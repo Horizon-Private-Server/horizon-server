@@ -1,4 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
+using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,11 @@ namespace Deadlocked.Server.Medius
 
         protected List<ClientSocket> _clients = new List<ClientSocket>();
 
+        protected DateTime timeLastEcho = DateTime.UtcNow;
+
+        protected bool shouldEcho = false;
+
+
         public virtual void Start()
         {
             Listener = new TcpListener(IPAddress.Any, Port);
@@ -32,7 +38,7 @@ namespace Deadlocked.Server.Medius
                 {
                     while (true)
                     {
-                        var client = new ClientSocket(Listener.AcceptSocket());
+                        var client = new ClientSocket(Listener.AcceptTcpClient());
                         Console.WriteLine($"Connection accepted on port {Port}.");
                         _clients.Add(client);
 
@@ -76,6 +82,9 @@ namespace Deadlocked.Server.Medius
                     if (!client.Connected)
                         break;
 
+                    if (size <= 0)
+                        break;
+
                     if (size > 0)
                     {
                         int ret = 0;
@@ -117,6 +126,10 @@ namespace Deadlocked.Server.Medius
 
         public void Tick()
         {
+            // Determine if should echo
+            if ((DateTime.UtcNow - timeLastEcho).TotalSeconds > 5)
+                shouldEcho = true;
+
             // Collection of clients that have DC'd
             Queue<ClientSocket> removeQueue = new Queue<ClientSocket>();
 
@@ -137,11 +150,23 @@ namespace Deadlocked.Server.Medius
                 client.Close();
                 _clients.Remove(client);
             }
+
+            // Reset echo timer
+            if (shouldEcho)
+            {
+                shouldEcho = false;
+                timeLastEcho = DateTime.UtcNow;
+            }
         }
 
         protected virtual void Tick(ClientSocket client)
         {
 
+        }
+
+        protected void Echo(ClientSocket client, ref List<BaseMessage> responses)
+        {
+            responses.Add(new RT_MSG_SERVER_ECHO() { });
         }
 
         protected virtual int HandleCommand(BaseMessage message, ClientSocket client, ref List<BaseMessage> responses)

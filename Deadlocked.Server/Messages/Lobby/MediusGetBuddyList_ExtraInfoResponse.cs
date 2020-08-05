@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Deadlocked.Server.Messages.App
+namespace Deadlocked.Server.Messages.Lobby
 {
     [MediusApp(MediusAppPacketIds.GetBuddyList_ExtraInfoResponse)]
     public class MediusGetBuddyList_ExtraInfoResponse : BaseLobbyMessage
@@ -16,7 +16,7 @@ namespace Deadlocked.Server.Messages.App
         public MediusCallbackStatus StatusCode;
         public int AccountID;
         public string AccountName; // ACCOUNTNAME_MAXLEN
-        public MediusPlayerOnlineState OnlineState;
+        public MediusPlayerOnlineState OnlineState = new MediusPlayerOnlineState();
         public bool EndOfList;
 
         public override void Deserialize(BinaryReader reader)

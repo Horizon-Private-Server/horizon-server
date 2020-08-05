@@ -245,6 +245,10 @@ namespace Deadlocked.Server.Messages
                         bool encrypted = rawId >= 0x80;
                         ushort len = reader.ReadUInt16();
 
+                        // End
+                        if (len > (reader.BaseStream.Length - reader.BaseStream.Position))
+                            break;
+
                         // Get class
                         if (!_messageClassById.TryGetValue(id, out var classType))
                             classType = null;

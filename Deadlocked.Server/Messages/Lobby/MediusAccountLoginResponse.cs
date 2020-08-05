@@ -5,7 +5,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace Deadlocked.Server.Messages.App
+namespace Deadlocked.Server.Messages.Lobby
 {
     [MediusApp(MediusAppPacketIds.AccountLoginResponse)]
     public class MediusAccountLoginResponse : BaseLobbyMessage

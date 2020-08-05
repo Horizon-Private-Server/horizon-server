@@ -1,5 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.App;
+using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;

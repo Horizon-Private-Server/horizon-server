@@ -5,7 +5,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 
-namespace Deadlocked.Server.Messages.App
+namespace Deadlocked.Server.Messages.Lobby
 {
     public abstract class BaseLobbyMessage : BaseAppMessage
     {

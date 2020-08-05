@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Messages.App;
+﻿using Deadlocked.Server.Messages.Lobby;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;

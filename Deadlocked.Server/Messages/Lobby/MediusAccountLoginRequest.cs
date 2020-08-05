@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Deadlocked.Server.Messages.App
+namespace Deadlocked.Server.Messages.Lobby
 {
     [MediusApp(MediusAppPacketIds.AccountLogin)]
     public class MediusAccountLoginRequest : BaseLobbyMessage

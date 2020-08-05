@@ -315,6 +315,18 @@ namespace Deadlocked.Server.Messages
         MediusBuddyChatType,       ///< send chat to all members in your buddy list
     }
 
+    public enum MediusWorldStatus : int
+    {
+        WorldInactive, ///< Game world is not active.
+        WorldStaging, ///< Players are staging in the game, but not yet playing.
+        WorldActive, ///< Players are playing in the game world.
+        WorldClosed, ///< Players are not allowed to join this game world.
+        WorldPendingCreation,  ///< Set by server while creation is in progress
+        WorldPendingConnectToGame,  ///< Set by server for spectator worlds only 
+                                    ///< after creation while connection to host
+                                    ///< game world is in progress
+    }
+
     public enum NetConnectionType : int
     {
         /**

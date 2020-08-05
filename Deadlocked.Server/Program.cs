@@ -1,16 +1,24 @@
-﻿using Deadlocked.Server.Medius;
+﻿using Deadlocked.Server.Accounts;
+using Deadlocked.Server.Config;
+using Deadlocked.Server.Medius;
 using Medius.Crypto;
+using Newtonsoft.Json;
+using Org.BouncyCastle.Crypto.Tls;
 using Org.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using System.Threading;
 
 namespace Deadlocked.Server
 {
     class Program
     {
+        public const string CONFIG_FILE = "config.json";
+        public const string DB_FILE = "db.json";
         public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
 
         public static PS2_RSA GlobalAuthKey = new PS2_RSA(
@@ -20,7 +28,11 @@ namespace Deadlocked.Server
         );
 
         public static List<ClientObject> Clients = new List<ClientObject>();
-        public static List<Lobby> Lobbies = new List<Lobby>();
+        public static List<Channel> Channels = new List<Channel>();
+        public static List<Game> Games = new List<Game>();
+
+        public static ServerSettings Settings = new ServerSettings();
+        public static ServerDB Database = new ServerDB();
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
@@ -30,12 +42,12 @@ namespace Deadlocked.Server
         public static MPS ProxyServer = new MPS();
         public static int TickRate = 10;
 
-        public static int AppId = 11184;
-
         public static int TickMS => 1000 / TickRate;
 
         static void Main(string[] args)
         {
+            Initialize();
+
             int sleepMS = TickMS;
 
             restart:;
@@ -74,6 +86,68 @@ namespace Deadlocked.Server
 
                 Thread.Sleep(sleepMS);
             }
+        }
+
+        static void Initialize()
+        {
+            // 
+            var serializerSettings = new JsonSerializerSettings()
+            {
+                MissingMemberHandling = MissingMemberHandling.Ignore
+            };
+
+            // Load settings
+            if (File.Exists(CONFIG_FILE))
+            {
+                // Populate existing object
+                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
+            }
+            else
+            {
+                // Save defaults
+                File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+            }
+
+            // Load account db
+            if (File.Exists(DB_FILE))
+            {
+                // Populate existing object
+                JsonConvert.PopulateObject(File.ReadAllText(DB_FILE), Database, serializerSettings);
+            }
+
+            // Save db
+            Database.Save();
+
+            // Determine server ip
+            if (!String.IsNullOrEmpty(Settings.ServerIpOverride))
+            {
+                SERVER_IP = IPAddress.Parse(Settings.ServerIpOverride);
+            }
+            else
+            {
+                SERVER_IP = IPAddress.Parse(GetIPAddress());
+            }
+        }
+
+        /// <summary>
+        /// From https://www.c-sharpcorner.com/blogs/how-to-get-public-ip-address-using-c-sharp1
+        /// </summary>
+        /// <returns></returns>
+        static string GetIPAddress()
+        {
+            String address;
+            WebRequest request = WebRequest.Create("http://checkip.dyndns.org/");
+            using (WebResponse response = request.GetResponse())
+            using (StreamReader stream = new StreamReader(response.GetResponseStream()))
+            {
+                address = stream.ReadToEnd();
+            }
+
+            int first = address.IndexOf("Address: ") + 9;
+            int last = address.LastIndexOf("</body>");
+            address = address.Substring(first, last - first);
+
+            return address;
         }
     }
 }

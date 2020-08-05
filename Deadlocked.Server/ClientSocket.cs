@@ -9,7 +9,7 @@ namespace Deadlocked.Server
 {
     public class ClientSocket
     {
-        private Socket _client = null;
+        private TcpClient _client = null;
 
         public string Token { get; protected set; }
 
@@ -17,7 +17,7 @@ namespace Deadlocked.Server
 
         public int ComponentState { get; set; } = 0;
 
-        public ClientSocket(Socket client)
+        public ClientSocket(TcpClient client)
         {
             _client = client;
         }
@@ -32,9 +32,9 @@ namespace Deadlocked.Server
 
         public bool Connected => _client?.Connected ?? false;
 
-        public EndPoint RemoteEndPoint => _client?.RemoteEndPoint;
+        public EndPoint RemoteEndPoint => _client?.Client.RemoteEndPoint;
 
-        public EndPoint LocalEndPoint => _client?.LocalEndPoint;
+        public EndPoint LocalEndPoint => _client?.Client.LocalEndPoint;
 
         public void Close()
         {
@@ -44,12 +44,12 @@ namespace Deadlocked.Server
         public void Disconnect()
         {
             if (Connected)
-                _client?.Disconnect(true);
+                _client?.Client.Disconnect(false);
         }
 
         public int Receive(byte[] buffer)
         {
-            return _client?.Receive(buffer) ?? 0;
+            return _client?.GetStream().Read(buffer) ?? 0;
         }
 
         public void Send(byte[] buffer)
@@ -57,7 +57,7 @@ namespace Deadlocked.Server
             if (!Connected)
                 return;
 
-            _client?.Send(buffer);
+            _client?.Client.Send(buffer);
         }
 
         #endregion

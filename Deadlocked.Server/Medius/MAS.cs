@@ -1,5 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.App;
+using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;
@@ -30,8 +30,13 @@ namespace Deadlocked.Server.Medius
                     recv.Add(_queue.Dequeue());
             }
 
+            // 
             foreach (var msg in recv)
                 HandleCommand(msg, client, ref responses);
+
+            // 
+            if (shouldEcho)
+                Echo(client, ref responses);
 
             responses.Send(client);
         }
@@ -76,7 +81,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
                     {
-                        
+                        client.Client?.OnEcho(DateTime.UtcNow);
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
@@ -120,8 +125,20 @@ namespace Deadlocked.Server.Medius
                                     var loginMsg = appMsg as MediusAccountLoginRequest;
                                     Console.WriteLine($"LOGIN REQUEST: {loginMsg}");
 
+                                    // Find account or create new
+                                    if (!Program.Database.GetAccountByName(loginMsg.Username, out var account))
+                                    {
+                                        account = new Accounts.Account()
+                                        {
+                                            AccountName = loginMsg.Username,
+                                            AccountPassword = loginMsg.Password
+                                        };
+
+                                        Program.Database.AddAccount(account);
+                                    }
+
                                     // Check client isn't already logged in
-                                    if (Program.Clients.Any(x => x.Username == loginMsg.Username))
+                                    if (account.IsLoggedIn)
                                     {
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
@@ -131,26 +148,36 @@ namespace Deadlocked.Server.Medius
                                             }
                                         });
                                     }
+                                    else if (account.AccountPassword != loginMsg.Password)
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusAccountLoginResponse()
+                                            {
+                                                StatusCode = MediusCallbackStatus.MediusInvalidPassword
+                                            }
+                                        });
+                                    }
                                     else
                                     {
 
-                                        var clientObject = new ClientObject(loginMsg.Username, loginMsg.SessionKey, 1);
+                                        var clientObject = new ClientObject(account, loginMsg.SessionKey);
                                         Program.Clients.Add(clientObject);
 
-                                        Console.WriteLine($"LOGGING IN AS {loginMsg.Username} with access token {clientObject.Token}");
+                                        Console.WriteLine($"LOGGING IN AS {account.AccountName} with access token {clientObject.Token}");
 
                                         // Tell client
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
                                             AppMessage = new MediusAccountLoginResponse()
                                             {
-                                                AccountID = clientObject.AccountId,
+                                                AccountID = account.AccountId,
                                                 AccountType = MediusAccountType.MediusMasterAccount,
                                                 ConnectInfo = new NetConnectionInfo()
                                                 {
                                                     AccessKey = clientObject.Token,
                                                     SessionKey = loginMsg.SessionKey,
-                                                    WorldID = 1,
+                                                    WorldID = 0,
                                                     ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
                                                     AddressList = new NetAddressList()
                                                     {
@@ -162,7 +189,7 @@ namespace Deadlocked.Server.Medius
                                                     },
                                                     Type = NetConnectionType.NetConnectionTypeClientServerTCP
                                                 },
-                                                MediusWorldID = 0x42,
+                                                MediusWorldID = Program.Settings.DefaultChannelId,
                                                 StatusCode = MediusCallbackStatus.MediusSuccess
                                             }
                                         });
@@ -171,7 +198,7 @@ namespace Deadlocked.Server.Medius
                                 }
                             default:
                                 {
-                                    Console.WriteLine($"Unhandled Exchange: {appMsg.Id} {appMsg}");
+                                    Console.WriteLine($"MAS Unhandled App Message: {appMsg.Id} {appMsg}");
                                     break;
                                 }
                         }

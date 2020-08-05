@@ -1,5 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.App;
+using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;
@@ -32,6 +32,11 @@ namespace Deadlocked.Server.Medius
 
             foreach (var msg in recv)
                 HandleCommand(msg, client, ref responses);
+
+            // 
+            var targetMsgs = client.Client?.PullProxyMessages();
+            if (targetMsgs != null && targetMsgs.Count > 0)
+                responses.AddRange(targetMsgs);
 
             responses.Send(client);
         }
@@ -76,6 +81,44 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
                     {
+
+                        break;
+                    }
+                case RT_MSG_TYPE.RT_MSG_CLIENT_SET_RECV_FLAG:
+                    {
+
+                        break;
+                    }
+                case RT_MSG_TYPE.RT_MSG_CLIENT_APP_BROADCAST:
+                    {
+                        var msg = message as RT_MSG_CLIENT_APP_BROADCAST;
+
+                        var game = Program.Games.FirstOrDefault(x => x.Clients.Contains(client.Client));
+                        if (game != null)
+                        {
+                            foreach (var peer in game.Clients)
+                            {
+                                if (peer != client.Client)
+                                {
+                                    peer.AddProxyMessage(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_APP)
+                                    {
+                                        Contents = msg.Contents
+                                    });
+                                }
+                            }
+                        }
+                        break;
+                    }
+                case RT_MSG_TYPE.RT_MSG_CLIENT_TIMEBASE_QUERY:
+                    {
+                        var msg = message as RT_MSG_CLIENT_TIMEBASE_QUERY;
+                        var game = Program.Games.FirstOrDefault(x => x.Clients.Contains(client.Client));
+
+                        responses.Add(new RT_MSG_SERVER_TIMEBASE_QUERY_NOTIFY()
+                        {
+                            ClientTime = msg.Timestamp,
+                            ServerTime = game?.Time ?? 0
+                        });
 
                         break;
                     }

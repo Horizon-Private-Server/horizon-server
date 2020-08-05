@@ -20,6 +20,7 @@ namespace Deadlocked.Server.Messages
         public const int LOBBYPASSWORD_MAXLEN = WORLDPASSWORD_MAXLEN;
         public const int GAMENAME_MAXLEN = 64;
         public const int GAMEPASSWORD_MAXLEN = 32;
+        public const int GAMESTATS_MAXLEN = 256;
         public const int DNASSIGNATURE_MAXLEN = 32;
         public const int ANNOUNCEMENT_MAXLEN = 1000;
         public const int MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN = 16;

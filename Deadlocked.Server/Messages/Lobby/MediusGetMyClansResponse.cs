@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Deadlocked.Server.Messages.App
+namespace Deadlocked.Server.Messages.Lobby
 {
     [MediusApp(MediusAppPacketIds.GetMyClansResponse)]
     public class MediusGetMyClansResponse : BaseLobbyMessage
@@ -20,7 +20,7 @@ namespace Deadlocked.Server.Messages.App
         public string LeaderAccountName; // ACCOUNTNAME_MAXLEN
         public string Stats; // CLANSTATS_MAXLEN
         public MediusClanStatus Status;
-        public byte EndOfList;
+        public bool EndOfList;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -37,7 +37,7 @@ namespace Deadlocked.Server.Messages.App
             LeaderAccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
             Stats = reader.ReadString(MediusConstants.CLANSTATS_MAXLEN);
             Status = reader.Read<MediusClanStatus>();
-            EndOfList = reader.ReadByte();
+            EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
 
