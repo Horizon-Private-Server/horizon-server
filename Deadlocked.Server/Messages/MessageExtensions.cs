@@ -35,8 +35,13 @@ namespace Deadlocked.Server.Messages
 
             // 
             foreach (var client in clients)
+            {
                 foreach (var msg in condensedMsgs)
+                {
+                    Console.WriteLine($"!! SEND {client.RemoteEndPoint} !! {BitConverter.ToString(msg)}");
                     client.Send(msg);
+                }
+            }
         }
 
     }

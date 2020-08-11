@@ -21,6 +21,7 @@ namespace Deadlocked.Server.Messages
         public const int GAMENAME_MAXLEN = 64;
         public const int GAMEPASSWORD_MAXLEN = 32;
         public const int GAMESTATS_MAXLEN = 256;
+        public const int WINNINGTEAM_MAXLEN = 64;
         public const int DNASSIGNATURE_MAXLEN = 32;
         public const int ANNOUNCEMENT_MAXLEN = 1000;
         public const int MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN = 16;
@@ -48,12 +49,21 @@ namespace Deadlocked.Server.Messages
 
         public const int RSA_SIZE_DWORD = 16;
 
+        public const int MGCL_MESSAGEID_MAXLEN = 21;
+        public const int MGCL_SERVERVERSION_MAXLEN = 16;
+        public const int MGCL_GAMENAME_MAXLEN = 64;
+        public const int MGCL_GAMESTATS_MAXLEN = 256;
+        public const int MGCL_GAMEPASSWORD_MAXLEN = 32;
+        public const int MGCL_SERVERIP_MAXLEN = 20;
+        public const int MGCL_ACCESSKEY_MAXLEN = 17;
+        public const int MGCL_SESSIONKEY_MAXLEN = 17;
 
         public const int MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE = 464;
         public const int MEDIUS_FILE_MAX_FILENAME_LENGTH = 128;
         public const int MEDIUS_FILE_CHECKSUM_NUMBYTES = 16;
 
         public const int DME_FRAGMENT_MAX_PAYLOAD_SIZE = MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE + 24;
+        public const int DME_VERSION_LENGTH = 16;
 
 
     }

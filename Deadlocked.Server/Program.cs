@@ -40,6 +40,7 @@ namespace Deadlocked.Server
         public static MAS AuthenticationServer = new MAS();
         public static MLS LobbyServer = new MLS();
         public static MPS ProxyServer = new MPS();
+        public static NAT NATServer = new NAT();
         public static int TickRate = 10;
 
         public static int TickMS => 1000 / TickRate;
@@ -58,6 +59,7 @@ namespace Deadlocked.Server
             AuthenticationServer.Start();
             LobbyServer.Start();
             ProxyServer.Start();
+            NATServer.Start();
 
             // 
             Console.WriteLine("Started. Press 1 to exit. Press 2 to restart.");
@@ -68,6 +70,10 @@ namespace Deadlocked.Server
                 AuthenticationServer.Tick();
                 LobbyServer.Tick();
                 ProxyServer.Tick();
+                NATServer.Tick();
+
+                foreach (var game in Games)
+                    game.Tick();
 
                 // Check exit
                 if (Console.KeyAvailable)
@@ -80,6 +86,7 @@ namespace Deadlocked.Server
                         UniverseInfoServer.Stop();
                         AuthenticationServer.Stop();
                         LobbyServer.Stop();
+                        NATServer.Stop();
                         goto restart;
                     }
                 }

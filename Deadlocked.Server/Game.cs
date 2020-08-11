@@ -1,8 +1,10 @@
-﻿using Deadlocked.Server.Messages;
+﻿using Deadlocked.Server.Medius;
+using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Text;
 
 namespace Deadlocked.Server
@@ -11,12 +13,19 @@ namespace Deadlocked.Server
     {
         public static int IdCounter = 1;
 
+        public class GameClient
+        {
+            public ClientObject Client;
+            public int GameId;
+        }
+
         public int Id = 0;
-        public List<ClientObject> Clients = new List<ClientObject>();
+        public int DMEWorldId = 0;
+        public List<GameClient> Clients = new List<GameClient>();
         public string GameName;
         public string GamePassword;
         public string SpectatorPassword;
-        public string GameStats;
+        public byte[] GameStats = new byte[MediusConstants.GAMESTATS_MAXLEN];
         public MediusGameHostType GameHostType;
         public int MinPlayers;
         public int MaxPlayers;
@@ -34,16 +43,22 @@ namespace Deadlocked.Server
         public MediusWorldStatus WorldStatus;
         public MediusWorldAttributesType Attributes;
 
+        public DMEServer DME = null;
 
         private DateTime utcTimeCreated;
+        private int gameClientIdCounter = 1;
 
         public uint Time => (uint)(DateTime.UtcNow - utcTimeCreated).TotalMilliseconds;
+
+        public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected);
 
         public Game()
         {
             Id = IdCounter++;
             WorldStatus = MediusWorldStatus.WorldPendingCreation;
             utcTimeCreated = DateTime.UtcNow;
+            //DME = new DMEServer(this);
+            //DME.Start();
         }
 
         public Game(MediusCreateGameRequest createGame)
@@ -69,11 +84,27 @@ namespace Deadlocked.Server
             Attributes = createGame.Attributes;
             WorldStatus = MediusWorldStatus.WorldPendingCreation;
             utcTimeCreated = DateTime.UtcNow;
+            //DME = new DMEServer(this);
+            //DME.Start();
+        }
+
+        public void Tick()
+        {
+            DME?.Tick();
         }
 
         public void OnPlayerJoined(ClientObject client)
         {
-            Clients.Add(client);
+            Clients.Add(new GameClient()
+            {
+                Client = client,
+                GameId = gameClientIdCounter++
+            });
+        }
+
+        public void OnEndGameReport(MediusEndGameReport report)
+        {
+            Clients.Clear();
         }
 
         public void OnWorldReport(MediusWorldReport report)

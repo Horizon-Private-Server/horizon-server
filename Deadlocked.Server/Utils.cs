@@ -82,7 +82,7 @@ namespace Deadlocked.Server
 
         public static IPAddress ReadIPAddress(this BinaryReader reader)
         {
-            return IPAddress.Parse(reader.ReadChars(16));
+            return IPAddress.Parse(reader.ReadString(16));
         }
 
         public static void Write(this BinaryWriter writer, string str, int length)

@@ -47,5 +47,13 @@ namespace Deadlocked.Server.Messages.RTIME
             writer.Write(ARG2);
             writer.Write(UNK);
         }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"ARG1:{ARG1:X8} " +
+                $"ARG2:{ARG2:X8} " +
+                $"UNK:{BitConverter.ToString(UNK)}";
+        }
     }
 }

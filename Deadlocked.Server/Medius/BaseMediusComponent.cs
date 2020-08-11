@@ -40,12 +40,10 @@ namespace Deadlocked.Server.Medius
                     {
                         var client = new ClientSocket(Listener.AcceptTcpClient());
                         Console.WriteLine($"Connection accepted on port {Port}.");
-                        _clients.Add(client);
-
-                        new Thread(() =>
+                        lock (_clients)
                         {
-                            OnClientConnected(client);
-                        }).Start();
+                            _clients.Add(client);
+                        }
                     }
                 }
                 catch (Exception e)
@@ -58,70 +56,48 @@ namespace Deadlocked.Server.Medius
         public virtual void Stop()
         {
             // 
-            foreach (var client in _clients)
-                client.Close();
+            lock (_clients)
+            {
+                foreach (var client in _clients)
+                    client.Close();
 
-            //
-            _clients.Clear();
+                //
+                _clients.Clear();
+            }
 
             //
             Listener.Stop();
         }
 
-        protected virtual void OnClientConnected(ClientSocket client)
+        protected void Read(ClientSocket client)
         {
             byte[] data = new byte[4096];
-            try
+            int size = client.ReadAvailable(data);
+
+            if (size > 0)
             {
-                while (true)
+                byte[] buffer = new byte[size];
+                Array.Copy(data, 0, buffer, 0, size);
+
+                var msgs = BaseMessage.Instantiate(buffer, (id, context) =>
                 {
-                    if (client == null || !client.Connected)
-                        break;
-
-                    int size = client.Receive(data);
-                    if (!client.Connected)
-                        break;
-
-                    if (size <= 0)
-                        break;
-
-                    if (size > 0)
+                    switch (context)
                     {
-                        int ret = 0;
-                        byte[] buffer = new byte[size];
-                        Array.Copy(data, 0, buffer, 0, size);
+                        case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
+                        case CipherContext.RSA_AUTH: return Program.GlobalAuthKey;
+                        default: return null;
+                    }
+                });
 
-                        var msgs = BaseMessage.Instantiate(buffer, (id, context) =>
-                        {
-                            switch (context)
-                            {
-                                case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
-                                case CipherContext.RSA_AUTH: return Program.GlobalAuthKey;
-                                default: return null;
-                            }
-                        });
-
-                        lock (_queue)
-                        {
-                            foreach (var msg in msgs)
-                            {
-                                _queue.Enqueue(msg);
-                            }
-                        }
-
-                        if (ret == 1)
-                            break;
+                lock (_queue)
+                {
+                    foreach (var msg in msgs)
+                    {
+                        msg.Source = (IPEndPoint)client.RemoteEndPoint;
+                        _queue.Enqueue(msg);
                     }
                 }
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-
-            //_clients.Remove(client);
-            client.Disconnect();
-            client.Close();
         }
 
         public void Tick()
@@ -135,20 +111,34 @@ namespace Deadlocked.Server.Medius
 
             // Iterate through each
             // Run tick on each unless client disconnected
-            foreach (var client in _clients)
+            lock (_clients)
             {
-                if (client == null || !client.Connected)
-                    removeQueue.Enqueue(client);
-                else
-                    Tick(client);
+                foreach (var client in _clients)
+                {
+                    if (client == null || !client.Connected)
+                    {
+                        removeQueue.Enqueue(client);
+                    }
+                    else
+                    {
+                        // Receive
+                        Read(client);
+
+                        // Tick
+                        Tick(client);
+                    }
+                }
             }
 
             // Remove disconnected clients from collection
-            while (removeQueue.Count > 0)
+            lock (_clients)
             {
-                var client = removeQueue.Dequeue();
-                client.Close();
-                _clients.Remove(client);
+                while (removeQueue.Count > 0)
+                {
+                    var client = removeQueue.Dequeue();
+                    client.Close();
+                    _clients.Remove(client);
+                }
             }
 
             // Reset echo timer

@@ -24,7 +24,7 @@ namespace Deadlocked.Server.Stream
                 return result;
             }
             else if (type.IsEnum)
-                return Enum.Parse(type, type.GetEnumName(reader.ReadObject(type.GetEnumUnderlyingType())));
+                return reader.ReadObject(type.GetEnumUnderlyingType()); //Enum.Parse(type, type.GetEnumName(reader.ReadObject(type.GetEnumUnderlyingType())));
             else if (type == typeof(bool))
                 return reader.ReadBoolean();
             else if (type == typeof(byte))

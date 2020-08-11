@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 
@@ -16,6 +17,16 @@ namespace Deadlocked.Server.Messages
         /// Message id.
         /// </summary>
         public abstract RT_MSG_TYPE Id { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IPEndPoint Source { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IPEndPoint[] Targets { get; set; }
 
         public BaseMessage()
         {
@@ -238,6 +249,7 @@ namespace Deadlocked.Server.Messages
                     {
                         // Reset
                         msg = null;
+                        long start = reader.BaseStream.Position;
 
                         // Parse header
                         byte rawId = reader.ReadByte();
@@ -254,7 +266,7 @@ namespace Deadlocked.Server.Messages
                             classType = null;
 
                         // Decrypt
-                        if (encrypted)
+                        if (encrypted && len > 0)
                         {
                             byte[] hash = reader.ReadBytes(4);
                             byte[] cipherText = reader.ReadBytes(len);
@@ -272,7 +284,11 @@ namespace Deadlocked.Server.Messages
                         }
 
                         if (msg != null)
+                        {
                             msgs.Add(msg);
+
+                            Console.WriteLine($"!! RECV !! {BitConverter.ToString(messageBuffer, (int)start, (int)(stream.Position - start))}");
+                        }
                     }
                 }
             }

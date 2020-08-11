@@ -43,5 +43,10 @@ namespace Deadlocked.Server.Config
         /// Time since last echo response before timing the client out.
         /// </summary>
         public int ClientTimeoutSeconds { get; set; } = 15;
+
+        /// <summary>
+        /// The start port for dme servers.
+        /// </summary>
+        public int DmeServerPortStart { get; set; } = 50000;
     }
 }

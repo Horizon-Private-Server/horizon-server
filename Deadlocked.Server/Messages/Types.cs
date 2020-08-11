@@ -327,6 +327,67 @@ namespace Deadlocked.Server.Messages
                                     ///< game world is in progress
     }
 
+    public enum MediusGameListFilterField : int
+    {
+        MEDIUS_FILTER_PLAYER_COUNT = 1,  ///< Filter based on the number of players in the game.
+        MEDIUS_FILTER_MIN_PLAYERS = 2,  ///< Filter based on the minimum number of players for the game.
+        MEDIUS_FILTER_MAX_PLAYERS = 3,  ///< Filter based on the maximum number of players for the game.
+        MEDIUS_FILTER_GAME_LEVEL = 4,  ///< Filter based on the game level.
+        MEDIUS_FILTER_PLAYER_SKILL_LEVEL = 5,  ///< Filter based on the advertised skill level for the game.
+        MEDIUS_FILTER_RULES_SET = 6,  ///< Filter based on the rule set for the game.
+        MEDIUS_FILTER_GENERIC_FIELD_1 = 7,  ///< Filter on generic field 1
+        MEDIUS_FILTER_GENERIC_FIELD_2 = 8,  ///< Filter on generic field 2
+        MEDIUS_FILTER_GENERIC_FIELD_3 = 9,  ///< Filter on generic field 3
+        MEDIUS_FILTER_LOBBY_WORLDID = 10,  ///< Filter based on the lobby world ID that the game was created in.
+        MEDIUS_FILTER_GENERIC_FIELD_4 = 11,  ///< Filter on generic field 4
+        MEDIUS_FILTER_GENERIC_FIELD_5 = 12,  ///< Filter on generic field 5
+        MEDIUS_FILTER_GENERIC_FIELD_6 = 13,  ///< Filter on generic field 6
+        MEDIUS_FILTER_GENERIC_FIELD_7 = 14,  ///< Filter on generic field 7
+        MEDIUS_FILTER_GENERIC_FIELD_8 = 15,  ///< Filter on generic field 8
+    }
+
+    public enum MediusWorldSecurityLevelType : int
+    {
+        WORLD_SECURITY_NONE = 0,       ///< No security on world
+        WORLD_SECURITY_PLAYER_PASSWORD = (1 << 0), ///< Password required to 
+                                                   ///< join as a player
+        WORLD_SECURITY_CLOSED = (1 << 1), ///< World is closed to new 
+                                          ///< players
+        WORLD_SECURITY_SPECTATOR_PASSWORD = (1 << 2), ///< Password is required to 
+                                                      ///< join as a spectator
+    }
+
+    public enum MediusLobbyFilterType : int
+    {
+        MediusLobbyFilterEqualsLobby = 0, ///< Lobby filtering rules.  Lobby&Filter = Lobby
+        MediusLobbyFilterEqualsFilter = 1, ///< Lobby filtering rules.  Lobby&Filter = Filter
+    }
+
+    public enum MediusLobbyFilterMaskLevelType : int
+    {
+        MediusLobbyFilterMaskLevel0 = 0, ///< not using filter mask
+        MediusLobbyFilterMaskLevel1 = (1 << 0),///< use only FilterMask1
+        MediusLobbyFilterMaskLevel2 = (1 << 1),///< use only FilterMask2
+        MediusLobbyFilterMaskLevel3 = (1 << 2),///< use only FilterMask3
+        MediusLobbyFilterMaskLevel4 = (1 << 3),///< use only FilterMask4
+        MediusLobbyFilterMaskLevel12 = (1 << 4),///< use 1 and 2
+        MediusLobbyFilterMaskLevel123 = (1 << 5),///< use 1, 2 and 3
+        MediusLobbyFilterMaskLevel1234 = (1 << 6),///< use 1, 2, 3, and 4
+        MediusLobbyFilterMaskLevel23 = (1 << 7),///< use 2 and 3
+        MediusLobbyFilterMaskLevel234 = (1 << 8),///< use 2, 3, and 4
+        MediusLobbyFilterMaskLevel34 = (1 << 9),///< use 3 and 4
+    }
+
+    public enum MediusComparisonOperator : int
+    {
+        LESS_THAN,  ///< Less than comparison operator
+        LESS_THAN_OR_EQUAL_TO,  ///< Less than or equal to comparison operator
+        EQUAL_TO,  ///< Equal to comparison operator
+        GREATER_THAN_OR_EQUAL_TO,  ///< Greater than or equal to comparison operator
+        GREATER_THAN,  ///< Great than comparison operator
+        NOT_EQUALS,  ///< Not equals comparison operator
+    }
+
     public enum NetConnectionType : int
     {
         /**
@@ -354,6 +415,78 @@ namespace Deadlocked.Server.Messages
          * (4) This specifies a connection to a Server via TCP.  This is reserved for SCE-RT "Spectator" functionality.
          */
         NetConnectionTypeClientListenerTCP = 4
+    }
+
+    public enum MGCL_EVENT_TYPE : int
+    {
+        /** A client disconnected from this game server.*/
+        MGCL_EVENT_CLIENT_DISCONNECT = 0,
+
+        /** A server connected to this game server.*/
+        MGCL_EVENT_CLIENT_CONNECT = 1,
+    }
+
+    public enum MGCL_ALERT_LEVEL : int
+    {
+        /** SUCCESSFUL response. */
+        MGCL_SUCCESS = 0,
+
+        /** Connect terminated. */
+        MGCL_CONNECTION_ERROR = -1,
+
+        /** Unable to connect to a target host. */
+        MGCL_CONNECTION_FAILED = -2,
+
+        /** Unable to disconnect from a target host. */
+        MGCL_DISCONNECT_FAILED = -3,
+
+        /** Attempt to use an API call that requires a connection - without a connection. */
+        MGCL_NOT_CONNECTED = -4,
+
+        /** Sending of data failed. */
+        MGCL_SEND_FAILED = -5,
+
+        /** Initialization of the MGCL library failed. */
+        MGCL_INITIALIZATION_FAILED = -6,
+
+        /** Shutdown of the MGCL library failed. */
+        MGCL_SHUTDOWN_ERROR = -7,
+
+        /** A lower level network error occurred. */
+        MGCL_NETWORK_ERROR = -8,
+
+        /** Authentication of the MGCL host failed. This may be due to application ID or mismatched security keys. */
+        MGCL_AUTHENTICATION_FAILED = -9,
+
+        /** Session begin failed. */
+        MGCL_SESSIONBEGIN_FAILED = -10,
+
+        /** Session end failed. */
+        MGCL_SESSIONEND_FAILED = -11,
+
+        /** General request failed. */
+        MGCL_UNSUCCESSFUL = -12,
+
+        /** An invalid argument was used in a function call. */
+        MGCL_INVALID_ARG = -13,
+
+        /** Unable to access the NAT service or resolve the internal NAT address. */
+        MGCL_NATRESOLVE_FAILED = -14,
+
+        /** A game with the same name already exists. */
+        MGCL_GAME_NAME_EXISTS = -15,
+
+        /** The specified world ID is already in use. */
+        MGCL_WORLDID_INUSE = -16,
+
+        /** A lower level DME error has occurred. */
+        MGCL_DME_ERROR = -17,
+
+        /** An attempt was made to re-initialize MGCL without first closing the subsystem. */
+        MGCL_CALL_MGCL_CLOSE_BEFORE_REINITIALIZING = -18,
+
+        /** The maximum number of games within a lobby world was exceeded. */
+        MGCL_NUM_GAME_WORLDS_PER_LOBBY_WORLD_EXCEEDED = -19,
     }
 
     public enum NetAddressType : int
@@ -435,6 +568,127 @@ namespace Deadlocked.Server.Messages
         MaxMessageClasses,
     }
 
+    public enum MGCL_TRUST_LEVEL : int
+    {
+        /** This server is a trusted game server. */
+        MGCL_TRUSTED = 0,
+
+        /** This server is NOT a trusted game server. This is used for all peer-to-peer game hosts.*/
+        MGCL_NOT_TRUSTED = 1,
+    }
+
+    public enum MGCL_GAME_HOST_TYPE : int
+    {
+        /** The game server is configured for client-server gaming. */
+        MGCLGameHostClientServer = 0,
+
+        /** The game server is configured for an integrated server with both game play and serving. */
+        MGCLGameHostIntegratedServer = 1,
+
+        /** The game server is configured for the host in a peer-to-peer game. */
+        MGCLGameHostPeerToPeer = 2,
+
+        /** This is the host of a LAN game. */
+        MGCLGameHostLANPlay = 3,
+
+        /** This game server is configured for a client-server auxilliary UDP gaming. */
+        MGCLGameHostClientServerAuxUDP = 4,
+    }
+
+    public enum MGCL_ERROR_CODE : sbyte
+    {
+
+        /** SUCCESSFUL response. */
+        MGCL_SUCCESS = 0,
+
+        /** Connect terminated. */
+        MGCL_CONNECTION_ERROR = -1,
+
+        /** Unable to connect to a target host. */
+        MGCL_CONNECTION_FAILED = -2,
+
+        /** Unable to disconnect from a target host. */
+        MGCL_DISCONNECT_FAILED = -3,
+
+        /** Attempt to use an API call that requires a connection - without a connection. */
+        MGCL_NOT_CONNECTED = -4,
+
+        /** Sending of data failed. */
+        MGCL_SEND_FAILED = -5,
+
+        /** Initialization of the MGCL library failed. */
+        MGCL_INITIALIZATION_FAILED = -6,
+
+        /** Shutdown of the MGCL library failed. */
+        MGCL_SHUTDOWN_ERROR = -7,
+
+        /** A lower level network error occurred. */
+        MGCL_NETWORK_ERROR = -8,
+
+        /** Authentication of the MGCL host failed. This may be due to application ID or mismatched security keys. */
+        MGCL_AUTHENTICATION_FAILED = -9,
+
+        /** Session begin failed. */
+        MGCL_SESSIONBEGIN_FAILED = -10,
+
+        /** Session end failed. */
+        MGCL_SESSIONEND_FAILED = -11,
+
+        /** General request failed. */
+        MGCL_UNSUCCESSFUL = -12,
+
+        /** An invalid argument was used in a function call. */
+        MGCL_INVALID_ARG = -13,
+
+        /** Unable to access the NAT service or resolve the internal NAT address. */
+        MGCL_NATRESOLVE_FAILED = -14,
+
+        /** A game with the same name already exists. */
+        MGCL_GAME_NAME_EXISTS = -15,
+
+        /** The specified world ID is already in use. */
+        MGCL_WORLDID_INUSE = -16,
+
+        /** A lower level DME error has occurred. */
+        MGCL_DME_ERROR = -17,
+
+        /** An attempt was made to re-initialize MGCL without first closing the subsystem. */
+        MGCL_CALL_MGCL_CLOSE_BEFORE_REINITIALIZING = -18,
+
+        /** The maximum number of games within a lobby world was exceeded. */
+        MGCL_NUM_GAME_WORLDS_PER_LOBBY_WORLD_EXCEEDED = -19,
+    }
+
+    public enum NetClientStatus : byte
+    {
+        /**
+         * (0) No ClientStatus is available.
+         */
+        ClientStatusNone,
+        /**
+         * (1) Client is not connected.
+         */
+        ClientStatusNotConnected,
+        /**
+         * (2) Client is connected, but has not called NetJoin().
+         */
+        ClientStatusConnected,
+        /**
+         * (3) Client is in the process of joining, and is now receiving its first batch
+         * of object and field updates.
+         */
+        ClientStatusJoining,
+        /**
+         * (4) The client is now fully synchronized with the game, and has received all
+         * initial object creation callbacks, etc.
+         */
+        ClientStatusJoined,
+        /**
+         * (5) The client is fully joined and is <i>also</i> the Session Master.
+         */
+        ClientStatusJoinedSessionMaster,
+    }
+
     public class NetAddress : IStreamSerializer
     {
         /**
@@ -478,7 +732,14 @@ $"Port:{Port}";
 
     public class NetAddressList : IStreamSerializer
     {
-        public NetAddress[] AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT];
+        public NetAddress[] AddressList = null;
+
+        public NetAddressList()
+        {
+            AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT];
+            for (int i = 0; i < MediusConstants.NET_ADDRESS_LIST_COUNT; ++i)
+                AddressList[i] = new NetAddress();
+        }
 
         public void Deserialize(BinaryReader reader)
         {
@@ -505,9 +766,9 @@ $"Port:{Port}";
     public class NetConnectionInfo : IStreamSerializer
     {
         public NetConnectionType Type;
-        public NetAddressList AddressList;
+        public NetAddressList AddressList = new NetAddressList();
         public int WorldID;
-        public RSA_KEY ServerKey;
+        public RSA_KEY ServerKey = new RSA_KEY();
         public string SessionKey; // NET_SESSION_KEY_LEN
         public string AccessKey; // NET_ACCESS_KEY_LEN
 

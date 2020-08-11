@@ -15,7 +15,7 @@ namespace Deadlocked.Server.Messages.Lobby
         public int MediusWorldID;
         public int PlayerCount;
         public string GameName; // GAMENAME_MAXLEN
-        public string GameStats; // GAMESTATS_MAXLEN
+        public byte[] GameStats = new byte[MediusConstants.GAMESTATS_MAXLEN];
         public int MinPlayers;
         public int MaxPlayers;
         public int GameLevel;
@@ -40,7 +40,7 @@ namespace Deadlocked.Server.Messages.Lobby
             MediusWorldID = reader.ReadInt32();
             PlayerCount = reader.ReadInt32();
             GameName = reader.ReadString(MediusConstants.GAMENAME_MAXLEN);
-            GameStats = reader.ReadString(MediusConstants.GAMESTATS_MAXLEN);
+            GameStats = reader.ReadBytes(MediusConstants.GAMESTATS_MAXLEN);
             MinPlayers = reader.ReadInt32();
             MaxPlayers = reader.ReadInt32();
             GameLevel = reader.ReadInt32();
@@ -66,7 +66,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(MediusWorldID);
             writer.Write(PlayerCount);
             writer.Write(GameName, MediusConstants.GAMENAME_MAXLEN);
-            writer.Write(GameStats, MediusConstants.GAMESTATS_MAXLEN);
+            writer.Write(GameStats);
             writer.Write(MinPlayers);
             writer.Write(MaxPlayers);
             writer.Write(GameLevel);

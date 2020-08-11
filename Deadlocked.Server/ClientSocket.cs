@@ -43,8 +43,15 @@ namespace Deadlocked.Server
 
         public void Disconnect()
         {
-            if (Connected)
-                _client?.Client.Disconnect(false);
+            try
+            {
+                if (Connected)
+                    _client?.Client.Disconnect(true);
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine(e);
+            }
         }
 
         public int Receive(byte[] buffer)
@@ -52,12 +59,27 @@ namespace Deadlocked.Server
             return _client?.GetStream().Read(buffer) ?? 0;
         }
 
+        public int ReadAvailable(byte[] buffer)
+        {
+            if (_client.Available == 0)
+                return 0;
+
+            return _client.GetStream().Read(buffer, 0, _client.Available);
+        }
+
         public void Send(byte[] buffer)
         {
             if (!Connected)
                 return;
 
-            _client?.Client.Send(buffer);
+            try
+            {
+                _client?.Client.Send(buffer);
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine(e);
+            }
         }
 
         #endregion
