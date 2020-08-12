@@ -52,14 +52,6 @@ namespace Deadlocked.Server
 
         public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected);
 
-        public Game()
-        {
-            Id = IdCounter++;
-            WorldStatus = MediusWorldStatus.WorldPendingCreation;
-            utcTimeCreated = DateTime.UtcNow;
-            //DME = new DMEServer(this);
-            //DME.Start();
-        }
 
         public Game(MediusCreateGameRequest createGame)
         {
@@ -124,6 +116,11 @@ namespace Deadlocked.Server
             GenericField7 = report.GenericField7;
             GenericField8 = report.GenericField8;
             WorldStatus = report.WorldStatus;
+        }
+
+        private void SendCreateGame()
+        {
+
         }
     }
 }

@@ -975,7 +975,7 @@ namespace Deadlocked.Server.Medius
                                                 ConnectInfo = new NetConnectionInfo()
                                                 {
                                                     Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
-                                                    WorldID = game.DMEWorldId,
+                                                    WorldID = joinGameReq.MediusWorldID,
                                                     SessionKey = joinGameReq.SessionKey
                                                 }
                                             }

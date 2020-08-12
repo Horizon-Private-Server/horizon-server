@@ -71,7 +71,7 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_REQUIRE:
                     {
                         responses.Add(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) });
-                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { UNK_02 = 0x26, UNK_03 = 0x33, IP = (client.RemoteEndPoint as IPEndPoint).Address });
+                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { UNK_02 = 0x0A, UNK_03 = 0x00, IP = (client.RemoteEndPoint as IPEndPoint).Address });
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP:
@@ -139,8 +139,12 @@ namespace Deadlocked.Server.Medius
                                         Program.Database.AddAccount(account);
                                     }
 
-                                    var clientObject = new ClientObject(account, "dme");
-                                    Program.Clients.Add(clientObject);
+                                    var clientObject = Program.Clients.FirstOrDefault(x => x.SessionKey == "dme");
+                                    if (clientObject == null)
+                                    {
+                                        clientObject = new ClientObject(account, "dme");
+                                        Program.Clients.Add(clientObject);
+                                    }
 
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {

@@ -382,8 +382,9 @@ namespace Deadlocked.Server.Medius
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
                                                         {
                                                             //new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                                            new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)10072, AddressType = NetAddressType.NetAddressTypeExternal},
-                                                                new NetAddress() { AddressType = NetAddressType.NetAddressNone},
+                                                            //new NetAddress() { Address = (client.RemoteEndPoint as IPEndPoint).Address.ToString(), Port = (uint)10072, AddressType = NetAddressType.NetAddressTypeExternal},
+                                                            new NetAddress() { Address = (client.LocalEndPoint as IPEndPoint).Address.ToString(), Port = (uint)10072, AddressType = NetAddressType.NetAddressTypeExternal},
+                                                            new NetAddress() { AddressType = NetAddressType.NetAddressNone},
                                                         }
                                                 },
                                                 Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP
