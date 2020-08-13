@@ -6,15 +6,14 @@ using System.Text;
 
 namespace Deadlocked.Server.Messages.Lobby
 {
-    [MediusApp(MediusAppPacketIds.PlayerReport)]
-    public class MediusPlayerReport : BaseAppMessage
+    [MediusApp(MediusAppPacketIds.GenericChatSetFilterRequest)]
+    public class MediusGenericChatSetFilterRequest : BaseLobbyMessage
     {
 
-        public override MediusAppPacketIds Id => MediusAppPacketIds.PlayerReport;
+        public override MediusAppPacketIds Id => MediusAppPacketIds.GenericChatSetFilterRequest;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public int MediusWorldID;
-        public byte[] Stats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN]; 
+        public MediusGenericChatFilter GenericChatFilter;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -23,9 +22,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
-            reader.ReadBytes(3);
-            MediusWorldID = reader.ReadInt32();
-            Stats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            GenericChatFilter = reader.Read<MediusGenericChatFilter>();
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -35,9 +32,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
-            writer.Write(new byte[3]);
-            writer.Write(MediusWorldID);
-            writer.Write(Stats);
+            writer.Write(GenericChatFilter);
         }
 
 
@@ -45,8 +40,7 @@ namespace Deadlocked.Server.Messages.Lobby
         {
             return base.ToString() + " " +
              $"SessionKey:{SessionKey}" + " " +
-$"MediusWorldID:{MediusWorldID}" + " " +
-$"Stats:{BitConverter.ToString(Stats)}";
+$"GenericChatFilter:{GenericChatFilter}";
         }
     }
 }

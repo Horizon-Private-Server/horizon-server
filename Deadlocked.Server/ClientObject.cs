@@ -18,7 +18,8 @@ namespace Deadlocked.Server
 
         public MediusUserAction Action { get; set; } = MediusUserAction.KeepAlive;
         public MediusPlayerStatus Status { get; set; } = MediusPlayerStatus.MediusPlayerDisconnected;
-        public int CurrentChannelId { get; set; } = -1;
+        public int CurrentChannelId { get; set; } = 0;
+        public int CurrentGameId { get; set; } = -1;
 
         public Account ClientAccount { get; protected set; } = null;
 
@@ -38,6 +39,8 @@ namespace Deadlocked.Server
 
             // Set account
             ClientAccount = clientAccount;
+            if (ClientAccount != null)
+                ClientAccount.Client = this;
 
             // Set session key
             SessionKey = sessionKey;

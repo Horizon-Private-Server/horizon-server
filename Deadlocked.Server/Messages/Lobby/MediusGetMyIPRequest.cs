@@ -6,15 +6,13 @@ using System.Text;
 
 namespace Deadlocked.Server.Messages.Lobby
 {
-    [MediusApp(MediusAppPacketIds.PlayerReport)]
-    public class MediusPlayerReport : BaseAppMessage
+    [MediusApp(MediusAppPacketIds.GetMyIP)]
+    public class MediusGetMyIPRequest : BaseLobbyMessage
     {
 
-        public override MediusAppPacketIds Id => MediusAppPacketIds.PlayerReport;
+        public override MediusAppPacketIds Id => MediusAppPacketIds.GetMyIP;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public int MediusWorldID;
-        public byte[] Stats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN]; 
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -23,9 +21,6 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
-            reader.ReadBytes(3);
-            MediusWorldID = reader.ReadInt32();
-            Stats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -35,18 +30,13 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
-            writer.Write(new byte[3]);
-            writer.Write(MediusWorldID);
-            writer.Write(Stats);
         }
 
 
         public override string ToString()
         {
             return base.ToString() + " " +
-             $"SessionKey:{SessionKey}" + " " +
-$"MediusWorldID:{MediusWorldID}" + " " +
-$"Stats:{BitConverter.ToString(Stats)}";
+             $"SessionKey:{SessionKey}";
         }
     }
 }

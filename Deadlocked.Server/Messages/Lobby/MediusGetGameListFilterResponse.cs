@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Messages.Lobby
 {
-    [MediusApp(MediusAppPacketIds.GetGameListFilterResponse0)]
+    [MediusApp(MediusAppPacketIds.GetGameListFilterResponse)]
     public class MediusGetGameListFilterResponse : BaseLobbyMessage
     {
 
-        public override MediusAppPacketIds Id => MediusAppPacketIds.GetGameListFilterResponse0;
+        public override MediusAppPacketIds Id => MediusAppPacketIds.GetGameListFilterResponse;
 
         public MediusCallbackStatus StatusCode;
         public uint FilterID;

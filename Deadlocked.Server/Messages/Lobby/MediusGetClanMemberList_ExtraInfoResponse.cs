@@ -38,6 +38,7 @@ namespace Deadlocked.Server.Messages.Lobby
             LadderPosition = reader.ReadUInt32();
             TotalRankings = reader.ReadUInt32();
             EndOfList = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -56,6 +57,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(LadderPosition);
             writer.Write(TotalRankings);
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
         }
 
 

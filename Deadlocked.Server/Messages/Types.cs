@@ -222,7 +222,7 @@ namespace Deadlocked.Server.Messages
         LeftGameWorld, ///< Sent when a player leaves a game world.
     }
 
-    public enum MediusJoinType :int
+    public enum MediusJoinType : int
     {
         MediusJoinAsPlayer = 0,  ///< Join a game as a normal player.
         MediusJoinAsSpectator = 1,  ///< Join a game as a spectator.
@@ -881,7 +881,7 @@ $"GameName:{GameName}";
 
     public class MediusFile : IStreamSerializer
     {
-        public byte[] Filename = new byte[MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH];
+        public string Filename; // MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH
         public byte[] ServerChecksum = new byte[MediusConstants.MEDIUS_FILE_CHECKSUM_NUMBYTES];
         public uint FileID;
         public uint FileSize;
@@ -896,7 +896,7 @@ $"GameName:{GameName}";
         public void Deserialize(BinaryReader reader)
         {
             // 
-            Filename = reader.ReadBytes(MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
+            Filename = reader.ReadString(MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
             ServerChecksum = reader.ReadBytes(MediusConstants.MEDIUS_FILE_CHECKSUM_NUMBYTES);
             FileID = reader.ReadUInt32();
             FileSize = reader.ReadUInt32();
@@ -912,7 +912,7 @@ $"GameName:{GameName}";
         public void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(Filename);
+            writer.Write(Filename, MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
             writer.Write(ServerChecksum);
             writer.Write(FileID);
             writer.Write(FileSize);
@@ -929,7 +929,7 @@ $"GameName:{GameName}";
         public override string ToString()
         {
             return $"Filename:{Filename}" + " " +
-$"ServerChecksum:{ServerChecksum}" + " " +
+$"ServerChecksum:{BitConverter.ToString(ServerChecksum)}" + " " +
 $"FileID:{FileID}" + " " +
 $"FileSize:{FileSize}" + " " +
 $"CreationTimeStamp:{CreationTimeStamp}" + " " +
@@ -942,29 +942,75 @@ $"ServerOperationID:{ServerOperationID}";
         }
     }
 
-        public class MediusGenericChatFilter : IStreamSerializer
+    public class MediusFileAttributes : IStreamSerializer
+    {
+
+
+        public byte[] Description = new byte[MediusConstants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH];
+        public uint LastChangedTimeStamp;
+        public uint LastChangedByUserID;
+        public uint NumberAccesses;
+        public uint StreamableFlag;
+        public uint StreamingDataRate;
+
+        public virtual void Deserialize(BinaryReader reader)
         {
-
-
-            public byte[] GenericChatFilterBitfield = new byte[MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN];
-
-            public void Deserialize(BinaryReader reader)
-            {
-                // 
-                GenericChatFilterBitfield = reader.ReadBytes(MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
-            }
-
-            public void Serialize(BinaryWriter writer)
-            {
-                // 
-                writer.Write(GenericChatFilterBitfield);
-            }
-
-
-            public override string ToString()
-            {
-                return base.ToString() + " " +
-                 $"GenericChatFilterBitfield:{GenericChatFilterBitfield}";
-            }
+            // 
+            Description = reader.ReadBytes(MediusConstants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
+            LastChangedTimeStamp = reader.ReadUInt32();
+            LastChangedByUserID = reader.ReadUInt32();
+            NumberAccesses = reader.ReadUInt32();
+            StreamableFlag = reader.ReadUInt32();
+            StreamingDataRate = reader.ReadUInt32();
         }
+
+        public virtual void Serialize(BinaryWriter writer)
+        {
+            // 
+            writer.Write(Description);
+            writer.Write(LastChangedTimeStamp);
+            writer.Write(LastChangedByUserID);
+            writer.Write(NumberAccesses);
+            writer.Write(StreamableFlag);
+            writer.Write(StreamingDataRate);
+        }
+
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+             $"Description:{Description}" + " " +
+$"LastChangedTimeStamp:{LastChangedTimeStamp}" + " " +
+$"LastChangedByUserID:{LastChangedByUserID}" + " " +
+$"NumberAccesses:{NumberAccesses}" + " " +
+$"StreamableFlag:{StreamableFlag}" + " " +
+$"StreamingDataRate:{StreamingDataRate}";
+        }
+    }
+
+    public class MediusGenericChatFilter : IStreamSerializer
+    {
+
+
+        public byte[] GenericChatFilterBitfield = new byte[MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN];
+
+        public void Deserialize(BinaryReader reader)
+        {
+            // 
+            GenericChatFilterBitfield = reader.ReadBytes(MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
+        }
+
+        public void Serialize(BinaryWriter writer)
+        {
+            // 
+            writer.Write(GenericChatFilterBitfield);
+        }
+
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+             $"GenericChatFilterBitfield:{GenericChatFilterBitfield}";
+        }
+    }
 }

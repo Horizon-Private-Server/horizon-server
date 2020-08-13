@@ -12,13 +12,15 @@ namespace Deadlocked.Server.Medius
 {
     public abstract class BaseMediusComponent : IMediusComponent
     {
+
+        public static Random RNG = new Random();
         public abstract int Port { get; }
 
         protected Queue<BaseMessage> _queue = new Queue<BaseMessage>();
         protected PS2_RC4 _sessionCipher = null;
         protected TcpListener Listener = null;
 
-        protected List<ClientSocket> _clients = new List<ClientSocket>();
+        public List<ClientSocket> Clients = new List<ClientSocket>();
 
         protected DateTime timeLastEcho = DateTime.UtcNow;
 
@@ -40,9 +42,9 @@ namespace Deadlocked.Server.Medius
                     {
                         var client = new ClientSocket(Listener.AcceptTcpClient());
                         Console.WriteLine($"Connection accepted on port {Port}.");
-                        lock (_clients)
+                        lock (Clients)
                         {
-                            _clients.Add(client);
+                            Clients.Add(client);
                         }
                     }
                 }
@@ -56,13 +58,13 @@ namespace Deadlocked.Server.Medius
         public virtual void Stop()
         {
             // 
-            lock (_clients)
+            lock (Clients)
             {
-                foreach (var client in _clients)
+                foreach (var client in Clients)
                     client.Close();
 
                 //
-                _clients.Clear();
+                Clients.Clear();
             }
 
             //
@@ -111,9 +113,9 @@ namespace Deadlocked.Server.Medius
 
             // Iterate through each
             // Run tick on each unless client disconnected
-            lock (_clients)
+            lock (Clients)
             {
-                foreach (var client in _clients)
+                foreach (var client in Clients)
                 {
                     if (client == null || !client.Connected)
                     {
@@ -131,13 +133,13 @@ namespace Deadlocked.Server.Medius
             }
 
             // Remove disconnected clients from collection
-            lock (_clients)
+            lock (Clients)
             {
                 while (removeQueue.Count > 0)
                 {
                     var client = removeQueue.Dequeue();
                     client.Close();
-                    _clients.Remove(client);
+                    Clients.Remove(client);
                 }
             }
 

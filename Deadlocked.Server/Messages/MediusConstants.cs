@@ -31,6 +31,7 @@ namespace Deadlocked.Server.Messages
         public const int APPNAME_MAXLEN = 32;
         public const int CHATMESSAGE_MAXLEN = 64;
         public const int BINARYMESSAGE_MAXLEN = 400;
+        public const int IP_MAXLEN = 20;
 
         public const int UNIVERSENAME_MAXLEN = 128;
         public const int UNIVERSEDNS_MAXLEN = 128;
@@ -61,6 +62,7 @@ namespace Deadlocked.Server.Messages
         public const int MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE = 464;
         public const int MEDIUS_FILE_MAX_FILENAME_LENGTH = 128;
         public const int MEDIUS_FILE_CHECKSUM_NUMBYTES = 16;
+        public const int MEDIUS_FILE_MAX_DESCRIPTION_LENGTH = 256;
 
         public const int DME_FRAGMENT_MAX_PAYLOAD_SIZE = MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE + 24;
         public const int DME_VERSION_LENGTH = 16;

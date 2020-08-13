@@ -21,6 +21,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            reader.ReadBytes(2);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -30,6 +31,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(new byte[2]);
         }
 
 

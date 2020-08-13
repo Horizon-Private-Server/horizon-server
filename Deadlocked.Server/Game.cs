@@ -1,6 +1,8 @@
 ﻿using Deadlocked.Server.Medius;
 using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
+using Deadlocked.Server.Messages.MGCL;
+using Deadlocked.Server.Messages.RTIME;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -16,7 +18,7 @@ namespace Deadlocked.Server
         public class GameClient
         {
             public ClientObject Client;
-            public int GameId;
+            public bool InGame;
         }
 
         public int Id = 0;
@@ -40,20 +42,21 @@ namespace Deadlocked.Server
         public int GenericField6;
         public int GenericField7;
         public int GenericField8;
-        public MediusWorldStatus WorldStatus;
+        public MediusWorldStatus WorldStatus = MediusWorldStatus.WorldPendingCreation;
         public MediusWorldAttributesType Attributes;
-
-        public DMEServer DME = null;
+        public DMEObject DMEServer;
 
         private DateTime utcTimeCreated;
-        private int gameClientIdCounter = 1;
+        private DateTime? utcTimeEmpty;
+        private bool forceDestroyWorld = false;
 
         public uint Time => (uint)(DateTime.UtcNow - utcTimeCreated).TotalMilliseconds;
 
         public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected);
 
+        public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 0.1f; // Program.Settings.GameTimeoutSeconds;
 
-        public Game(MediusCreateGameRequest createGame)
+        public Game(MediusCreateGameRequest createGame, DMEObject dmeServer)
         {
             Id = IdCounter++;
             GameName = createGame.GameName;
@@ -76,27 +79,76 @@ namespace Deadlocked.Server
             Attributes = createGame.Attributes;
             WorldStatus = MediusWorldStatus.WorldPendingCreation;
             utcTimeCreated = DateTime.UtcNow;
-            //DME = new DMEServer(this);
-            //DME.Start();
+            utcTimeEmpty = null;
+            DMEServer = dmeServer;
         }
 
         public void Tick()
         {
-            DME?.Tick();
+            // Remove timedout clients
+            for (int i = 0; i < Clients.Count; ++i)
+            {
+                var client = Clients[i];
+
+                if (client == null || client.Client == null || !client.Client.IsConnected)
+                {
+                    Clients.RemoveAt(i);
+                    --i;
+                }
+            }
+
+            // Auto close when everyone leaves or if host fails to connect after timeout time
+            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (DateTime.UtcNow - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds)
+            {
+                forceDestroyWorld = true;
+                utcTimeEmpty = DateTime.UtcNow;
+                WorldStatus = MediusWorldStatus.WorldClosed;
+            }
+        }
+
+        public void OnMediusServerConnectNotification(MediusServerConnectNotification notification)
+        {
+            var player = Clients.FirstOrDefault(x => x.Client.SessionKey == notification.PlayerSessionKey);
+
+            if (player == null)
+                return;
+
+            switch (notification.ConnectEventType)
+            {
+                case MGCL_EVENT_TYPE.MGCL_EVENT_CLIENT_CONNECT:
+                    {
+                        player.InGame = true;
+                        break;
+                    }
+                case MGCL_EVENT_TYPE.MGCL_EVENT_CLIENT_DISCONNECT:
+                    {
+                        player.InGame = false;
+                        OnPlayerLeft(player);
+                        break;
+                    }
+            }
         }
 
         public void OnPlayerJoined(ClientObject client)
         {
             Clients.Add(new GameClient()
             {
-                Client = client,
-                GameId = gameClientIdCounter++
+                Client = client
             });
+
+            client.Status = MediusPlayerStatus.MediusPlayerInGameWorld;
+            client.CurrentGameId = Id;
+        }
+
+        private void OnPlayerLeft(GameClient client)
+        {
+            if (Clients.Contains(client))
+                Clients.Remove(client);
         }
 
         public void OnEndGameReport(MediusEndGameReport report)
         {
-            Clients.Clear();
+            // Clients.Clear();
         }
 
         public void OnWorldReport(MediusWorldReport report)
@@ -118,9 +170,16 @@ namespace Deadlocked.Server
             WorldStatus = report.WorldStatus;
         }
 
-        private void SendCreateGame()
+        public void SendEndGame()
         {
-
+            DMEServer.AddProxyMessage(new RT_MSG_SERVER_APP()
+            {
+                AppMessage = new MediusServerEndGameRequest()
+                {
+                    WorldID = this.DMEWorldId,
+                    BrutalFlag = false
+                }
+            });
         }
     }
 }

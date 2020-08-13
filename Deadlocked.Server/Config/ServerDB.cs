@@ -18,11 +18,19 @@ namespace Deadlocked.Server.Config
         [JsonProperty]
         private List<Account> Accounts = new List<Account>();
 
+        /// <summary>
+        /// Grabs the first account with a matching id.
+        /// Returns null if no account found.
+        /// </summary>
+        public Account GetAccountById(int id)
+        {
+            return Accounts.FirstOrDefault(x => x.AccountId == id);
+        }
 
         /// <summary>
-        /// Get account by id.
+        /// Try get account by id.
         /// </summary>
-        public bool GetAccountById(int id, out Account account)
+        public bool TryGetAccountById(int id, out Account account)
         {
             account = Accounts.FirstOrDefault(x => x.AccountId == id);
             return account != null;

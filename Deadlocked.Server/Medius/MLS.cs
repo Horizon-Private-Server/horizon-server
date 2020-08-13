@@ -93,27 +93,19 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_TCP:
                     {
                         var m00 = message as RT_MSG_CLIENT_CONNECT_TCP;
-                        if (m00.AccessToken == "dme")
-                        {
-                            Console.WriteLine($"DME CLIENT CONNECTED TO MLS WITH SESSION KEY {m00.SessionKey} and ACCESS TOKEN {m00.AccessToken}");
 
-                            responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
+                        client.SetToken(m00.AccessToken);
+
+                        Console.WriteLine($"CLIENT CONNECTED TO MLS WITH SESSION KEY {m00.SessionKey} and ACCESS TOKEN {m00.AccessToken}");
+
+                        if (client.Client == null)
+                        {
+                            responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT_WITH_REASON) { Contents = new byte[1] });
                         }
                         else
                         {
-                            client.SetToken(m00.AccessToken);
-
-                            Console.WriteLine($"CLIENT CONNECTED TO MLS WITH SESSION KEY {m00.SessionKey} and ACCESS TOKEN {m00.AccessToken}");
-
-                            if (client.Client == null)
-                            {
-                                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT_WITH_REASON) { Contents = new byte[1] });
-                            }
-                            else
-                            {
-                                client.Client.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
-                                responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
-                            }
+                            client.Client.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
+                            responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
                         }
                         break;
                     }
@@ -195,31 +187,128 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
                     {
                         var appMsg = (message as RT_MSG_CLIENT_APP_TOSERVER).AppMessage;
+                        if (appMsg == null)
+                            break;
 
                         switch (appMsg.Id)
                         {
                             case MediusAppPacketIds.GetLadderStatsWide:
                                 {
                                     var getLadderStatsWide = appMsg as MediusGetLadderStatsWideRequest;
+                                    int[] stats = null;
+
+                                    switch (getLadderStatsWide.LadderType)
+                                    {
+                                        case MediusLadderType.MediusLadderTypePlayer:
+                                            {
+                                                if (Program.Database.TryGetAccountById(getLadderStatsWide.AccountID_or_ClanID, out var account))
+                                                    stats = account.AccountWideStats;
+                                                break;
+                                            }
+                                        case MediusLadderType.MediusLadderTypeClan:
+                                            {
+
+                                                break;
+                                            }
+                                    }
+
+                                    var response = new MediusGetLadderStatsWideResponse()
+                                    {
+                                        MessageID = getLadderStatsWide.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        AccountID_or_ClanID = getLadderStatsWide.AccountID_or_ClanID
+                                    };
+
+                                    if (stats != null)
+                                        response.Stats = stats;
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
-                                        AppMessage = new MediusGetLadderStatsWideResponse()
+                                        AppMessage = response
+                                    });
+
+                                    break;
+                                }
+                            case MediusAppPacketIds.LadderList_ExtraInfo:
+                                {
+                                    var msg = appMsg as MediusLadderList_ExtraInfoRequest;
+                                    var account = client.Client.ClientAccount;
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusLadderList_ExtraInfoResponse()
                                         {
+                                            MessageID = msg.MessageID,
+                                            AccountID = account.AccountId,
+                                            AccountName = account.AccountName,
+                                            AccountStats = account.Stats,
+                                            LadderPosition = 0,
+                                            LadderStat = account.AccountWideStats[msg.LadderStatIndex],
+                                            OnlineState = new MediusPlayerOnlineState()
+                                            {
+
+                                            },
                                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            AccountID_or_ClanID = getLadderStatsWide.AccountID_or_ClanID
+                                            EndOfList = true
                                         }
                                     });
                                     break;
                                 }
                             case MediusAppPacketIds.AccountUpdateStats:
                                 {
+                                    var msg = appMsg as MediusAccountUpdateStatsRequest;
+
+                                    // Update stats
+                                    var account = client.Client?.ClientAccount;
+                                    if (account != null)
+                                    {
+                                        account.Stats = msg.Stats;
+                                        Program.Database.Save();
+                                    }
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusAccountUpdateStatsResponse()
                                         {
+                                            MessageID = msg.MessageID,
                                             Response = 0
                                         }
                                     });
+                                    break;
+                                }
+                            case MediusAppPacketIds.UpdateLadderStatsWide:
+                                {
+                                    var msg = appMsg as MediusUpdateLadderStatsWideRequest;
+
+                                    switch (msg.LadderType)
+                                    {
+                                        case MediusLadderType.MediusLadderTypePlayer:
+                                            {
+                                                client.Client.ClientAccount.AccountWideStats = msg.Stats;
+                                                Program.Database.Save();
+
+                                                responses.Add(new RT_MSG_SERVER_APP()
+                                                {
+                                                    AppMessage = new RawAppMessage(MediusAppPacketIds.UpdateLadderStatsWideResponse)
+                                                    {
+                                                        Contents = Utils.FromString("31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00".Replace(" ", ""))
+                                                    }
+                                                });
+                                                break;
+                                            }
+                                        case MediusLadderType.MediusLadderTypeClan:
+                                            {
+                                                responses.Add(new RT_MSG_SERVER_APP()
+                                                {
+                                                    AppMessage = new RawAppMessage(MediusAppPacketIds.UpdateLadderStatsWideResponse)
+                                                    {
+                                                        Contents = Utils.FromString("31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00".Replace(" ", ""))
+                                                    }
+                                                });
+                                                break;
+                                            }
+                                    }
+
                                     break;
                                 }
                             case MediusAppPacketIds.GenericChatSetFilterRequest:
@@ -248,6 +337,21 @@ namespace Deadlocked.Server.Medius
                                     });
                                     break;
                                 }
+                            case MediusAppPacketIds.GetMyIP:
+                                {
+                                    var msg = appMsg as MediusGetMyIPRequest;
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusGetMyIPResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            IP = (client.RemoteEndPoint as IPEndPoint).Address,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess
+                                        }
+                                    });
+                                    break;
+                                }
                             case MediusAppPacketIds.GetAllAnnouncements:
                                 {
                                     responses.Add(new RT_MSG_SERVER_APP()
@@ -268,19 +372,25 @@ namespace Deadlocked.Server.Medius
                                     {
                                         AppMessage = new MediusGetMyClansResponse()
                                         {
-                                            StatusCode = MediusCallbackStatus.MediusNoResult,
-                                            /*
-                                            ClanID = 1,
+                                            StatusCode = MediusCallbackStatus.MediusClanNotFound,
+                                            ClanID = -1,
                                             ApplicationID = Program.Settings.ApplicationId,
-                                            ClanName = "YEET",
+                                            ClanName = null,
                                             LeaderAccountID = client.Client.ClientAccount.AccountId,
                                             LeaderAccountName = client.Client.ClientAccount.AccountName,
-                                            Stats = "0000000000000000000A800C",
-                                            Status = MediusClanStatus.ClanActive,
-                                            */
+                                            Stats = "000000000000000000000000",
+                                            Status = MediusClanStatus.ClanDisbanded,
                                             EndOfList = true
                                         }
                                     });
+                                    break;
+                                }
+                            case MediusAppPacketIds.FileCreate:
+                                {
+                                    var msg = appMsg as MediusFileCreateRequest;
+
+
+
                                     break;
                                 }
                             case MediusAppPacketIds.FileDownload:
@@ -298,14 +408,113 @@ namespace Deadlocked.Server.Medius
                                     });
                                     break;
                                 }
+                            case MediusAppPacketIds.AddToBuddyList:
+                                {
+                                    var msg = appMsg as MediusAddToBuddyListRequest;
+                                    var statusCode = MediusCallbackStatus.MediusFail;
+
+                                    // find target player
+                                    if (Program.Database.TryGetAccountById(msg.AccountID, out var targetAccount))
+                                    {
+                                        if (client.Client.ClientAccount.Friends.Contains(msg.AccountID))
+                                        {
+
+                                            statusCode = MediusCallbackStatus.MediusAccountAlreadyExists;
+                                        }
+                                        else
+                                        {
+                                            // targetAccount
+
+                                            // Temporarily auto add player as friend
+                                            // This should be replaced with a confirm/request system later
+                                            client.Client.ClientAccount.Friends.Add(msg.AccountID);
+                                            Program.Database.Save();
+
+                                            statusCode = MediusCallbackStatus.MediusSuccess;
+                                        }
+                                    }
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusAddToBuddyListResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = statusCode
+                                        }
+                                    });
+                                    break;
+                                }
+                            case MediusAppPacketIds.RemoveFromBuddyList:
+                                {
+                                    var msg = appMsg as MediusRemoveFromBuddyListRequest;
+                                    var statusCode = MediusCallbackStatus.MediusFail;
+
+                                    // 
+                                    if (client.Client != null && client.Client.ClientAccount != null)
+                                    {
+                                        // find target friend
+                                        if (client.Client.ClientAccount.Friends.Contains(msg.AccountID))
+                                        {
+                                            // remove
+                                            client.Client.ClientAccount.Friends.Remove(msg.AccountID);
+                                            Program.Database.Save();
+
+                                            statusCode = MediusCallbackStatus.MediusSuccess;
+                                        }
+                                    }
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusRemoveFromBuddyListResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = statusCode
+                                        }
+                                    });
+                                    break;
+                                }
                             case MediusAppPacketIds.GetBuddyList_ExtraInfo:
                                 {
                                     var getBuddyListReq = appMsg as MediusGetBuddyList_ExtraInfoRequest;
 
-                                    if (true)
+                                    // Get friends
+                                    var friends = client.Client.ClientAccount.Friends.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
+
+                                    // Responses
+                                    List<MediusGetBuddyList_ExtraInfoResponse> friendListResponses = new List<MediusGetBuddyList_ExtraInfoResponse>();
+
+                                    // Iterate and send to client
+                                    foreach (var friend in friends)
                                     {
-                                        // Not implemented
-                                        // Just send none
+                                        friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
+                                        {
+                                            MessageID = getBuddyListReq.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            AccountID = friend.AccountId,
+                                            AccountName = friend.AccountName,
+                                            OnlineState = new MediusPlayerOnlineState()
+                                            {
+                                                ConnectStatus = friend.IsLoggedIn ? (friend.Client?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected) : MediusPlayerStatus.MediusPlayerDisconnected,
+                                                MediusLobbyWorldID = Program.Settings.DefaultChannelId,
+                                                MediusGameWorldID = Program.GetGameByGameId(friend.Client?.CurrentGameId ?? -1)?.Id ?? -1
+                                            },
+                                            EndOfList = false
+                                        });
+                                    }
+
+                                    if (friendListResponses.Count > 0)
+                                    {
+                                        friendListResponses[friendListResponses.Count - 1].EndOfList = true;
+
+                                        // Send friends
+                                        responses.AddRange(friendListResponses.Select(x => new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = x
+                                        }));
+                                    }
+                                    else
+                                    {
+                                        // No friends
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
                                             AppMessage = new MediusGetBuddyList_ExtraInfoResponse()
@@ -410,7 +619,7 @@ namespace Deadlocked.Server.Medius
                                     var findPlayerReq = appMsg as MediusFindPlayerRequest;
                                     Account account = null;
 
-                                    if (findPlayerReq.SearchType == MediusPlayerSearchType.PlayerAccountID && !Program.Database.GetAccountById(findPlayerReq.ID, out account))
+                                    if (findPlayerReq.SearchType == MediusPlayerSearchType.PlayerAccountID && !Program.Database.TryGetAccountById(findPlayerReq.ID, out account))
                                         account = null;
                                     else if (findPlayerReq.SearchType == MediusPlayerSearchType.PlayerAccountName && !Program.Database.GetAccountByName(findPlayerReq.Name, out account))
                                         account = null;
@@ -431,21 +640,36 @@ namespace Deadlocked.Server.Medius
                                     }
                                     else
                                     {
-                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        if (account.IsLoggedIn)
                                         {
-                                            AppMessage = new MediusFindPlayerResponse()
+                                            responses.Add(new RT_MSG_SERVER_APP()
                                             {
-                                                MessageID = findPlayerReq.MessageID,
-                                                StatusCode = MediusCallbackStatus.MediusSuccess,
-                                                ApplicationID = Program.Settings.ApplicationId,
-                                                AccountID = account.AccountId,
-                                                AccountName = account.AccountName,
-                                                ApplicationType = MediusApplicationType.LobbyChatChannel,
-                                                ApplicationName = "?????",
-                                                MediusWorldID = account.IsLoggedIn ? account.Client.CurrentChannelId : -1,
-                                                EndOfList = true
-                                            }
-                                        });
+                                                AppMessage = new MediusFindPlayerResponse()
+                                                {
+                                                    MessageID = findPlayerReq.MessageID,
+                                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                    ApplicationID = Program.Settings.ApplicationId,
+                                                    AccountID = account.AccountId,
+                                                    AccountName = account.AccountName,
+                                                    ApplicationType = (account.Client.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? MediusApplicationType.MediusAppTypeGame : MediusApplicationType.LobbyChatChannel,
+                                                    ApplicationName = "?????",
+                                                    MediusWorldID = (account.Client.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? account.Client.CurrentGameId : account.Client.CurrentChannelId,
+                                                    EndOfList = true
+                                                }
+                                            });
+                                        }
+                                        else
+                                        {
+                                            responses.Add(new RT_MSG_SERVER_APP()
+                                            {
+                                                AppMessage = new MediusFindPlayerResponse()
+                                                {
+                                                    MessageID = findPlayerReq.MessageID,
+                                                    StatusCode = MediusCallbackStatus.MediusNoResult,
+                                                    EndOfList = true
+                                                }
+                                            });
+                                        }
                                     }
                                     break;
                                 }
@@ -469,15 +693,29 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var binaryMessage = appMsg as MediusBinaryMessage;
 
-                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    switch (binaryMessage.MessageType)
                                     {
-                                        AppMessage = new MediusBinaryFwdMessage()
-                                        {
-                                            MessageType = binaryMessage.MessageType,
-                                            OriginatorAccountID = client.Client.ClientAccount.AccountId,
-                                            Message = binaryMessage.Message
-                                        }
-                                    });
+                                        case MediusBinaryMessageType.TargetBinaryMsg:
+                                            {
+                                                var target = Program.GetClientByAccountId(binaryMessage.TargetAccountID);
+
+                                                target?.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                                                {
+                                                    AppMessage = new MediusBinaryFwdMessage()
+                                                    {
+                                                        MessageType = binaryMessage.MessageType,
+                                                        OriginatorAccountID = client.Client.ClientAccount.AccountId,
+                                                        Message = binaryMessage.Message
+                                                    }
+                                                });
+                                                break;
+                                            }
+                                        default:
+                                            {
+                                                Console.WriteLine($"Unhandled binary message type {binaryMessage.MessageType}");
+                                                break;
+                                            }
+                                    }
                                     break;
                                 }
                             case MediusAppPacketIds.LadderPosition_ExtraInfo:
@@ -498,7 +736,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var playerInfoReq = appMsg as MediusPlayerInfoRequest;
 
-                                    if (Program.Database.GetAccountById(playerInfoReq.AccountID, out var account))
+                                    if (Program.Database.TryGetAccountById(playerInfoReq.AccountID, out var account))
                                     {
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
@@ -509,7 +747,8 @@ namespace Deadlocked.Server.Medius
                                                 AccountName = account.AccountName,
                                                 ApplicationID = Program.Settings.ApplicationId,
                                                 PlayerStatus = account.IsLoggedIn ?  account.Client.Status : MediusPlayerStatus.MediusPlayerDisconnected,
-                                                ConnectionClass = MediusConnectionType.Ethernet
+                                                ConnectionClass = MediusConnectionType.Ethernet,
+                                                Stats = account.Stats
                                             }
                                         });
                                     }
@@ -602,6 +841,39 @@ namespace Deadlocked.Server.Medius
                                     }
                                     break;
                                 }
+                            case MediusAppPacketIds.ChannelInfo:
+                                {
+                                    var msg = appMsg as MediusChannelInfoRequest;
+
+                                    var game = Program.GetGameByGameId(msg.MediusWorldID);
+
+                                    if (game == null)
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusChannelInfoResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                            }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusChannelInfoResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                LobbyName = game.GameName,
+                                                ActivePlayerCount = game.PlayerCount,
+                                                MaxPlayers = game.MaxPlayers
+                                            }
+                                        });
+                                    }
+                                    break;
+                                }
                             case MediusAppPacketIds.PlayerReport:
                                 {
                                     var msg = appMsg as MediusPlayerReport;
@@ -618,12 +890,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.WorldReport:
                                 {
                                     var msg = appMsg as MediusWorldReport;
-
-                                    var game = Program.Games.FirstOrDefault(x => x.Id == msg.MediusWorldID);
-                                    if (game != null)
-                                    {
-                                        game.OnWorldReport(msg);
-                                    }
+                                    Program.GetGameByGameId(msg.MediusWorldID)?.OnWorldReport(msg);
 
                                     break;
                                 }
@@ -631,30 +898,24 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusGetGameListFilterRequest;
 
-
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusGetGameListFilterResponse()
                                         {
                                             MessageID = msg.MessageID,
-                                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            BaselineValue = 0,
-                                            FilterField = MediusGameListFilterField.MEDIUS_FILTER_GENERIC_FIELD_1,
-                                            ComparisonOperator = MediusComparisonOperator.EQUAL_TO,
-                                            FilterID = 0,
-                                            Mask = -1,
+                                            StatusCode = MediusCallbackStatus.MediusNoResult,
                                             EndOfList = true
                                         }
                                     });
-
-
                                     break;
                                 }
                             case MediusAppPacketIds.GameList_ExtraInfo:
                                 {
                                     var msg = appMsg as MediusGameList_ExtraInfoRequest;
 
-                                    var gameList = Program.Games.Select(x => new MediusGameList_ExtraInfoResponse()
+                                    var gameList = Program.Games
+                                        .Where(x => x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging)
+                                        .Select(x => new MediusGameList_ExtraInfoResponse()
                                     {
                                         MessageID = msg.MessageID,
                                         StatusCode = MediusCallbackStatus.MediusSuccess,
@@ -685,10 +946,25 @@ namespace Deadlocked.Server.Medius
 
                                     // Make last end of list
                                     if (gameList.Length > 0)
+                                    {
                                         gameList[gameList.Length - 1].EndOfList = true;
 
-                                    // Add to responses
-                                    responses.AddRange(gameList.Select(x => new RT_MSG_SERVER_APP() { AppMessage = x }));
+                                        // Add to responses
+                                        responses.AddRange(gameList.Select(x => new RT_MSG_SERVER_APP() { AppMessage = x }));
+                                    }
+                                    else
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusGameList_ExtraInfoResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                                EndOfList = true
+                                            }
+                                        });
+                                    }
+
 
                                     break;
                                 }
@@ -696,7 +972,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusGameInfoRequest;
 
-                                    var game = Program.Games.FirstOrDefault(x => x.Id == msg.MediusWorldID);
+                                    var game = Program.GetGameByGameId(msg.MediusWorldID);
 
                                     if (game == null)
                                     {
@@ -746,8 +1022,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.GameWorldPlayerList:
                                 {
                                     var msg = appMsg as MediusGameWorldPlayerListRequest;
-
-                                    var game = Program.Games.FirstOrDefault(x => x.Id == msg.MediusWorldID);
+                                    var game = Program.GetGameByGameId(msg.MediusWorldID);
                                     if (game == null)
                                     {
                                         responses.Add(new RT_MSG_SERVER_APP()
@@ -848,13 +1123,10 @@ namespace Deadlocked.Server.Medius
                                 }
                             case MediusAppPacketIds.EndGameReport:
                                 {
-                                    var msg = appMsg as MediusEndGameReport;
-
-                                    var game = Program.Games.FirstOrDefault(x => x.Id == msg.MediusWorldID);
-                                    if (game != null)
+                                    if (appMsg is MediusEndGameReport msg)
                                     {
-                                        game.OnEndGameReport(msg);
-                                        Program.Games.Remove(game);
+                                        var game = Program.GetGameByGameId(msg.MediusWorldID);
+                                        game?.OnEndGameReport(msg);
                                     }
 
                                     break;
@@ -863,17 +1135,113 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var ignoreListReq = appMsg as MediusGetIgnoreListRequest;
 
-                                    // No ignore list
-                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    // Get ignored players
+                                    var ignored = client.Client.ClientAccount.Ignored.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
+
+                                    // Responses
+                                    List<MediusGetIgnoreListResponse> ignoredListResponses = new List<MediusGetIgnoreListResponse>();
+
+                                    // Iterate and send to client
+                                    foreach (var player in ignored)
                                     {
-                                        AppMessage = new  MediusGetIgnoreListResponse()
+                                        ignoredListResponses.Add(new MediusGetIgnoreListResponse()
                                         {
                                             MessageID = ignoreListReq.MessageID,
-                                            StatusCode = MediusCallbackStatus.MediusNoResult,
-                                            EndOfList = true
-                                        } 
-                                    });
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            IgnoreAccountID = player.AccountId,
+                                            IgnoreAccountName = player.AccountName,
+                                            PlayerStatus = player.Client?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected,
+                                            EndOfList = false
+                                        });
+                                    }
 
+                                    if (ignoredListResponses.Count > 0)
+                                    {
+                                        // End list
+                                        ignoredListResponses[ignoredListResponses.Count - 1].EndOfList = true;
+
+                                        // Send ignored list
+                                        responses.AddRange(ignoredListResponses.Select(x => new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = x
+                                        }));
+                                    }
+                                    else
+                                    {
+                                        // No ignored
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusGetIgnoreListResponse()
+                                            {
+                                                MessageID = ignoreListReq.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                                EndOfList = true
+                                            }
+                                        });
+                                    }
+                                    break;
+                                }
+                            case MediusAppPacketIds.AddToIgnoreList:
+                                {
+                                    var msg = appMsg as MediusAddToIgnoreListRequest;
+                                    var statusCode = MediusCallbackStatus.MediusFail;
+
+                                    // find target player
+                                    if (Program.Database.TryGetAccountById(msg.IgnoreAccountID, out var targetAccount))
+                                    {
+                                        // Ensure they're not already ignored
+                                        if (client.Client.ClientAccount.Ignored.Contains(msg.IgnoreAccountID))
+                                        {
+                                            statusCode = MediusCallbackStatus.MediusAccountAlreadyExists;
+                                        }
+                                        else
+                                        {
+                                            // Remove from friends if a friend
+                                            client.Client.ClientAccount.Friends.Remove(msg.IgnoreAccountID);
+                                            client.Client.ClientAccount.Ignored.Add(msg.IgnoreAccountID);
+                                            Program.Database.Save();
+
+                                            statusCode = MediusCallbackStatus.MediusSuccess;
+                                        }
+                                    }
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusAddToIgnoreListResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = statusCode
+                                        }
+                                    });
+                                    break;
+                                }
+                            case MediusAppPacketIds.RemoveFromIgnoreList:
+                                {
+                                    var msg = appMsg as MediusRemoveFromIgnoreListRequest;
+                                    var statusCode = MediusCallbackStatus.MediusFail;
+
+                                    // 
+                                    if (client.Client != null && client.Client.ClientAccount != null)
+                                    {
+                                        // find target ignored
+                                        if (client.Client.ClientAccount.Ignored.Contains(msg.IgnoreAccountID))
+                                        {
+                                            // remove
+                                            client.Client.ClientAccount.Ignored.Remove(msg.IgnoreAccountID);
+                                            Program.Database.Save();
+
+                                            statusCode = MediusCallbackStatus.MediusSuccess;
+                                        }
+                                    }
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusRemoveFromIgnoreListResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = statusCode
+                                        }
+                                    });
                                     break;
                                 }
                             case MediusAppPacketIds.AccountLogout:
@@ -885,9 +1253,11 @@ namespace Deadlocked.Server.Medius
                                     if (accountLogoutReq.SessionKey == client.Client.SessionKey)
                                     {
                                         success = true;
-                                        
+
                                         // Logout
+                                        client.Client.OnDestroy();
                                         Program.Clients.Remove(client.Client);
+                                        client.Disconnect();
                                     }
 
                                     responses.Add(new RT_MSG_SERVER_APP()
@@ -904,6 +1274,16 @@ namespace Deadlocked.Server.Medius
                                     var updateUserReq = appMsg as MediusUpdateUserState;
 
                                     client.Client.Action = updateUserReq.UserAction;
+
+                                    switch (updateUserReq.UserAction)
+                                    {
+                                        case MediusUserAction.JoinedChatWorld:
+                                        case MediusUserAction.LeftGameWorld:
+                                            {
+                                                client.Client.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
+                                                break;
+                                            }
+                                    }
                                     break;
                                 }
                             case MediusAppPacketIds.GetServerTimeRequest:
@@ -925,82 +1305,70 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var createGameReq = appMsg as MediusCreateGameRequest;
 
-                                    Console.WriteLine($"{createGameReq}");
-
-                                    var game = new Game(createGameReq);
-                                    Program.Games.Add(game);
-
-
-                                    var dme = Program.Clients.FirstOrDefault(x => x.SessionKey == "dme");
-                                    dme.AddProxyMessage(new RT_MSG_SERVER_APP()
-                                    {
-                                        AppMessage = new MediusServerCreateGameWithAttributesRequest()
-                                        {
-                                            MessageID = $"{game.Id}-{client.Client.ClientAccount.AccountId}-{createGameReq.MessageID}",
-                                            MediusWorldUID = (uint)game.Id,
-                                            Attributes = game.Attributes,
-                                            ApplicationID = Program.Settings.ApplicationId,
-                                            MaxClients = game.MaxPlayers
-                                        }
-                                    });
-
-                                   
-
+                                    Program.ProxyServer.CreateGame(client, createGameReq);
                                     break;
                                 }
                             case MediusAppPacketIds.JoinGame:
                                 {
                                     var joinGameReq = appMsg as MediusJoinGameRequest;
 
-                                    var game = Program.Games.FirstOrDefault(x => x.Id == joinGameReq.MediusWorldID);
-                                    if (game == null)
-                                    {
-                                        responses.Add(new RT_MSG_SERVER_APP()
-                                        {
-                                            AppMessage = new MediusJoinGameResponse()
-                                            {
-                                                MessageID = joinGameReq.MessageID,
-                                                StatusCode = MediusCallbackStatus.MediusGameNotFound
-                                            }
-                                        });
-                                    }
-                                    else
-                                    {
-                                        var dme = Program.Clients.FirstOrDefault(x => x.SessionKey == "dme");
-                                        dme.AddProxyMessage(new RT_MSG_SERVER_APP()
-                                        {
-                                            AppMessage = new MediusServerJoinGameRequest()
-                                            {
-                                                MessageID = $"{game.Id}-{client.Client.ClientAccount.AccountId}-{joinGameReq.MessageID}",
-                                                ConnectInfo = new NetConnectionInfo()
-                                                {
-                                                    Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
-                                                    WorldID = joinGameReq.MediusWorldID,
-                                                    SessionKey = joinGameReq.SessionKey
-                                                }
-                                            }
-                                        });
-
-                                        
-                                    }
+                                    Program.ProxyServer.JoinGame(client, joinGameReq);
                                     break;
                                 }
                             case MediusAppPacketIds.GenericChatMessage:
                                 {
                                     var genericChatMessage = appMsg as MediusGenericChatMessage;
+                                    List<BaseMessage> chatResponses = new List<BaseMessage>();
 
-                                    // Send it back for now
-                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    switch (genericChatMessage.MessageType)
                                     {
-                                        AppMessage = new MediusGenericChatFwdMessage()
-                                        {
-                                            OriginatorAccountID = client.Client.ClientAccount.AccountId,
-                                            OriginatorAccountName = client.Client.ClientAccount.AccountName,
-                                            Message = genericChatMessage.Message,
-                                            MessageType = genericChatMessage.MessageType,
-                                            TimeStamp = Utils.GetUnixTime()
-                                        }
-                                    });
+                                        case MediusChatMessageType.Broadcast:
+                                            {
+                                                IEnumerable<ClientSocket> players = Clients.Where(x => x?.Client?.CurrentChannelId == client?.Client?.CurrentChannelId && x != client);
+                                                chatResponses.Add(new RT_MSG_SERVER_APP()
+                                                {
+                                                    AppMessage = new MediusGenericChatFwdMessage()
+                                                    {
+                                                        OriginatorAccountID = client.Client.ClientAccount.AccountId,
+                                                        OriginatorAccountName = client.Client.ClientAccount.AccountName,
+                                                        Message = genericChatMessage.Message,
+                                                        MessageType = genericChatMessage.MessageType,
+                                                        TimeStamp = Utils.GetUnixTime()
+                                                    }
+                                                });
+
+                                                switch (genericChatMessage.Message.Substring(1))
+                                                {
+                                                    case "/roll":
+                                                        {
+                                                            players = Clients.Where(x => x?.Client?.CurrentChannelId == client?.Client?.CurrentChannelId);
+                                                            chatResponses.Add(new RT_MSG_SERVER_APP()
+                                                            {
+                                                                AppMessage = new MediusGenericChatFwdMessage()
+                                                                {
+                                                                    OriginatorAccountID = 0,
+                                                                    OriginatorAccountName = "SYSTEM",
+                                                                    Message = "A" + RNG.Next(0, 100).ToString(),
+                                                                    MessageType = genericChatMessage.MessageType,
+                                                                    TimeStamp = Utils.GetUnixTime()
+                                                                }
+                                                            });
+                                                            break;
+                                                        }
+                                                }
+
+                                                // 
+                                                if (chatResponses != null && chatResponses.Count > 0 && players != null)
+                                                    foreach (var player in players)
+                                                        player.Client.AddLobbyMessages(chatResponses);
+                                                break;
+                                            }
+                                        default:
+                                            {
+                                                Console.WriteLine($"Unhandled generic chat message type:{genericChatMessage.MessageType} {genericChatMessage}");
+                                                break;
+                                            }
+                                    }
                                     break;
                                 }
                             case MediusAppPacketIds.SessionEnd:

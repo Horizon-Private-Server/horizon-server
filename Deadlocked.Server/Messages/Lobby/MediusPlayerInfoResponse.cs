@@ -17,7 +17,7 @@ namespace Deadlocked.Server.Messages.Lobby
         public int ApplicationID;
         public MediusPlayerStatus PlayerStatus;
         public MediusConnectionType ConnectionClass;
-        public string Stats; // ACCOUNTSTATS_MAXLEN
+        public byte[] Stats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -31,7 +31,7 @@ namespace Deadlocked.Server.Messages.Lobby
             ApplicationID = reader.ReadInt32();
             PlayerStatus = reader.Read<MediusPlayerStatus>();
             ConnectionClass = reader.Read<MediusConnectionType>();
-            Stats = reader.ReadString(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            Stats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -46,7 +46,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(ApplicationID);
             writer.Write(PlayerStatus);
             writer.Write(ConnectionClass);
-            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
+            writer.Write(Stats);
         }
 
 
@@ -58,7 +58,7 @@ $"AccountName:{AccountName}" + " " +
 $"ApplicationID:{ApplicationID}" + " " +
 $"PlayerStatus:{PlayerStatus}" + " " +
 $"ConnectionClass:{ConnectionClass}" + " " +
-$"Stats:{Stats}";
+$"Stats:{BitConverter.ToString(Stats)}";
         }
     }
 }

@@ -8,6 +8,7 @@ using Org.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -41,9 +42,11 @@ namespace Deadlocked.Server
         public static MLS LobbyServer = new MLS();
         public static MPS ProxyServer = new MPS();
         public static NAT NATServer = new NAT();
-        public static int TickRate = 10;
 
-        public static int TickMS => 1000 / TickRate;
+        public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
+
+        private static ulong _sessionKeyCounter = 0;
+        private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
 
         static void Main(string[] args)
         {
@@ -65,6 +68,17 @@ namespace Deadlocked.Server
             Console.WriteLine("Started. Press 1 to exit. Press 2 to restart.");
             while (true)
             {
+                // Remove old clients
+                for (int i = 0; i < Clients.Count; ++i)
+                {
+                    if (Clients[i] == null || !Clients[i].IsConnected)
+                    {
+                        Clients[i]?.OnDestroy();
+                        Clients.RemoveAt(i);
+                        --i;
+                    }
+                }
+
                 // Tick
                 UniverseInfoServer.Tick();
                 AuthenticationServer.Tick();
@@ -72,6 +86,18 @@ namespace Deadlocked.Server
                 ProxyServer.Tick();
                 NATServer.Tick();
 
+                // Remove old games
+                for (int i = 0; i < Games.Count; ++i)
+                {
+                    if (Games[i].ReadyToDestroy)
+                    {
+                        Games[i].SendEndGame();
+                        Games.RemoveAt(i);
+                        --i;
+                    }
+                }
+
+                // Tick games
                 foreach (var game in Games)
                     game.Tick();
 
@@ -119,7 +145,8 @@ namespace Deadlocked.Server
             if (File.Exists(DB_FILE))
             {
                 // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(DB_FILE), Database, serializerSettings);
+                try { JsonConvert.PopulateObject(File.ReadAllText(DB_FILE), Database, serializerSettings); }
+                catch (Exception e) { Console.WriteLine(e); }
             }
 
             // Save db
@@ -155,6 +182,24 @@ namespace Deadlocked.Server
             address = address.Substring(first, last - first);
 
             return address;
+        }
+
+        public static Game GetGameByGameId(int id)
+        {
+            return Games.FirstOrDefault(x => x.Id == id);
+        }
+
+        public static ClientObject GetClientByAccountId(int accountId)
+        {
+            return Clients.FirstOrDefault(x => x.IsConnected && x.ClientAccount?.AccountId == accountId);
+        }
+
+        public static string GenerateSessionKey()
+        {
+            lock (_sessionKeyCounterLock)
+            {
+                return (++_sessionKeyCounter).ToString();
+            }
         }
     }
 }

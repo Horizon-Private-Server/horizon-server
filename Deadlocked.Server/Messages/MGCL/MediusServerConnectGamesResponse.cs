@@ -26,6 +26,7 @@ namespace Deadlocked.Server.Messages.MGCL
             GameWorldID = reader.ReadInt32();
             SpectatorWorldID = reader.ReadInt32();
             Confirmation = reader.ReadChar();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -38,6 +39,7 @@ namespace Deadlocked.Server.Messages.MGCL
             writer.Write(GameWorldID);
             writer.Write(SpectatorWorldID);
             writer.Write(Confirmation);
+            writer.Write(new byte[3]);
         }
 
 

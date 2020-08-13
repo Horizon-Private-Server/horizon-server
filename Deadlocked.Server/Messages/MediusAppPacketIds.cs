@@ -352,6 +352,7 @@ namespace Deadlocked.Server.Messages
         SetAutoChatHistoryRequest = 0x2D04,
         SetAutoChatHistoryResponse = 0x2E04,
         CreateGame = 0x2F04,
+        GetGameListFilterResponse = 0x3204,
         SetGameListFilter = 0x3304,
         ClearGameListFilter = 0x3104,
         WorldReport = 0x3004,

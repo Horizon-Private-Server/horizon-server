@@ -35,7 +35,7 @@ namespace Deadlocked.Server.Medius
         {
             Console.WriteLine($"!!! NAT !!! NEW MSG {source} {BitConverter.ToString(buffer)}");
 
-            var client = _clients.FirstOrDefault(x => x.EndPoint.Address.ToString() == source.Address.ToString() && x.EndPoint.Port == source.Port);
+            var client = _clients.FirstOrDefault(x => x.EndPoint.Equals(source));
             if (client == null)
             {
                 client = new UdpClientObject()
@@ -61,17 +61,20 @@ namespace Deadlocked.Server.Medius
 
         public void Start()
         {
+            return;
             _udpServer.Server(Port);
             _udpServer.OnReceive += OnReceive;
         }
 
         public void Stop()
         {
+            return;
             _udpServer.Stop();
         }
 
         public void Tick()
         {
+            return;
             // 
             _udpServer.ReadAvailable();
         }

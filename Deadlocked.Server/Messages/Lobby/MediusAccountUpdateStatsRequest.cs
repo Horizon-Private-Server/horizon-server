@@ -13,7 +13,7 @@ namespace Deadlocked.Server.Messages.Lobby
         public override MediusAppPacketIds Id => MediusAppPacketIds.AccountUpdateStats;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public string Stats; // ACCOUNTSTATS_MAXLEN
+        public byte[] Stats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -22,7 +22,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
-            Stats = reader.ReadString(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            Stats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -32,7 +32,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
-            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
+            writer.Write(Stats);
         }
 
 
@@ -40,7 +40,7 @@ namespace Deadlocked.Server.Messages.Lobby
         {
             return base.ToString() + " " +
              $"SessionKey:{SessionKey}" + " " +
-$"Stats:{Stats}";
+$"Stats:{BitConverter.ToString(Stats)}";
         }
     }
 }

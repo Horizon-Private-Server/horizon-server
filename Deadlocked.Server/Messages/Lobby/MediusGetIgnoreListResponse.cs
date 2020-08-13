@@ -36,6 +36,7 @@ namespace Deadlocked.Server.Messages.Lobby
             IgnoreAccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
             PlayerStatus = reader.Read<MediusPlayerStatus>();
             EndOfList = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -50,6 +51,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(IgnoreAccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
             writer.Write(PlayerStatus);
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
         }
 
 

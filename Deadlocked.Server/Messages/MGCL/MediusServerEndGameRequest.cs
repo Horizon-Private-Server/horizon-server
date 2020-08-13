@@ -13,7 +13,7 @@ namespace Deadlocked.Server.Messages.MGCL
         public override MediusAppPacketIds Id => MediusAppPacketIds.MediusServerEndGameRequest;
 
         public int WorldID;
-        public char BrutalFlag;
+        public bool BrutalFlag;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -23,7 +23,8 @@ namespace Deadlocked.Server.Messages.MGCL
             // 
             reader.ReadBytes(3);
             WorldID = reader.ReadInt32();
-            BrutalFlag = reader.ReadChar();
+            BrutalFlag = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -35,6 +36,7 @@ namespace Deadlocked.Server.Messages.MGCL
             writer.Write(new byte[3]);
             writer.Write(WorldID);
             writer.Write(BrutalFlag);
+            writer.Write(new byte[3]);
         }
 
 

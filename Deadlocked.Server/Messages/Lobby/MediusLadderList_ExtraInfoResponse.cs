@@ -6,18 +6,19 @@ using System.Text;
 
 namespace Deadlocked.Server.Messages.Lobby
 {
-    [MediusApp(MediusAppPacketIds.GetClanInvitationsSentResponse)]
-    public class MediusGetClanInvitationsSentResponse : BaseLobbyMessage
+    [MediusApp(MediusAppPacketIds.LadderList_ExtraInfoResponse)]
+    public class MediusLadderList_ExtraInfoResponse : BaseLobbyMessage
     {
 
-        public override MediusAppPacketIds Id => MediusAppPacketIds.GetClanInvitationsSentResponse;
+        public override MediusAppPacketIds Id => MediusAppPacketIds.LadderList_ExtraInfoResponse;
 
         public MediusCallbackStatus StatusCode;
+        public uint LadderPosition;
+        public int LadderStat;
         public int AccountID;
         public string AccountName; // ACCOUNTNAME_MAXLEN
-        public string ResponseMsg; // CLANMSG_MAXLEN
-        public MediusClanInvitationsResponseStatus ResponseStatus;
-        public int ResponseTime;
+        public byte[] AccountStats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+        public MediusPlayerOnlineState OnlineState;
         public bool EndOfList;
 
         public override void Deserialize(BinaryReader reader)
@@ -28,11 +29,12 @@ namespace Deadlocked.Server.Messages.Lobby
             // 
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
+            LadderPosition = reader.ReadUInt32();
+            LadderStat = reader.ReadInt32();
             AccountID = reader.ReadInt32();
             AccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
-            ResponseMsg = reader.ReadString(MediusConstants.CLANMSG_MAXLEN);
-            ResponseStatus = reader.Read<MediusClanInvitationsResponseStatus>();
-            ResponseTime = reader.ReadInt32();
+            AccountStats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            OnlineState = reader.Read<MediusPlayerOnlineState>();
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -45,11 +47,12 @@ namespace Deadlocked.Server.Messages.Lobby
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
+            writer.Write(LadderPosition);
+            writer.Write(LadderStat);
             writer.Write(AccountID);
             writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(ResponseMsg, MediusConstants.CLANMSG_MAXLEN);
-            writer.Write(ResponseStatus);
-            writer.Write(ResponseTime);
+            writer.Write(AccountStats);
+            writer.Write(OnlineState);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }
@@ -59,11 +62,12 @@ namespace Deadlocked.Server.Messages.Lobby
         {
             return base.ToString() + " " +
              $"StatusCode:{StatusCode}" + " " +
+$"LadderPosition:{LadderPosition}" + " " +
+$"LadderStat:{LadderStat}" + " " +
 $"AccountID:{AccountID}" + " " +
 $"AccountName:{AccountName}" + " " +
-$"ResponseMsg:{ResponseMsg}" + " " +
-$"ResponseStatus:{ResponseStatus}" + " " +
-$"ResponseTime:{ResponseTime}" + " " +
+$"AccountStats:{AccountStats}" + " " +
+$"OnlineState:{OnlineState}" + " " +
 $"EndOfList:{EndOfList}";
         }
     }

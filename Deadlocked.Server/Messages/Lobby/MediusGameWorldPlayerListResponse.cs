@@ -15,7 +15,7 @@ namespace Deadlocked.Server.Messages.Lobby
         public MediusCallbackStatus StatusCode;
         public int AccountID;
         public string AccountName; // ACCOUNTNAME_MAXLEN
-        public string Stats; // ACCOUNTSTATS_MAXLEN
+        public byte[] Stats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
         public MediusConnectionType ConnectionClass;
         public bool EndOfList;
 
@@ -29,7 +29,7 @@ namespace Deadlocked.Server.Messages.Lobby
             StatusCode = reader.Read<MediusCallbackStatus>();
             AccountID = reader.ReadInt32();
             AccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
-            Stats = reader.ReadString(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            Stats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
             ConnectionClass = reader.Read<MediusConnectionType>();
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
@@ -45,7 +45,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(StatusCode);
             writer.Write(AccountID);
             writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
+            writer.Write(Stats);
             writer.Write(ConnectionClass);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);

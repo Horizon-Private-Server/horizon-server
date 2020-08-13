@@ -6,13 +6,13 @@ using System.Text;
 
 namespace Deadlocked.Server.Messages.Lobby
 {
-    [MediusApp(MediusAppPacketIds.GetIgnoreList)]
-    public class MediusGetIgnoreListRequest : BaseLobbyMessage
+    [MediusApp(MediusAppPacketIds.AddToIgnoreListResponse)]
+    public class MediusAddToIgnoreListResponse : BaseLobbyMessage
     {
 
-        public override MediusAppPacketIds Id => MediusAppPacketIds.GetIgnoreList;
+        public override MediusAppPacketIds Id => MediusAppPacketIds.AddToIgnoreListResponse;
 
-        public string SessionKey; // SESSIONKEY_MAXLEN
+        public MediusCallbackStatus StatusCode;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -20,8 +20,8 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
-            reader.ReadBytes(2);
+            reader.ReadBytes(3);
+            StatusCode = reader.Read<MediusCallbackStatus>();
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -30,15 +30,15 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
-            writer.Write(new byte[2]);
+            writer.Write(new byte[3]);
+            writer.Write(StatusCode);
         }
 
 
         public override string ToString()
         {
             return base.ToString() + " " +
-             $"SessionKey:{SessionKey}";
+             $"StatusCode:{StatusCode}";
         }
     }
 }

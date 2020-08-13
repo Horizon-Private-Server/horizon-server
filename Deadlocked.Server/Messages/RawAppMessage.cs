@@ -37,5 +37,10 @@ namespace Deadlocked.Server.Messages
             writer.Write(Contents);
         }
 
+        public override string ToString()
+        {
+            return base.ToString() + $" Id:{Id} Contents:{BitConverter.ToString(Contents)}";
+        }
+
     }
 }

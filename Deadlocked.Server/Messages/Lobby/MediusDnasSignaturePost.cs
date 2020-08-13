@@ -14,8 +14,8 @@ namespace Deadlocked.Server.Messages.Lobby
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public MediusDnasCategory DnasSignatureType;
-        public char DnasSignatureLength;
-        public string DnasSignature; // DNASSIGNATURE_MAXLEN
+        public byte DnasSignatureLength;
+        public byte[] DnasSignature = new byte[MediusConstants.DNASSIGNATURE_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -26,8 +26,8 @@ namespace Deadlocked.Server.Messages.Lobby
             SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             DnasSignatureType = reader.Read<MediusDnasCategory>();
-            DnasSignatureLength = reader.ReadChar();
-            DnasSignature = reader.ReadString(MediusConstants.DNASSIGNATURE_MAXLEN);
+            DnasSignatureLength = reader.ReadByte();
+            DnasSignature = reader.ReadBytes(MediusConstants.DNASSIGNATURE_MAXLEN);
             reader.ReadBytes(3);
         }
 
@@ -41,7 +41,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(new byte[2]);
             writer.Write(DnasSignatureType);
             writer.Write(DnasSignatureLength);
-            writer.Write(DnasSignature, MediusConstants.DNASSIGNATURE_MAXLEN);
+            writer.Write(DnasSignature);
             writer.Write(new byte[3]);
         }
 
@@ -52,7 +52,7 @@ namespace Deadlocked.Server.Messages.Lobby
              $"SessionKey:{SessionKey}" + " " +
 $"DnasSignatureType:{DnasSignatureType}" + " " +
 $"DnasSignatureLength:{DnasSignatureLength}" + " " +
-$"DnasSignature:{DnasSignature}";
+$"DnasSignature:{BitConverter.ToString(DnasSignature)}";
         }
     }
 }

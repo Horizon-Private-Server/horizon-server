@@ -45,8 +45,13 @@ namespace Deadlocked.Server.Config
         public int ClientTimeoutSeconds { get; set; } = 15;
 
         /// <summary>
-        /// The start port for dme servers.
+        /// Time since game created and host never connected to close the game world.
         /// </summary>
-        public int DmeServerPortStart { get; set; } = 50000;
+        public int GameTimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// Number of ticks per second.
+        /// </summary>
+        public int TickRate { get; set; } = 10;
     }
 }
