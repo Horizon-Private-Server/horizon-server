@@ -335,9 +335,10 @@ namespace Deadlocked.Server.Medius
 
                                                 responses.Add(new RT_MSG_SERVER_APP()
                                                 {
-                                                    AppMessage = new RawAppMessage(MediusAppPacketIds.UpdateLadderStatsWideResponse)
+                                                    AppMessage = new MediusUpdateLadderStatsWideResponse()
                                                     {
-                                                        Contents = Utils.FromString("31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00".Replace(" ", ""))
+                                                        MessageID = msg.MessageID,
+                                                        StatusCode = MediusCallbackStatus.MediusSuccess
                                                     }
                                                 });
                                                 break;
@@ -346,9 +347,10 @@ namespace Deadlocked.Server.Medius
                                             {
                                                 responses.Add(new RT_MSG_SERVER_APP()
                                                 {
-                                                    AppMessage = new RawAppMessage(MediusAppPacketIds.UpdateLadderStatsWideResponse)
+                                                    AppMessage = new MediusUpdateLadderStatsWideResponse()
                                                     {
-                                                        Contents = Utils.FromString("31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00".Replace(" ", ""))
+                                                        MessageID = msg.MessageID,
+                                                        StatusCode = MediusCallbackStatus.MediusSuccess
                                                     }
                                                 });
                                                 break;
@@ -478,6 +480,7 @@ namespace Deadlocked.Server.Medius
                                     {
                                         AppMessage = new MediusFileCreateResponse()
                                         {
+                                            MessageID = msg.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusDBError,
                                             MediusFileInfo = new MediusFile()
                                             {
@@ -904,6 +907,11 @@ namespace Deadlocked.Server.Medius
                                                         Message = binaryMessage.Message
                                                     }
                                                 });
+                                                break;
+                                            }
+                                        case MediusBinaryMessageType.BroadcastBinaryMsg:
+                                            {
+                                                client.Client.CurrentChannel?.BroadcastBinaryMessage(client.Client, binaryMessage);
                                                 break;
                                             }
                                         default:

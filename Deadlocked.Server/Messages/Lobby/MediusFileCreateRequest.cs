@@ -7,7 +7,7 @@ using System.Text;
 namespace Deadlocked.Server.Messages.Lobby
 {
     [MediusApp(MediusAppPacketIds.FileCreate)]
-    public class MediusFileCreateRequest : BaseAppMessage
+    public class MediusFileCreateRequest : BaseLobbyMessage
     {
 
         public override MediusAppPacketIds Id => MediusAppPacketIds.FileCreate;
@@ -18,21 +18,23 @@ namespace Deadlocked.Server.Messages.Lobby
         public override void Deserialize(BinaryReader reader)
         {
             // 
-            base.Deserialize(reader);
-
-            // 
             MediusFileToCreate = reader.Read<MediusFile>();
             MediusFileCreateAttributes = reader.Read<MediusFileAttributes>();
+
+            // 
+            base.Deserialize(reader);
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
         {
             // 
-            base.Serialize(writer);
-
-            // 
             writer.Write(MediusFileToCreate);
             writer.Write(MediusFileCreateAttributes);
+
+            // 
+            base.Serialize(writer);
+            writer.Write(new byte[3]);
         }
 
 

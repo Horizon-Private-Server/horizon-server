@@ -50,7 +50,7 @@ namespace Deadlocked.Server.Messages.Lobby
              $"SessionKey:{SessionKey}" + " " +
 $"MessageType:{MessageType}" + " " +
 $"TargetAccountID:{TargetAccountID}" + " " +
-$"Message:{Message}";
+$"Message:{BitConverter.ToString(Message)}";
         }
     }
 }

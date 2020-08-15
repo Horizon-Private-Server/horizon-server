@@ -194,7 +194,12 @@ namespace Deadlocked.Server
 
         public static uint GetUnixTime()
         {
-            return (uint)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            return DateTime.UtcNow.ToUnixTime();
+        }
+
+        public static uint ToUnixTime(this DateTime time)
+        {
+            return (uint)(time.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
 
         #endregion

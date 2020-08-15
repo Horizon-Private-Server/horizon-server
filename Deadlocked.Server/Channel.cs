@@ -1,5 +1,6 @@
 ﻿using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
+using Deadlocked.Server.Messages.RTIME;
 using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
@@ -104,6 +105,25 @@ namespace Deadlocked.Server
             if (games.Count == 0)
             {
                 removeChannel = true;
+            }
+        }
+
+        public void BroadcastBinaryMessage(ClientObject source, MediusBinaryMessage msg)
+        {
+            foreach (var client in Clients)
+            {
+                if (client.Client != null && client.Client.IsConnected && client.Client.ClientAccount != null && client.Client != source)
+                {
+                    client.Client?.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                    {
+                        AppMessage = new MediusBinaryFwdMessage()
+                        {
+                            MessageType = msg.MessageType,
+                            OriginatorAccountID = client.Client.ClientAccount.AccountId,
+                            Message = msg.Message
+                        }
+                    });
+                }
             }
         }
     }
