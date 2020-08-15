@@ -1,18 +1,49 @@
 ﻿using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Deadlocked.Server
 {
+    public enum ChannelType
+    {
+        Lobby,
+        Game
+    }
     public class Channel
     {
         public static int IdCounter = 1;
 
-        public int Id = 0;
+        public class ChannelClient
+        {
+            public ClientObject Client;
+        }
 
+        
+
+        public int Id = 0;
+        public ChannelType Type = ChannelType.Game;
+        public string Name = "Default";
+        public string Password = null;
+        public int MaxPlayers = 10;
+        public MediusWorldSecurityLevelType SecurityLevel = MediusWorldSecurityLevelType.WORLD_SECURITY_NONE;
+        public uint GenericField1 = 0;
+        public uint GenericField2 = 0;
+        public uint GenericField3 = 0;
+        public uint GenericField4 = 0;
+        public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
+
+        public bool ReadyToDestroy => Type == ChannelType.Game && (!isAlive || removeChannel);
+        public int PlayerCount => Clients.Count;
+        public int GameCount => games.Count;
+
+        private List<Game> games = new List<Game>();
+        public List<ChannelClient> Clients = new List<ChannelClient>();
         private DateTime utcTimeLastReport = DateTime.UtcNow;
+        private bool removeChannel = false;
         private bool isAlive => (DateTime.UtcNow - utcTimeLastReport).TotalSeconds < 60;
 
         public Channel()
@@ -20,9 +51,62 @@ namespace Deadlocked.Server
             Id = IdCounter++;
         }
 
-        public void OnPlayerReport(ClientObject client, MediusPlayerReport report)
+        public Channel(MediusCreateChannelRequest request)
         {
-            utcTimeLastReport = DateTime.UtcNow;
+            Id = IdCounter++;
+
+            Name = request.LobbyName;
+            Password = request.LobbyPassword;
+            SecurityLevel = string.IsNullOrEmpty(Password) ? MediusWorldSecurityLevelType.WORLD_SECURITY_NONE : MediusWorldSecurityLevelType.WORLD_SECURITY_PLAYER_PASSWORD;
+            MaxPlayers = request.MaxPlayers;
+            GenericField1 = request.GenericField1;
+            GenericField2 = request.GenericField2;
+            GenericField3 = request.GenericField3;
+            GenericField4 = request.GenericField4;
+            GenericFieldLevel = request.GenericFieldLevel;
+        }
+
+        public void Tick()
+        {
+            // Remove inactive clients
+            for (int i = 0; i < Clients.Count; ++i)
+            {
+                if (!Clients[i].Client.IsConnected)
+                {
+                    Clients.RemoveAt(i);
+                    --i;
+                }
+            }
+        }
+
+        public void OnPlayerJoined(ClientObject client)
+        {
+            Clients.Add(new ChannelClient()
+            {
+                Client = client
+            });
+        }
+
+        public void OnPlayerLeft(ClientObject client)
+        {
+            Clients.RemoveAll(x => x.Client == client);
+        }
+
+        public void RegisterGame(Game game)
+        {
+            games.Add(game);
+        }
+
+        public void UnregisterGame(Game game)
+        {
+            // Remove game
+            games.Remove(game);
+
+            // If empty, just end channel
+            if (games.Count == 0)
+            {
+                removeChannel = true;
+            }
         }
     }
 }

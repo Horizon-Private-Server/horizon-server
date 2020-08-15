@@ -23,6 +23,7 @@ namespace Deadlocked.Server
 
         public int Id = 0;
         public int DMEWorldId = 0;
+        public int ChannelId = 0;
         public List<GameClient> Clients = new List<GameClient>();
         public string GameName;
         public string GamePassword;
@@ -45,10 +46,10 @@ namespace Deadlocked.Server
         public MediusWorldStatus WorldStatus = MediusWorldStatus.WorldPendingCreation;
         public MediusWorldAttributesType Attributes;
         public DMEObject DMEServer;
+        public Channel ChatChannel;
 
         private DateTime utcTimeCreated;
         private DateTime? utcTimeEmpty;
-        private bool forceDestroyWorld = false;
 
         public uint Time => (uint)(DateTime.UtcNow - utcTimeCreated).TotalMilliseconds;
 
@@ -56,7 +57,7 @@ namespace Deadlocked.Server
 
         public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 0.1f; // Program.Settings.GameTimeoutSeconds;
 
-        public Game(MediusCreateGameRequest createGame, DMEObject dmeServer)
+        public Game(ClientObject client, MediusCreateGameRequest createGame, DMEObject dmeServer)
         {
             Id = IdCounter++;
             GameName = createGame.GameName;
@@ -81,6 +82,9 @@ namespace Deadlocked.Server
             utcTimeCreated = DateTime.UtcNow;
             utcTimeEmpty = null;
             DMEServer = dmeServer;
+            ChannelId = client.CurrentChannelId;
+            ChatChannel = Program.GetChannelById(ChannelId);
+            ChatChannel?.RegisterGame(this);
         }
 
         public void Tick()
@@ -100,7 +104,6 @@ namespace Deadlocked.Server
             // Auto close when everyone leaves or if host fails to connect after timeout time
             if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (DateTime.UtcNow - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds)
             {
-                forceDestroyWorld = true;
                 utcTimeEmpty = DateTime.UtcNow;
                 WorldStatus = MediusWorldStatus.WorldClosed;
             }
@@ -131,6 +134,10 @@ namespace Deadlocked.Server
 
         public void OnPlayerJoined(ClientObject client)
         {
+            // Don't add again
+            if (Clients.Any(x => x.Client == client))
+                return;
+
             Clients.Add(new GameClient()
             {
                 Client = client
@@ -143,7 +150,13 @@ namespace Deadlocked.Server
         private void OnPlayerLeft(GameClient client)
         {
             if (Clients.Contains(client))
+            {
+                // Remove reference
+                if (client.Client != null)
+                    client.Client.CurrentGameId = -1;
+
                 Clients.Remove(client);
+            }
         }
 
         public void OnEndGameReport(MediusEndGameReport report)
@@ -151,8 +164,21 @@ namespace Deadlocked.Server
             // Clients.Clear();
         }
 
+
+        public void OnPlayerReport(MediusPlayerReport report)
+        {
+            // Ensure report is for correct game world
+            if (report.MediusWorldID != Id)
+                return;
+
+            
+        }
         public void OnWorldReport(MediusWorldReport report)
         {
+            // Ensure report is for correct game world
+            if (report.MediusWorldID != Id)
+                return;
+
             GameName = report.GameName;
             MinPlayers = report.MinPlayers;
             MaxPlayers = report.MaxPlayers;
@@ -170,8 +196,19 @@ namespace Deadlocked.Server
             WorldStatus = report.WorldStatus;
         }
 
-        public void SendEndGame()
+        public void EndGame()
         {
+            // Unregister from channel
+            ChatChannel?.UnregisterGame(this);
+
+            // Remove players from game world
+            foreach (var client in Clients)
+            {
+                if (client.Client != null)
+                    client.Client.CurrentGameId = -1;
+            }
+
+            // Send end game
             DMEServer.AddProxyMessage(new RT_MSG_SERVER_APP()
             {
                 AppMessage = new MediusServerEndGameRequest()

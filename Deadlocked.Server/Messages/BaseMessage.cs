@@ -287,7 +287,7 @@ namespace Deadlocked.Server.Messages
                         {
                             msgs.Add(msg);
 
-                            Console.WriteLine($"!! RECV !! {BitConverter.ToString(messageBuffer, (int)start, (int)(stream.Position - start))}");
+                            // Console.WriteLine($"!! RECV !! {BitConverter.ToString(messageBuffer, (int)start, (int)(stream.Position - start))}");
                         }
                     }
                 }

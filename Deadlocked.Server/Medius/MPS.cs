@@ -116,7 +116,7 @@ namespace Deadlocked.Server.Medius
                                     int gameId = int.Parse(msg.MessageID.Split('-')[0]);
                                     int accountId = int.Parse(msg.MessageID.Split('-')[1]);
                                     string msgId = msg.MessageID.Split('-')[2];
-                                    var game = Program.GetGameByGameId(gameId);
+                                    var game = Program.GetGameById(gameId);
                                     var rClient = Program.GetClientByAccountId(accountId);
                                     game.DMEWorldId = msg.WorldID;
 
@@ -140,7 +140,7 @@ namespace Deadlocked.Server.Medius
                                     int gameId = int.Parse(msg.MessageID.Split('-')[0]);
                                     int accountId = int.Parse(msg.MessageID.Split('-')[1]);
                                     string msgId = msg.MessageID.Split('-')[2];
-                                    var game = Program.GetGameByGameId(gameId);
+                                    var game = Program.GetGameById(gameId);
                                     var rClient = Program.GetClientByAccountId(accountId);
 
                                     game.OnPlayerJoined(rClient);
@@ -162,7 +162,7 @@ namespace Deadlocked.Server.Medius
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
                                                         {
                                                             //new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-#if RELEASE
+#if TRUE || RELEASE
                                                             new NetAddress() { Address = (client.RemoteEndPoint as IPEndPoint).Address.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
 #else                                                        
                                                             new NetAddress() { Address = (client.Client as DMEObject).IP.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
@@ -187,7 +187,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusServerConnectNotification;
 
-                                    Program.GetGameByGameId((int)msg.MediusWorldUID)?.OnMediusServerConnectNotification(msg);
+                                    Program.GetGameById((int)msg.MediusWorldUID)?.OnMediusServerConnectNotification(msg);
                                     
 
                                     break;
@@ -248,8 +248,23 @@ namespace Deadlocked.Server.Medius
 
         public void CreateGame(ClientSocket client, MediusCreateGameRequest request)
         {
-            var dme = GetFreeDme()?.Client as DMEObject;
+            // Ensure the name is unique
+            if (Program.Games.Any(x => x.GameName == request.GameName))
+            {
+                client.Client.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                {
+                    AppMessage = new MediusCreateGameResponse()
+                    {
+                        MessageID = request.MessageID,
+                        MediusWorldID = -1,
+                        StatusCode = MediusCallbackStatus.MediusGameNameExists
+                    }
+                });
+                return;
+            }
 
+            // 
+            var dme = GetFreeDme()?.Client as DMEObject;
             if (dme == null)
             {
                 client.Client.AddLobbyMessage(new RT_MSG_SERVER_APP()
@@ -261,29 +276,28 @@ namespace Deadlocked.Server.Medius
                         StatusCode = MediusCallbackStatus.MediusExceedsMaxWorlds
                     }
                 });
+                return;
             }
-            else
-            {
-                var game = new Game(request, dme);
-                Program.Games.Add(game);
 
-                dme.AddProxyMessage(new RT_MSG_SERVER_APP()
+            var game = new Game(client.Client, request, dme);
+            Program.Games.Add(game);
+
+            dme.AddProxyMessage(new RT_MSG_SERVER_APP()
+            {
+                AppMessage = new MediusServerCreateGameWithAttributesRequest()
                 {
-                    AppMessage = new MediusServerCreateGameWithAttributesRequest()
-                    {
-                        MessageID = $"{game.Id}-{client.Client.ClientAccount.AccountId}-{request.MessageID}",
-                        MediusWorldUID = (uint)game.Id,
-                        Attributes = game.Attributes,
-                        ApplicationID = Program.Settings.ApplicationId,
-                        MaxClients = game.MaxPlayers
-                    }
-                });
-            }
+                    MessageID = $"{game.Id}-{client.Client.ClientAccount.AccountId}-{request.MessageID}",
+                    MediusWorldUID = (uint)game.Id,
+                    Attributes = game.Attributes,
+                    ApplicationID = Program.Settings.ApplicationId,
+                    MaxClients = game.MaxPlayers
+                }
+            });
         }
 
         public void JoinGame(ClientSocket client, MediusJoinGameRequest request)
         {
-            var game = Program.GetGameByGameId(request.MediusWorldID);
+            var game = Program.GetGameById(request.MediusWorldID);
             if (game == null)
             {
                 client.Client.AddLobbyMessage(new RT_MSG_SERVER_APP()

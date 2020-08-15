@@ -18,8 +18,33 @@ namespace Deadlocked.Server
 
         public MediusUserAction Action { get; set; } = MediusUserAction.KeepAlive;
         public MediusPlayerStatus Status { get; set; } = MediusPlayerStatus.MediusPlayerDisconnected;
-        public int CurrentChannelId { get; set; } = 0;
-        public int CurrentGameId { get; set; } = -1;
+
+
+        public Channel CurrentChannel { get; protected set; } = null;
+
+        private int _currentChannelId = 0;
+        public int CurrentChannelId
+        {
+            get => _currentChannelId;
+            set
+            {
+                _currentChannelId = value;
+                CurrentChannel = Program.GetChannelById(value);
+            }
+        }
+
+        public Game CurrentGame { get; protected set; } = null;
+
+        private int _currentGameId = -1;
+        public int CurrentGameId
+        {
+            get => _currentGameId;
+            set
+            {
+                _currentGameId = value;
+                CurrentGame = Program.GetGameById(value);
+            }
+        }
 
         public Account ClientAccount { get; protected set; } = null;
 
@@ -147,11 +172,11 @@ namespace Deadlocked.Server
         /// <summary>
         /// 
         /// </summary>
-        public void OnDestroy()
+        public void Logout()
         {
             // Unset client in account
-            if (ClientAccount != null && ClientAccount.Client == this)
-                ClientAccount.Client = null;
+            //if (ClientAccount != null && ClientAccount.Client == this)
+            //    ClientAccount.Client = null;
 
             // Move to invalid channel
             CurrentChannelId = -1;

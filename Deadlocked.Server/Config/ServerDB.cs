@@ -39,7 +39,7 @@ namespace Deadlocked.Server.Config
         /// <summary>
         /// Get account by name. Not case sensitive.
         /// </summary>
-        public bool GetAccountByName(string name, out Account account)
+        public bool TryGetAccountByName(string name, out Account account)
         {
             account = Accounts.FirstOrDefault(x => x.AccountName.ToLower() == name.ToLower());
             return account != null;
@@ -55,6 +55,15 @@ namespace Deadlocked.Server.Config
             account.AccountId = (Accounts.Count > 0 ? Accounts.Max(x => x.AccountId) : 0) + 1;
             Accounts.Add(account);
 
+            Save();
+        }
+
+        /// <summary>
+        /// Deletes an account.
+        /// </summary>
+        public void DeleteAccount(Account account)
+        {
+            Accounts.Remove(account);
             Save();
         }
 

@@ -90,7 +90,7 @@ namespace Deadlocked.Server
             if (str == null)
                 writer.Write(new byte[length]);
             else if (str.Length >= length)
-                writer.Write(Encoding.UTF8.GetBytes(str.Substring(0, length)));
+                writer.Write(Encoding.UTF8.GetBytes(str.Substring(0, length-1) + "\0"));
             else
                 writer.Write(Encoding.UTF8.GetBytes(str.PadRight(length, '\0')));
         }

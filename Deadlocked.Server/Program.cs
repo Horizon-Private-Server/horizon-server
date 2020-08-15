@@ -65,7 +65,7 @@ namespace Deadlocked.Server
             NATServer.Start();
 
             // 
-            Console.WriteLine("Started. Press 1 to exit. Press 2 to restart.");
+            Console.WriteLine("Started.");
             while (true)
             {
                 // Remove old clients
@@ -73,7 +73,8 @@ namespace Deadlocked.Server
                 {
                     if (Clients[i] == null || !Clients[i].IsConnected)
                     {
-                        Clients[i]?.OnDestroy();
+                        Console.WriteLine($"Destroying Client SK:{Clients[i].SessionKey} Token:{Clients[i].Token} Name:{Clients[i].ClientAccount?.AccountName}");
+                        Clients[i]?.Logout();
                         Clients.RemoveAt(i);
                         --i;
                     }
@@ -86,36 +87,37 @@ namespace Deadlocked.Server
                 ProxyServer.Tick();
                 NATServer.Tick();
 
-                // Remove old games
-                for (int i = 0; i < Games.Count; ++i)
+                // Tick channels
+                for (int i = 0; i < Channels.Count; ++i)
                 {
-                    if (Games[i].ReadyToDestroy)
+                    if (Channels[i].ReadyToDestroy)
                     {
-                        Games[i].SendEndGame();
-                        Games.RemoveAt(i);
+                        Console.WriteLine($"Destroying Channel Id:{Channels[i].Id} Name:{Channels[i].Name}");
+                        Channels.RemoveAt(i);
                         --i;
+                    }
+                    else
+                    {
+                        Channels[i].Tick();
                     }
                 }
 
                 // Tick games
-                foreach (var game in Games)
-                    game.Tick();
-
-                // Check exit
-                if (Console.KeyAvailable)
+                for (int i = 0; i < Games.Count; ++i)
                 {
-                    ConsoleKeyInfo key = Console.ReadKey(true);
-                    if (key.Key == ConsoleKey.D1)
-                        break;
-                    if (key.Key == ConsoleKey.D2)
+                    if (Games[i].ReadyToDestroy)
                     {
-                        UniverseInfoServer.Stop();
-                        AuthenticationServer.Stop();
-                        LobbyServer.Stop();
-                        NATServer.Stop();
-                        goto restart;
+                        Console.WriteLine($"Destroying Game Id:{Games[i].Id} Name:{Games[i].GameName}");
+                        Games[i].EndGame();
+                        Games.RemoveAt(i);
+                        --i;
+                    }
+                    else
+                    {
+                        Games[i].Tick();
                     }
                 }
+
 
                 Thread.Sleep(sleepMS);
             }
@@ -161,6 +163,15 @@ namespace Deadlocked.Server
             {
                 SERVER_IP = IPAddress.Parse(GetIPAddress());
             }
+
+            // Initialize default channel
+            Channels.Add(new Channel()
+            {
+                Id = Settings.DefaultChannelId,
+                MaxPlayers = 256,
+                Name = "Default",
+                Type = ChannelType.Lobby
+            });
         }
 
         /// <summary>
@@ -184,7 +195,13 @@ namespace Deadlocked.Server
             return address;
         }
 
-        public static Game GetGameByGameId(int id)
+
+        public static Channel GetChannelById(int channelId)
+        {
+            return Channels.FirstOrDefault(x => x.Id == channelId);
+        }
+
+        public static Game GetGameById(int id)
         {
             return Games.FirstOrDefault(x => x.Id == id);
         }

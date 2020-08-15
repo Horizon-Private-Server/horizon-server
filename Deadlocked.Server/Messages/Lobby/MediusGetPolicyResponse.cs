@@ -73,7 +73,8 @@ $"EndOfText:{EndOfText}";
             }
 
             // Set end of text
-            policies[policies.Count - 1].EndOfText = true;
+            if (policies.Count > 0)
+                policies[policies.Count - 1].EndOfText = true;
 
             //
             return policies;

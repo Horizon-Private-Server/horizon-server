@@ -17,6 +17,7 @@ namespace Deadlocked.Server.Medius
     public class MLS : BaseMediusComponent
     {
         public override int Port => 10078;
+        private DateTime ticker = DateTime.UtcNow;
 
         static string[] INIT_1D_MESSAGES =
         {
@@ -58,6 +59,30 @@ namespace Deadlocked.Server.Medius
             // 
             foreach (var msg in recv)
                 HandleCommand(msg, client, ref responses);
+
+
+            if (false && (DateTime.UtcNow - ticker).TotalSeconds > 1)
+            {
+                ticker = DateTime.UtcNow;
+
+                // Enable form party
+                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_MEMORY_POKE)
+                {
+                    Contents = Utils.FromString("24 57 36 01 04 00 00 00 04 00 00 00".Replace(" ", ""))
+                });
+
+                // Add game mode count
+                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_MEMORY_POKE)
+                {
+                    Contents = Utils.FromString("58 79 2A 01 01 00 00 00 06".Replace(" ", ""))
+                });
+
+                // Set infected
+                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_MEMORY_POKE)
+                {
+                    Contents = Utils.FromString("EC 7A 2A 01 09 00 00 00 49 6E 66 65 63 74 65 64 00".Replace(" ", ""))
+                });
+            }
 
             // 
             var targetMsgs = client.Client?.PullLobbyMessages();
@@ -128,6 +153,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_CHEAT_QUERY:
                     {
+                        break;
                         int id1D = (message as RT_MSG_SERVER_CHEAT_QUERY).UNK_01;
                         int off1D = id1D - 0xCC;
                         switch (id1D)
@@ -187,7 +213,7 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
                     {
                         var appMsg = (message as RT_MSG_CLIENT_APP_TOSERVER).AppMessage;
-                        if (appMsg == null)
+                        if (appMsg == null || client == null || !client.Connected || client.Client == null)
                             break;
 
                         switch (appMsg.Id)
@@ -234,6 +260,13 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusLadderList_ExtraInfoRequest;
                                     var account = client.Client.ClientAccount;
 
+                                    // ERROR -- Need to be logged in
+                                    if (account == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusLadderList_ExtraInfoResponse()
@@ -258,11 +291,17 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusAccountUpdateStatsRequest;
 
-                                    // Update stats
-                                    var account = client.Client?.ClientAccount;
-                                    if (account != null)
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
                                     {
-                                        account.Stats = msg.Stats;
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+                                    // Update stats
+                                    if (client.Client.ClientAccount != null)
+                                    {
+                                        client.Client.ClientAccount.Stats = msg.Stats;
                                         Program.Database.Save();
                                     }
 
@@ -279,6 +318,13 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.UpdateLadderStatsWide:
                                 {
                                     var msg = appMsg as MediusUpdateLadderStatsWideRequest;
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
 
                                     switch (msg.LadderType)
                                     {
@@ -366,8 +412,47 @@ namespace Deadlocked.Server.Medius
                                     });
                                     break;
                                 }
+                            case MediusAppPacketIds.CheckMyClanInvitations:
+                                {
+                                    var msg = appMsg as MediusCheckMyClanInvitationsRequest;
+
+                                    // Disabled for now
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusCheckMyClanInvitationsResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusNoResult
+                                        }
+                                    });
+
+                                    break;
+                                }
+                            case MediusAppPacketIds.CreateClan:
+                                {
+                                    var msg = appMsg as MediusCreateClanRequest;
+
+                                    // Disable for now
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusCreateClanResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess
+                                        }
+                                    });
+
+                                    break;
+                                }
                             case MediusAppPacketIds.GetMyClans:
                                 {
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusGetMyClansResponse()
@@ -389,7 +474,17 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusFileCreateRequest;
 
-
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusFileCreateResponse()
+                                        {
+                                            StatusCode = MediusCallbackStatus.MediusDBError,
+                                            MediusFileInfo = new MediusFile()
+                                            {
+                                                
+                                            }
+                                        }
+                                    });
 
                                     break;
                                 }
@@ -412,6 +507,13 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusAddToBuddyListRequest;
                                     var statusCode = MediusCallbackStatus.MediusFail;
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
 
                                     // find target player
                                     if (Program.Database.TryGetAccountById(msg.AccountID, out var targetAccount))
@@ -449,6 +551,13 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusRemoveFromBuddyListRequest;
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     // 
                                     if (client.Client != null && client.Client.ClientAccount != null)
                                     {
@@ -477,29 +586,40 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var getBuddyListReq = appMsg as MediusGetBuddyList_ExtraInfoRequest;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     // Get friends
-                                    var friends = client.Client.ClientAccount.Friends.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
+                                    var friends = client.Client.ClientAccount.Friends?.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
 
                                     // Responses
                                     List<MediusGetBuddyList_ExtraInfoResponse> friendListResponses = new List<MediusGetBuddyList_ExtraInfoResponse>();
 
-                                    // Iterate and send to client
-                                    foreach (var friend in friends)
+                                    // 
+                                    if (friends != null)
                                     {
-                                        friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
+                                        // Iterate and send to client
+                                        foreach (var friend in friends)
                                         {
-                                            MessageID = getBuddyListReq.MessageID,
-                                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            AccountID = friend.AccountId,
-                                            AccountName = friend.AccountName,
-                                            OnlineState = new MediusPlayerOnlineState()
+                                            friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
                                             {
-                                                ConnectStatus = friend.IsLoggedIn ? (friend.Client?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected) : MediusPlayerStatus.MediusPlayerDisconnected,
-                                                MediusLobbyWorldID = Program.Settings.DefaultChannelId,
-                                                MediusGameWorldID = Program.GetGameByGameId(friend.Client?.CurrentGameId ?? -1)?.Id ?? -1
-                                            },
-                                            EndOfList = false
-                                        });
+                                                MessageID = getBuddyListReq.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                AccountID = friend.AccountId,
+                                                AccountName = friend.AccountName,
+                                                OnlineState = new MediusPlayerOnlineState()
+                                                {
+                                                    ConnectStatus = friend.IsLoggedIn ? (friend.Client?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected) : MediusPlayerStatus.MediusPlayerDisconnected,
+                                                    MediusLobbyWorldID = friend.Client?.CurrentChannel?.Id ?? Program.Settings.DefaultChannelId,
+                                                    MediusGameWorldID = friend.Client?.CurrentGame?.Id ?? -1,
+                                                },
+                                                EndOfList = false
+                                            });
+                                        }
                                     }
 
                                     if (friendListResponses.Count > 0)
@@ -621,7 +741,7 @@ namespace Deadlocked.Server.Medius
 
                                     if (findPlayerReq.SearchType == MediusPlayerSearchType.PlayerAccountID && !Program.Database.TryGetAccountById(findPlayerReq.ID, out account))
                                         account = null;
-                                    else if (findPlayerReq.SearchType == MediusPlayerSearchType.PlayerAccountName && !Program.Database.GetAccountByName(findPlayerReq.Name, out account))
+                                    else if (findPlayerReq.SearchType == MediusPlayerSearchType.PlayerAccountName && !Program.Database.TryGetAccountByName(findPlayerReq.Name, out account))
                                         account = null;
 
                                     if (account == null)
@@ -693,6 +813,13 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var binaryMessage = appMsg as MediusBinaryMessage;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     switch (binaryMessage.MessageType)
                                     {
                                         case MediusBinaryMessageType.TargetBinaryMsg:
@@ -716,6 +843,46 @@ namespace Deadlocked.Server.Medius
                                                 break;
                                             }
                                     }
+                                    break;
+                                }
+                            case MediusAppPacketIds.GetTotalRankings:
+                                {
+                                    var msg = appMsg as MediusGetTotalRankingsRequest;
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+
+                                    /*
+                                    switch (msg.LadderType)
+                                    {
+                                        case MediusLadderType.MediusLadderTypeClan:
+                                            {
+
+                                                break;
+                                            }
+                                        case MediusLadderType.MediusLadderTypePlayer:
+                                            {
+
+                                                break;
+                                            }
+                                    }
+                                    */
+
+                                    //
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusGetTotalRankingsResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            TotalRankings = 0
+                                        }
+                                    });
                                     break;
                                 }
                             case MediusAppPacketIds.LadderPosition_ExtraInfo:
@@ -777,8 +944,15 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var createChannelReq = appMsg as MediusCreateChannelRequest;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     // Create channel
-                                    Channel channel = new Channel();
+                                    Channel channel = new Channel(createChannelReq);
 
                                     // Add
                                     Program.Channels.Add(channel);
@@ -799,7 +973,14 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var joinChannelReq = appMsg as MediusJoinChannelRequest;
 
-                                    var channel = Program.Channels.FirstOrDefault(x => x.Id == joinChannelReq.MediusWorldID);
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+                                    var channel = Program.GetChannelById(joinChannelReq.MediusWorldID);
                                     if (channel == null)
                                     {
                                         responses.Add(new RT_MSG_SERVER_APP()
@@ -810,9 +991,27 @@ namespace Deadlocked.Server.Medius
                                             }
                                         });
                                     }
+                                    else if (channel.SecurityLevel == MediusWorldSecurityLevelType.WORLD_SECURITY_PLAYER_PASSWORD && joinChannelReq.LobbyChannelPassword != channel.Password)
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusJoinChannelResponse()
+                                            {
+                                                StatusCode = MediusCallbackStatus.MediusInvalidPassword
+                                            }
+                                        });
+                                    }
                                     else
                                     {
+                                        // Tell previous channel player left
+                                        var prevChannel = Program.Channels.FirstOrDefault(x => x.Id == client.Client.CurrentChannelId);
+                                        prevChannel?.OnPlayerLeft(client.Client);
+
+                                        // 
                                         client.Client.CurrentChannelId = channel.Id;
+
+                                        // Tell channel
+                                        channel.OnPlayerJoined(client.Client);
 
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
@@ -845,10 +1044,12 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusChannelInfoRequest;
 
-                                    var game = Program.GetGameByGameId(msg.MediusWorldID);
+                                    // Find channel
+                                    var channel = Program.GetChannelById(msg.MediusWorldID);
 
-                                    if (game == null)
+                                    if (channel == null)
                                     {
+                                        // No channels
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
                                             AppMessage = new MediusChannelInfoResponse()
@@ -866,9 +1067,9 @@ namespace Deadlocked.Server.Medius
                                             {
                                                 MessageID = msg.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusSuccess,
-                                                LobbyName = game.GameName,
-                                                ActivePlayerCount = game.PlayerCount,
-                                                MaxPlayers = game.MaxPlayers
+                                                LobbyName = channel.Name,
+                                                ActivePlayerCount = channel.PlayerCount,
+                                                MaxPlayers = channel.MaxPlayers
                                             }
                                         });
                                     }
@@ -878,19 +1079,33 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusPlayerReport;
 
-                                    // 
-                                    if (client.Client != null && client.Client.CurrentChannelId == msg.MediusWorldID && client.Client.SessionKey == msg.SessionKey)
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
                                     {
-                                        var channel = Program.Channels.FirstOrDefault(x => x.Id == msg.MediusWorldID);
-                                        if (channel != null)
-                                            channel.OnPlayerReport(client.Client, msg);
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+                                    // 
+                                    if (client.Client.CurrentGameId == msg.MediusWorldID &&
+                                        client.Client.SessionKey == msg.SessionKey)
+                                    {
+                                        client.Client.CurrentGame?.OnPlayerReport(msg);
                                     }
                                     break;
                                 }
                             case MediusAppPacketIds.WorldReport:
                                 {
                                     var msg = appMsg as MediusWorldReport;
-                                    Program.GetGameByGameId(msg.MediusWorldID)?.OnWorldReport(msg);
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+                                    client.Client.CurrentGame?.OnWorldReport(msg);
 
                                     break;
                                 }
@@ -972,7 +1187,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusGameInfoRequest;
 
-                                    var game = Program.GetGameByGameId(msg.MediusWorldID);
+                                    var game = Program.GetGameById(msg.MediusWorldID);
 
                                     if (game == null)
                                     {
@@ -1022,7 +1237,15 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.GameWorldPlayerList:
                                 {
                                     var msg = appMsg as MediusGameWorldPlayerListRequest;
-                                    var game = Program.GetGameByGameId(msg.MediusWorldID);
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+                                    var game = Program.GetGameById(msg.MediusWorldID);
                                     if (game == null)
                                     {
                                         responses.Add(new RT_MSG_SERVER_APP()
@@ -1081,19 +1304,46 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.ChannelList:
                                 {
                                     var msg = appMsg as MediusChannelListRequest;
+                                    var gameChannels = Program.Channels.Where(x => x.Type == ChannelType.Game);
+                                    List<MediusChannelListResponse> channelResponses = new List<MediusChannelListResponse>();
 
-                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    foreach (var channel in gameChannels)
                                     {
-                                        AppMessage = new MediusChannelListResponse()
+                                        if (channel.Type != ChannelType.Game)
+                                            continue;
+
+                                        channelResponses.Add(new MediusChannelListResponse()
                                         {
                                             MessageID = msg.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            LobbyName = "Default",
-                                            MediusWorldID = Program.Settings.DefaultChannelId,
-                                            PlayerCount = Program.Clients.Count,
-                                            EndOfList = true
-                                        }
-                                    });
+                                            MediusWorldID = channel.Id,
+                                            LobbyName = channel.Name,
+                                            PlayerCount = channel.PlayerCount,
+                                            EndOfList = false
+                                        });
+                                    }
+
+                                    if (channelResponses.Count == 0)
+                                    {
+                                        // Return none
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusChannelListResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                                EndOfList = true
+                                            }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        // Ensure the end of list flag is set
+                                        channelResponses[channelResponses.Count - 1].EndOfList = true;
+
+                                        // Add to responses
+                                        responses.AddRange(channelResponses.Select(x => new RT_MSG_SERVER_APP() { AppMessage = x }));
+                                    }
 
 
                                     break;
@@ -1102,31 +1352,69 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusChannelList_ExtraInfoRequest;
 
-                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    // Deadlocked only uses this to connect to a non-game channel (lobby)
+                                    // So we'll filter by lobby here
+                                    var channels = Program.Channels.Where(x => x.Type == ChannelType.Lobby);
+                                    List<MediusChannelList_ExtraInfoResponse> channelResponses = new List<MediusChannelList_ExtraInfoResponse>();
+
+                                    foreach (var channel in channels)
                                     {
-                                        AppMessage = new MediusChannelList_ExtraInfoResponse()
+                                        channelResponses.Add(new MediusChannelList_ExtraInfoResponse()
                                         {
                                             MessageID = msg.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            LobbyName = "Default",
-                                            MediusWorldID = Program.Settings.DefaultChannelId,
-                                            GameWorldCount = (ushort)Program.Games.Count,
+                                            MediusWorldID = channel.Id,
+                                            LobbyName = channel.Name,
+                                            GameWorldCount = (ushort)channel.GameCount,
+                                            PlayerCount = (ushort)channel.PlayerCount,
+                                            MaxPlayers = (ushort)channel.MaxPlayers,
+                                            GenericField1 = channel.GenericField1,
+                                            GenericField2 = channel.GenericField2,
+                                            GenericField3 = channel.GenericField3,
+                                            GenericField4 = channel.GenericField4,
+                                            GenericFieldLevel = channel.GenericFieldLevel,
+                                            SecurityLevel = channel.SecurityLevel,
+                                            EndOfList = false
+                                        });
+                                    }
 
-                                            MaxPlayers = 0xFF,
-                                            PlayerCount = (ushort)Program.Clients.Count,
-                                            SecurityLevel = MediusWorldSecurityLevelType.WORLD_SECURITY_NONE,
+                                    if (channelResponses.Count == 0)
+                                    {
+                                        // Return none
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusChannelList_ExtraInfoResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                                EndOfList = true
+                                            }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        // Ensure the end of list flag is set
+                                        channelResponses[channelResponses.Count - 1].EndOfList = true;
 
-                                            EndOfList = true
-                                        }
-                                    });
+                                        // Add to responses
+                                        responses.AddRange(channelResponses.Select(x => new RT_MSG_SERVER_APP() { AppMessage = x }));
+                                    }
+
+
                                     break;
                                 }
                             case MediusAppPacketIds.EndGameReport:
                                 {
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     if (appMsg is MediusEndGameReport msg)
                                     {
-                                        var game = Program.GetGameByGameId(msg.MediusWorldID);
-                                        game?.OnEndGameReport(msg);
+                                        client.Client.CurrentGame?.OnEndGameReport(msg);
                                     }
 
                                     break;
@@ -1186,6 +1474,13 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusAddToIgnoreListRequest;
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     // find target player
                                     if (Program.Database.TryGetAccountById(msg.IgnoreAccountID, out var targetAccount))
                                     {
@@ -1220,6 +1515,13 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusRemoveFromIgnoreListRequest;
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     // 
                                     if (client.Client != null && client.Client.ClientAccount != null)
                                     {
@@ -1249,15 +1551,23 @@ namespace Deadlocked.Server.Medius
                                     var accountLogoutReq = appMsg as MediusAccountLogoutRequest;
                                     bool success = false;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     // Check token
                                     if (accountLogoutReq.SessionKey == client.Client.SessionKey)
                                     {
                                         success = true;
 
+                                        // 
+                                        Console.WriteLine($"{client.Client.ClientAccount.AccountName} has logged out.");
+
                                         // Logout
-                                        client.Client.OnDestroy();
-                                        Program.Clients.Remove(client.Client);
-                                        client.Disconnect();
+                                        client.Client.Logout();
                                     }
 
                                     responses.Add(new RT_MSG_SERVER_APP()
@@ -1272,6 +1582,13 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.UpdateUserState:
                                 {
                                     var updateUserReq = appMsg as MediusUpdateUserState;
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
 
                                     client.Client.Action = updateUserReq.UserAction;
 
@@ -1305,6 +1622,13 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var createGameReq = appMsg as MediusCreateGameRequest;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     Program.ProxyServer.CreateGame(client, createGameReq);
                                     break;
                                 }
@@ -1312,43 +1636,67 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var joinGameReq = appMsg as MediusJoinGameRequest;
 
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
                                     Program.ProxyServer.JoinGame(client, joinGameReq);
                                     break;
                                 }
                             case MediusAppPacketIds.GenericChatMessage:
                                 {
                                     var genericChatMessage = appMsg as MediusGenericChatMessage;
+                                    var channel = client.Client.CurrentChannel;
                                     List<BaseMessage> chatResponses = new List<BaseMessage>();
+
+                                    // ERROR -- Need to be logged in
+                                    if (client.Client.ClientAccount == null)
+                                    {
+                                        client.Disconnect();
+                                        break;
+                                    }
+
+                                    // Need to be in a channel
+                                    if (channel == null)
+                                        break;
 
                                     switch (genericChatMessage.MessageType)
                                     {
                                         case MediusChatMessageType.Broadcast:
                                             {
-                                                IEnumerable<ClientSocket> players = Clients.Where(x => x?.Client?.CurrentChannelId == client?.Client?.CurrentChannelId && x != client);
-                                                chatResponses.Add(new RT_MSG_SERVER_APP()
-                                                {
-                                                    AppMessage = new MediusGenericChatFwdMessage()
-                                                    {
-                                                        OriginatorAccountID = client.Client.ClientAccount.AccountId,
-                                                        OriginatorAccountName = client.Client.ClientAccount.AccountName,
-                                                        Message = genericChatMessage.Message,
-                                                        MessageType = genericChatMessage.MessageType,
-                                                        TimeStamp = Utils.GetUnixTime()
-                                                    }
-                                                });
+                                                IEnumerable<ClientObject> players = null;
 
                                                 switch (genericChatMessage.Message.Substring(1))
                                                 {
                                                     case "/roll":
                                                         {
-                                                            players = Clients.Where(x => x?.Client?.CurrentChannelId == client?.Client?.CurrentChannelId);
+                                                            players = channel.Clients.Select(x => x.Client);
                                                             chatResponses.Add(new RT_MSG_SERVER_APP()
                                                             {
                                                                 AppMessage = new MediusGenericChatFwdMessage()
                                                                 {
                                                                     OriginatorAccountID = 0,
                                                                     OriginatorAccountName = "SYSTEM",
-                                                                    Message = "A" + RNG.Next(0, 100).ToString(),
+                                                                    Message = $"APlayer {client.Client?.ClientAccount?.AccountName ?? "ERROR"} rolled " + RNG.Next(0, 100).ToString(),
+                                                                    MessageType = genericChatMessage.MessageType,
+                                                                    TimeStamp = Utils.GetUnixTime()
+                                                                }
+                                                            });
+                                                            break;
+                                                        }
+                                                    default:
+                                                        {
+                                                            players = channel.Clients.Where(x => x.Client != client.Client).Select(x => x.Client);
+                                                            chatResponses.Add(new RT_MSG_SERVER_APP()
+                                                            {
+                                                                AppMessage = new MediusGenericChatFwdMessage()
+                                                                {
+                                                                    OriginatorAccountID = client.Client.ClientAccount.AccountId,
+                                                                    OriginatorAccountName = client.Client.ClientAccount.AccountName,
+                                                                    Message = genericChatMessage.Message,
                                                                     MessageType = genericChatMessage.MessageType,
                                                                     TimeStamp = Utils.GetUnixTime()
                                                                 }
@@ -1360,7 +1708,7 @@ namespace Deadlocked.Server.Medius
                                                 // 
                                                 if (chatResponses != null && chatResponses.Count > 0 && players != null)
                                                     foreach (var player in players)
-                                                        player.Client.AddLobbyMessages(chatResponses);
+                                                        player.AddLobbyMessages(chatResponses);
                                                 break;
                                             }
                                         default:

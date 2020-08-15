@@ -1,4 +1,5 @@
-﻿using Deadlocked.Server.Messages;
+﻿using Deadlocked.Server.Accounts;
+using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.MGCL;
 using Deadlocked.Server.Messages.RTIME;
@@ -198,6 +199,20 @@ namespace Deadlocked.Server.Medius
                                     });
                                     break;
                                 }
+                            case MediusAppPacketIds.SessionEnd:
+                                {
+                                    var msg = appMsg as MediusSessionEndRequest;
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusSessionEndResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        }
+                                    });
+                                    break;
+                                }
                             case MediusAppPacketIds.ExtendedSessionBeginRequest:
                                 {
                                     var sessionBeginMsg = appMsg as MediusExtendedSessionBeginRequest;
@@ -230,6 +245,135 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.DnasSignaturePost:
                                 {
                                     var msg = appMsg as MediusDnasSignaturePost;
+                                    break;
+                                }
+                            case MediusAppPacketIds.AccountRegistration:
+                                {
+                                    var msg = appMsg as MediusAccountRegistrationRequest;
+
+                                    // Ensure account doesn't already exist
+                                    if (Program.Database.TryGetAccountByName(msg.AccountName, out var account))
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusAccountRegistrationResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusAccountAlreadyExists
+                                            }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        // Create new account
+                                        account = new Account()
+                                        {
+                                            AccountName = msg.AccountName,
+                                            AccountPassword = msg.Password
+                                        };
+
+                                        // Add to collection
+                                        Program.Database.AddAccount(account);
+
+                                        // Reply with account id
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusAccountRegistrationResponse()
+                                            {
+                                                MessageID = msg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                AccountID = account.AccountId
+                                            }
+                                        });
+                                    }
+                                    break;
+                                }
+                            case MediusAppPacketIds.AccountGetID:
+                                {
+                                    var msg = appMsg as MediusAccountGetIDRequest;
+                                    int? accountId = null;
+
+                                    // Try to grab account id
+                                    if (Program.Database.TryGetAccountByName(msg.AccountName, out var account))
+                                        accountId = account.AccountId;
+
+                                    // Return id
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusAccountGetIDResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            AccountID = accountId ?? 0,
+                                            StatusCode = accountId.HasValue ? MediusCallbackStatus.MediusSuccess : MediusCallbackStatus.MediusAccountNotFound
+                                        }
+                                    });
+
+                                    break;
+                                }
+                            case MediusAppPacketIds.AccountDelete:
+                                {
+                                    var msg = appMsg as MediusAccountDeleteRequest;
+                                    var status = MediusCallbackStatus.MediusFail;
+
+                                    // 
+                                    var account = client.Client?.ClientAccount;
+
+                                    // Ensure logged in
+                                    if (account != null)
+                                    {
+                                        // Double check password
+                                        if (account.AccountPassword == msg.MasterPassword)
+                                        {
+                                            // Delete
+                                            Program.Database.DeleteAccount(account);
+                                            client.Client.Logout();
+                                            status = MediusCallbackStatus.MediusSuccess;
+                                        }
+                                    }
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusAccountDeleteResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = status
+                                        }
+                                    });
+
+                                    Console.WriteLine($"Delete account {account?.AccountName} {status}");
+
+                                    break;
+                                }
+                            case MediusAppPacketIds.AnonymousLogin:
+                                {
+                                    var msg = appMsg as MediusAnonymousLoginRequest;
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusAnonymousLoginResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            AccountID = -1,
+                                            AccountType = MediusAccountType.MediusMasterAccount,
+                                            MediusWorldID = Program.Settings.DefaultChannelId,
+                                            ConnectInfo = new NetConnectionInfo()
+                                            {
+                                                SessionKey = msg.SessionKey,
+                                                WorldID = 0,
+                                                ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
+                                                AddressList = new NetAddressList()
+                                                {
+                                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                                        {
+                                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
+                                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                                        }
+                                                },
+                                                Type = NetConnectionType.NetConnectionTypeClientServerTCP
+                                            }
+                                        }
+                                    });
 
                                     break;
                                 }
@@ -238,25 +382,27 @@ namespace Deadlocked.Server.Medius
                                     var loginMsg = appMsg as MediusAccountLoginRequest;
                                     Console.WriteLine($"LOGIN REQUEST: {loginMsg}");
 
-                                    // Find account or create new
-                                    if (!Program.Database.GetAccountByName(loginMsg.Username, out var account))
-                                    {
-                                        account = new Accounts.Account()
-                                        {
-                                            AccountName = loginMsg.Username,
-                                            AccountPassword = loginMsg.Password
-                                        };
-
-                                        Program.Database.AddAccount(account);
-                                    }
-
-                                    // Check client isn't already logged in
-                                    if (account.IsLoggedIn)
+                                    // Find account
+                                    if (!Program.Database.TryGetAccountByName(loginMsg.Username, out var account))
                                     {
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
                                             AppMessage = new MediusAccountLoginResponse()
                                             {
+                                                MessageID = loginMsg.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusAccountNotFound,
+                                            }
+                                        });
+                                    }
+
+                                    // Check client isn't already logged in
+                                    else if (account.IsLoggedIn)
+                                    {
+                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        {
+                                            AppMessage = new MediusAccountLoginResponse()
+                                            {
+                                                MessageID = loginMsg.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusAccountLoggedIn
                                             }
                                         });
@@ -267,18 +413,24 @@ namespace Deadlocked.Server.Medius
                                         {
                                             AppMessage = new MediusAccountLoginResponse()
                                             {
+                                                MessageID = loginMsg.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusInvalidPassword
                                             }
                                         });
                                     }
                                     else
                                     {
-
+                                        // 
                                         var clientObject = new ClientObject(account, loginMsg.SessionKey);
                                         clientObject.Status = MediusPlayerStatus.MediusPlayerInAuthWorld;
-                                        
+
+                                        // 
                                         Program.Clients.Add(clientObject);
 
+                                        // 
+                                        client.SetToken(clientObject.Token);
+
+                                        // 
                                         Console.WriteLine($"LOGGING IN AS {account.AccountName} with access token {clientObject.Token}");
 
                                         // Tell client
@@ -286,13 +438,14 @@ namespace Deadlocked.Server.Medius
                                         {
                                             AppMessage = new MediusAccountLoginResponse()
                                             {
+                                                MessageID = loginMsg.MessageID,
                                                 AccountID = account.AccountId,
                                                 AccountType = MediusAccountType.MediusMasterAccount,
                                                 ConnectInfo = new NetConnectionInfo()
                                                 {
                                                     AccessKey = clientObject.Token,
                                                     SessionKey = loginMsg.SessionKey,
-                                                    WorldID = 0,
+                                                    WorldID = Program.Settings.DefaultChannelId,
                                                     ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
                                                     AddressList = new NetAddressList()
                                                     {
@@ -309,6 +462,47 @@ namespace Deadlocked.Server.Medius
                                             }
                                         });
                                     }
+                                    break;
+                                }
+                            case MediusAppPacketIds.AccountLogout:
+                                {
+                                    var msg = appMsg as MediusAccountLogoutRequest;
+                                    bool success = false;
+
+                                    // Check token
+                                    if (client.Client != null && client.Client.ClientAccount != null && msg.SessionKey == client.Client.SessionKey)
+                                    {
+                                        success = true;
+
+                                        // Logout
+                                        client.Client.Logout();
+                                    }
+
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusAccountLogoutResponse()
+                                        {
+                                            StatusCode = success ? MediusCallbackStatus.MediusSuccess : MediusCallbackStatus.MediusFail
+                                        }
+                                    });
+                                    break;
+                                }
+                            case MediusAppPacketIds.TextFilter:
+                                {
+                                    var msg = appMsg as MediusTextFilterRequest;
+
+                                    // Accept everything
+                                    // No filter
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusTextFilterResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            Text = msg.Text
+                                        }
+                                    });
+
                                     break;
                                 }
                             case MediusAppPacketIds.GetBuddyList_ExtraInfo:

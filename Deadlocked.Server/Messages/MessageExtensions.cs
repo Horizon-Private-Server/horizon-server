@@ -23,6 +23,9 @@ namespace Deadlocked.Server.Messages
 
             foreach (var msg in messages)
             {
+                //
+                Console.WriteLine($"Send to <{String.Join(",", clients.Select(x=>x.Client?.ClientAccount?.AccountName))}> || {msg}");
+
                 // Serialize
                 msg.Serialize(out var msgBuffers);
 
@@ -38,7 +41,7 @@ namespace Deadlocked.Server.Messages
             {
                 foreach (var msg in condensedMsgs)
                 {
-                    Console.WriteLine($"!! SEND {client.RemoteEndPoint} !! {BitConverter.ToString(msg)}");
+                    // Console.WriteLine($"!! SEND {client.RemoteEndPoint} !! {BitConverter.ToString(msg)}");
                     client.Send(msg);
                 }
             }
