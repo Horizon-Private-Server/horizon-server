@@ -56,7 +56,7 @@ namespace Deadlocked.Server
 
         public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected);
 
-        public bool ReadyToDestroy => false; // WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 0.1f;
+        public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 1f;
 
         public Game(ClientObject client, MediusCreateGameRequest createGame, DMEObject dmeServer)
         {
@@ -109,11 +109,6 @@ namespace Deadlocked.Server
                 utcTimeEmpty = DateTime.UtcNow;
                 WorldStatus = MediusWorldStatus.WorldClosed;
             }
-
-            // Auto close if host leaves and not in game
-            if (WorldStatus == MediusWorldStatus.WorldStaging || WorldStatus == MediusWorldStatus.WorldPendingCreation || WorldStatus == MediusWorldStatus.WorldPendingConnectToGame)
-                if (Host == null || Host.CurrentGameId != Id)
-                    WorldStatus = MediusWorldStatus.WorldClosed;
         }
 
         public void OnMediusServerConnectNotification(MediusServerConnectNotification notification)
@@ -169,9 +164,11 @@ namespace Deadlocked.Server
         public void OnEndGameReport(MediusEndGameReport report)
         {
             Console.WriteLine($"---------------------------------------");
-            Console.WriteLine($"----- END GAME REPORT {report.MediusWorldID} {GameName} {WorldStatus} -----");
+            Console.WriteLine($"----- END GAME REPORT {GameName} {Id} -----");
+            Console.WriteLine($"----- {report} -----");
             Console.WriteLine($"---------------------------------------");
-            // Clients.Clear();
+
+            WorldStatus = MediusWorldStatus.WorldClosed;
         }
 
 
@@ -203,7 +200,14 @@ namespace Deadlocked.Server
             GenericField6 = report.GenericField6;
             GenericField7 = report.GenericField7;
             GenericField8 = report.GenericField8;
-            WorldStatus = report.WorldStatus;
+
+            // Once the world has been closed then we force it closed.
+            // This is because when the host hits 'Play Again' they tell the server the world has closed (EndGameReport)
+            // but the existing clients tell the server the world is still active.
+            // This gives the host a "Game Name Already Exists" when they try to remake with the same name.
+            // This just fixes that. At the cost of the game not showing after a host leaves a game.
+            if (WorldStatus != MediusWorldStatus.WorldClosed)
+                WorldStatus = report.WorldStatus;
         }
 
         public void EndGame()

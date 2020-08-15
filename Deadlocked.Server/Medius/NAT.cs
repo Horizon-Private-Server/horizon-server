@@ -61,20 +61,17 @@ namespace Deadlocked.Server.Medius
 
         public void Start()
         {
-            return;
             _udpServer.Server(Port);
             _udpServer.OnReceive += OnReceive;
         }
 
         public void Stop()
         {
-            return;
             _udpServer.Stop();
         }
 
         public void Tick()
         {
-            return;
             // 
             _udpServer.ReadAvailable();
         }

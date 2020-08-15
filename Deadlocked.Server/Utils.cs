@@ -212,7 +212,7 @@ namespace Deadlocked.Server
                 case MediusComparisonOperator.LESS_THAN_OR_EQUAL_TO: return lhs <= rhs;
                 case MediusComparisonOperator.NOT_EQUALS: return lhs != rhs;
                 default: return false;
-            }
+            }   
         }
 
         #endregion
