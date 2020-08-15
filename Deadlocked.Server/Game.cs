@@ -47,6 +47,7 @@ namespace Deadlocked.Server
         public MediusWorldAttributesType Attributes;
         public DMEObject DMEServer;
         public Channel ChatChannel;
+        public ClientObject Host;
 
         private DateTime utcTimeCreated;
         private DateTime? utcTimeEmpty;
@@ -55,7 +56,7 @@ namespace Deadlocked.Server
 
         public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected);
 
-        public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 0.1f; // Program.Settings.GameTimeoutSeconds;
+        public bool ReadyToDestroy => false; // WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 0.1f;
 
         public Game(ClientObject client, MediusCreateGameRequest createGame, DMEObject dmeServer)
         {
@@ -85,6 +86,7 @@ namespace Deadlocked.Server
             ChannelId = client.CurrentChannelId;
             ChatChannel = Program.GetChannelById(ChannelId);
             ChatChannel?.RegisterGame(this);
+            Host = client;
         }
 
         public void Tick()
@@ -94,7 +96,7 @@ namespace Deadlocked.Server
             {
                 var client = Clients[i];
 
-                if (client == null || client.Client == null || !client.Client.IsConnected)
+                if (client == null || client.Client == null || !client.Client.IsConnected || client.Client.CurrentGameId != Id)
                 {
                     Clients.RemoveAt(i);
                     --i;
@@ -107,6 +109,11 @@ namespace Deadlocked.Server
                 utcTimeEmpty = DateTime.UtcNow;
                 WorldStatus = MediusWorldStatus.WorldClosed;
             }
+
+            // Auto close if host leaves and not in game
+            if (WorldStatus == MediusWorldStatus.WorldStaging || WorldStatus == MediusWorldStatus.WorldPendingCreation || WorldStatus == MediusWorldStatus.WorldPendingConnectToGame)
+                if (Host == null || Host.CurrentGameId != Id)
+                    WorldStatus = MediusWorldStatus.WorldClosed;
         }
 
         public void OnMediusServerConnectNotification(MediusServerConnectNotification notification)
@@ -161,6 +168,9 @@ namespace Deadlocked.Server
 
         public void OnEndGameReport(MediusEndGameReport report)
         {
+            Console.WriteLine($"---------------------------------------");
+            Console.WriteLine($"----- END GAME REPORT {report.MediusWorldID} {GameName} {WorldStatus} -----");
+            Console.WriteLine($"---------------------------------------");
             // Clients.Clear();
         }
 

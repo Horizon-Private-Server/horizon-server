@@ -354,6 +354,7 @@ namespace Deadlocked.Server.Messages
         CreateGame = 0x2F04,
         GetGameListFilterResponse = 0x3204,
         SetGameListFilter = 0x3304,
+        SetGameListFilterResponse = 0x3404,
         ClearGameListFilter = 0x3104,
         WorldReport = 0x3004,
         GameInfo = 0x3504,

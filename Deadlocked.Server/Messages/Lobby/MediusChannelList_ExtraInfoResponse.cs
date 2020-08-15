@@ -84,10 +84,10 @@ $"PlayerCount:{PlayerCount}" + " " +
 $"MaxPlayers:{MaxPlayers}" + " " +
 $"GameWorldCount:{GameWorldCount}" + " " +
 $"SecurityLevel:{SecurityLevel}" + " " +
-$"GenericField1:{GenericField1}" + " " +
-$"GenericField2:{GenericField2}" + " " +
-$"GenericField3:{GenericField3}" + " " +
-$"GenericField4:{GenericField4}" + " " +
+$"GenericField1:{GenericField1:X8}" + " " +
+$"GenericField2:{GenericField2:X8}" + " " +
+$"GenericField3:{GenericField3:X8}" + " " +
+$"GenericField4:{GenericField4:X8}" + " " +
 $"GenericFieldLevel:{GenericFieldLevel}" + " " +
 $"LobbyName:{LobbyName}" + " " +
 $"EndOfList:{EndOfList}";

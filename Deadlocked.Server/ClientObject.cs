@@ -1,9 +1,12 @@
 ﻿using Deadlocked.Server.Accounts;
 using Deadlocked.Server.Messages;
+using Deadlocked.Server.Messages.Lobby;
 using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 
@@ -19,6 +22,9 @@ namespace Deadlocked.Server
         public MediusUserAction Action { get; set; } = MediusUserAction.KeepAlive;
         public MediusPlayerStatus Status { get; set; } = MediusPlayerStatus.MediusPlayerDisconnected;
 
+
+        private uint gameListFilterIdCounter = 0;
+        public List<GameListFilter> GameListFilters = new List<GameListFilter>();
 
         public Channel CurrentChannel { get; protected set; } = null;
 
@@ -183,6 +189,32 @@ namespace Deadlocked.Server
 
             // Remove reference to account
             ClientAccount = null;
+        }
+
+        public GameListFilter SetGameListFilter(MediusSetGameListFilterRequest request)
+        {
+            GameListFilter result = null;
+
+            GameListFilters.Add(result = new GameListFilter()
+            {
+                FieldID = gameListFilterIdCounter++,
+                Mask = request.Mask,
+                BaselineValue = request.BaselineValue,
+                ComparisonOperator = request.ComparisonOperator,
+                FilterField = request.FilterField
+            });
+
+            return result;
+        }
+
+        public void ClearGameListFilter(uint filterID)
+        {
+            GameListFilters.RemoveAll(x => x.FieldID == filterID);
+        }
+
+        public bool IsGameMatch(Game game)
+        {
+            return !GameListFilters.Any(x => !x.IsMatch(game));
         }
     }
 }

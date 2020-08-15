@@ -249,7 +249,7 @@ namespace Deadlocked.Server.Medius
         public void CreateGame(ClientSocket client, MediusCreateGameRequest request)
         {
             // Ensure the name is unique
-            if (Program.Games.Any(x => x.GameName == request.GameName))
+            if (Program.Games.Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == request.GameName))
             {
                 client.Client.AddLobbyMessage(new RT_MSG_SERVER_APP()
                 {

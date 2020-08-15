@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Deadlocked.Server.Messages;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -194,6 +195,24 @@ namespace Deadlocked.Server
         public static uint GetUnixTime()
         {
             return (uint)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+        }
+
+        #endregion
+
+        #region MediusComparisonOperator
+
+        public static bool Compare(this MediusComparisonOperator op, long lhs, long rhs)
+        {
+            switch (op)
+            {
+                case MediusComparisonOperator.EQUAL_TO: return lhs == rhs;
+                case MediusComparisonOperator.GREATER_THAN: return lhs > rhs;
+                case MediusComparisonOperator.GREATER_THAN_OR_EQUAL_TO: return lhs >= rhs;
+                case MediusComparisonOperator.LESS_THAN: return lhs < rhs;
+                case MediusComparisonOperator.LESS_THAN_OR_EQUAL_TO: return lhs <= rhs;
+                case MediusComparisonOperator.NOT_EQUALS: return lhs != rhs;
+                default: return false;
+            }
         }
 
         #endregion

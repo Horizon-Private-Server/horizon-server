@@ -7,6 +7,7 @@ using Org.BouncyCastle.Crypto.Tls;
 using Org.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -53,6 +54,13 @@ namespace Deadlocked.Server
             Initialize();
 
             int sleepMS = TickMS;
+            string dmeServerPath = null;
+            DateTime lastDMECheck = DateTime.UtcNow;
+
+            if (args.Length > 0)
+                dmeServerPath = args[0];
+
+            Console.WriteLine($"ARGS: {String.Join(" ", args)}");
 
             restart:;
 
@@ -118,6 +126,12 @@ namespace Deadlocked.Server
                     }
                 }
 
+                // Check DME
+                if (dmeServerPath != null && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
+                {
+                    EnsureDMERunning(dmeServerPath);
+                    lastDMECheck = DateTime.UtcNow;
+                }
 
                 Thread.Sleep(sleepMS);
             }
@@ -195,6 +209,42 @@ namespace Deadlocked.Server
             return address;
         }
 
+        /// <summary>
+        /// Ensures that the DME server is running while this is running.
+        /// </summary>
+        static void EnsureDMERunning(string dmePath)
+        {
+            if (!File.Exists(dmePath))
+            {
+                Console.WriteLine($"Unable to find DmeServer binary at {dmePath}");
+                return;
+            }
+
+            var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName.Contains("DmeServer"));
+
+            if (process == null)
+            {
+                Console.WriteLine("Dme Server not running. Starting...");
+
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                {
+                    Process.Start(new ProcessStartInfo()
+                    {
+                        WorkingDirectory = Environment.CurrentDirectory,
+                        FileName = dmePath,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    Process.Start(new ProcessStartInfo()
+                    {
+                        WorkingDirectory = Environment.CurrentDirectory,
+                        FileName = dmePath
+                    });
+                }
+            }
+        }
 
         public static Channel GetChannelById(int channelId)
         {

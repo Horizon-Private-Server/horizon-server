@@ -6,19 +6,16 @@ using System.Text;
 
 namespace Deadlocked.Server.Messages.Lobby
 {
-    [MediusApp(MediusAppPacketIds.GetGameListFilterResponse)]
-    public class MediusGetGameListFilterResponse : BaseLobbyMessage
+    [MediusApp(MediusAppPacketIds.SetGameListFilter)]
+    public class MediusSetGameListFilterRequest : BaseLobbyMessage
     {
 
-        public override MediusAppPacketIds Id => MediusAppPacketIds.GetGameListFilterResponse;
+        public override MediusAppPacketIds Id => MediusAppPacketIds.SetGameListFilter;
 
-        public MediusCallbackStatus StatusCode;
-        public uint FilterID;
         public MediusGameListFilterField FilterField;
         public uint Mask;
         public MediusComparisonOperator ComparisonOperator;
         public int BaselineValue;
-        public bool EndOfList;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -27,14 +24,10 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             reader.ReadBytes(3);
-            StatusCode = reader.Read<MediusCallbackStatus>();
-            FilterID = reader.ReadUInt32();
             FilterField = reader.Read<MediusGameListFilterField>();
             Mask = reader.ReadUInt32();
             ComparisonOperator = reader.Read<MediusComparisonOperator>();
             BaselineValue = reader.ReadInt32();
-            EndOfList = reader.ReadBoolean();
-            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -44,27 +37,20 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             writer.Write(new byte[3]);
-            writer.Write(StatusCode);
-            writer.Write(FilterID);
             writer.Write(FilterField);
             writer.Write(Mask);
             writer.Write(ComparisonOperator);
             writer.Write(BaselineValue);
-            writer.Write(EndOfList);
-            writer.Write(new byte[3]);
         }
 
 
         public override string ToString()
         {
             return base.ToString() + " " +
-             $"StatusCode:{StatusCode}" + " " +
-$"FilterID:{FilterID}" + " " +
-$"FilterField:{FilterField}" + " " +
+             $"FilterField:{FilterField}" + " " +
 $"Mask:{Mask}" + " " +
 $"ComparisonOperator:{ComparisonOperator}" + " " +
-$"BaselineValue:{BaselineValue}" + " " +
-$"EndOfList:{EndOfList}";
+$"BaselineValue:{BaselineValue}";
         }
     }
 }

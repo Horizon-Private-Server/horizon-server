@@ -36,15 +36,13 @@ namespace Deadlocked.Server
         public uint GenericField4 = 0;
         public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
 
-        public bool ReadyToDestroy => Type == ChannelType.Game && (!isAlive || removeChannel);
+        public bool ReadyToDestroy => Type == ChannelType.Game && removeChannel;
         public int PlayerCount => Clients.Count;
         public int GameCount => games.Count;
 
         private List<Game> games = new List<Game>();
         public List<ChannelClient> Clients = new List<ChannelClient>();
-        private DateTime utcTimeLastReport = DateTime.UtcNow;
         private bool removeChannel = false;
-        private bool isAlive => (DateTime.UtcNow - utcTimeLastReport).TotalSeconds < 60;
 
         public Channel()
         {
