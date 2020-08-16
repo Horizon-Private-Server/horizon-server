@@ -66,7 +66,7 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_REQUIRE:
                     {
                         responses.Add(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) });
-                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { IP = (client.RemoteEndPoint as IPEndPoint).Address });
+                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { IP = (client.RemoteEndPoint as IPEndPoint)?.Address });
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP:

@@ -33,7 +33,7 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(IP.ToString(), MediusConstants.IP_MAXLEN);
+            writer.Write(IP?.ToString(), MediusConstants.IP_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
         }

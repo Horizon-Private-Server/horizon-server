@@ -32,9 +32,47 @@ namespace Deadlocked.Server
 
         public bool Connected => _client?.Connected ?? false;
 
-        public EndPoint RemoteEndPoint => _client?.Client.RemoteEndPoint;
+        /// <summary>
+        /// Socket remote endpoint.
+        /// </summary>
+        public EndPoint RemoteEndPoint
+        {
+            get
+            {
+                // This can crash the server when the socket is closed abruptly
+                try
+                {
+                    return _client?.Client.RemoteEndPoint;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
 
-        public EndPoint LocalEndPoint => _client?.Client.LocalEndPoint;
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Socket local endpoint.
+        /// </summary>
+        public EndPoint LocalEndPoint
+        {
+            get
+            {
+                // This can crash the server when the socket is closed abruptly
+                try
+                {
+                    return _client?.Client.LocalEndPoint;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+
+                return null;
+            }
+        }
 
         public void Close()
         {

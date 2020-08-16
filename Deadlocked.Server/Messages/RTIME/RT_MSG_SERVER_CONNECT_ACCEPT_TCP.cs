@@ -47,7 +47,10 @@ namespace Deadlocked.Server.Messages.RTIME
             writer.Write(UNK_05);
             writer.Write(UNK_06);
 
-            writer.Write(IP);
+            if (IP == null)
+                writer.Write(IPAddress.Any);
+            else
+                writer.Write(IP);
         }
     }
 }

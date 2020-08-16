@@ -89,7 +89,7 @@ namespace Deadlocked.Server.Medius
                             UNK_01 = 0,
                             UNK_02 = 0x01,
                             UNK_06 = 0x01,
-                            IP = (client.RemoteEndPoint as IPEndPoint).Address
+                            IP = (client.RemoteEndPoint as IPEndPoint)?.Address
                         });
                         break;
                     }
@@ -163,7 +163,7 @@ namespace Deadlocked.Server.Medius
                                                         {
                                                             //new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
 #if TRUE || RELEASE
-                                                            new NetAddress() { Address = (client.RemoteEndPoint as IPEndPoint).Address.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
+                                                            new NetAddress() { Address = (client.RemoteEndPoint as IPEndPoint)?.Address.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
 #else                                                        
                                                             new NetAddress() { Address = (client.Client as DMEObject).IP.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
 #endif
