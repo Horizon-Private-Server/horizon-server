@@ -102,7 +102,7 @@ namespace Deadlocked.Server.Medius
                                             StatusCode = MediusCallbackStatus.MediusSuccess,
                                             InfoFilter = msg.InfoType,
                                             UniverseID = 1,
-                                            ExtendedInfo = "www.dzo.gg/static/patch.bin",
+                                            ExtendedInfo = "",
                                             UniverseName = "Ratchet: Deadlocked Production",
                                             UniverseDescription = "Ratchet: Deadlocked Production",
                                             DNS = "ratchetdl-prod.pdonline.scea.com",
