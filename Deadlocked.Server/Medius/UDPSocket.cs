@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -31,7 +32,8 @@ namespace Deadlocked.Server.Medius
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             _socket.DontFragment = true;
             _socket.EnableBroadcast = true;
-            _socket.IOControl(SioUdpConnreset, new byte[] { 0 }, null);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                _socket.IOControl(SioUdpConnreset, new byte[] { 0 }, null);
             _socket.Bind(new IPEndPoint(IPAddress.Any, port));
         }
 

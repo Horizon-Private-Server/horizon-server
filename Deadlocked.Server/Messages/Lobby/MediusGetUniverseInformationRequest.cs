@@ -12,7 +12,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
         public override MediusAppPacketIds Id => MediusAppPacketIds.GetUniverseInformation;
 
-        public uint InfoType;
+        public MediusUniverseVariableInformationInfoFilter InfoType;
         public MediusCharacterEncodingType CharacterEncoding;
         public MediusLanguageType Language;
 
@@ -23,7 +23,7 @@ namespace Deadlocked.Server.Messages.Lobby
 
             // 
             reader.ReadBytes(3);
-            InfoType = reader.ReadUInt32();
+            InfoType = reader.Read<MediusUniverseVariableInformationInfoFilter>();
             CharacterEncoding = reader.Read<MediusCharacterEncodingType>();
             Language = reader.Read<MediusLanguageType>();
         }

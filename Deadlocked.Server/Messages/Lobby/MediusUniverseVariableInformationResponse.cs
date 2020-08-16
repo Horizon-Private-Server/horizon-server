@@ -13,7 +13,7 @@ namespace Deadlocked.Server.Messages.Lobby
         public override MediusAppPacketIds Id => MediusAppPacketIds.UniverseVariableInformationResponse;
 
         public MediusCallbackStatus StatusCode;
-        public uint InfoFilter;
+        public MediusUniverseVariableInformationInfoFilter InfoFilter;
         public uint UniverseID;
         public string UniverseName; // UNIVERSENAME_MAXLEN
         public string DNS; // UNIVERSEDNS_MAXLEN
@@ -34,21 +34,47 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Deserialize(reader);
 
             // 
-            reader.ReadBytes(3);
+            //reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
-            InfoFilter = reader.ReadUInt32();
-            UniverseID = reader.ReadUInt32();
-            UniverseName = reader.ReadString(MediusConstants.UNIVERSENAME_MAXLEN);
-            DNS = reader.ReadString(MediusConstants.UNIVERSEDNS_MAXLEN);
-            Port = reader.ReadInt32();
-            UniverseDescription = reader.ReadString(MediusConstants.UNIVERSEDESCRIPTION_MAXLEN);
-            Status = reader.ReadInt32();
-            UserCount = reader.ReadInt32();
-            MaxUsers = reader.ReadInt32();
-            UniverseBilling = reader.ReadString(MediusConstants.UNIVERSE_BSP_MAXLEN);
-            BillingSystemName = reader.ReadString(MediusConstants.UNIVERSE_BSP_NAME_MAXLEN);
-            ExtendedInfo = reader.ReadString(MediusConstants.UNIVERSE_EXTENDED_INFO_MAXLEN);
-            SvoURL = reader.ReadString(MediusConstants.UNIVERSE_SVO_URL_MAXLEN);
+            InfoFilter = reader.Read<MediusUniverseVariableInformationInfoFilter>();
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_ID))
+                UniverseID = reader.ReadUInt32();
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_NAME))
+                UniverseName = reader.ReadString(MediusConstants.UNIVERSENAME_MAXLEN);
+
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DNS))
+            {
+                DNS = reader.ReadString(MediusConstants.UNIVERSEDNS_MAXLEN);
+                Port = reader.ReadInt32();
+            }
+
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DESCRIPTION))
+                UniverseDescription = reader.ReadString(MediusConstants.UNIVERSEDESCRIPTION_MAXLEN);
+
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_STATUS))
+            {
+                Status = reader.ReadInt32();
+                UserCount = reader.ReadInt32();
+                MaxUsers = reader.ReadInt32();
+            }
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_BILLING))
+            {
+                UniverseBilling = reader.ReadString(MediusConstants.UNIVERSE_BSP_MAXLEN);
+                BillingSystemName = reader.ReadString(MediusConstants.UNIVERSE_BSP_NAME_MAXLEN);
+            }
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_EXTRAINFO))
+                ExtendedInfo = reader.ReadString(MediusConstants.UNIVERSE_EXTENDED_INFO_MAXLEN);
+
+            //if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+            //    SvoURL = reader.ReadString(MediusConstants.UNIVERSE_SVO_URL_MAXLEN);
+
             EndOfList = reader.ReadBoolean();
         }
 
@@ -58,22 +84,47 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(new byte[3]);
+            //writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(InfoFilter);
-            writer.Write(UniverseID);
-            writer.Write(UniverseName, MediusConstants.UNIVERSENAME_MAXLEN);
-            writer.Write(DNS, MediusConstants.UNIVERSEDNS_MAXLEN);
-            writer.Write(Port);
-            writer.Write(UniverseDescription, MediusConstants.UNIVERSEDESCRIPTION_MAXLEN);
-            writer.Write(Status);
-            writer.Write(UserCount);
-            writer.Write(MaxUsers);
-            writer.Write(UniverseBilling, MediusConstants.UNIVERSE_BSP_MAXLEN);
-            writer.Write(BillingSystemName, MediusConstants.UNIVERSE_BSP_NAME_MAXLEN);
-            writer.Write(ExtendedInfo, MediusConstants.UNIVERSE_EXTENDED_INFO_MAXLEN);
-            writer.Write(SvoURL, MediusConstants.UNIVERSE_SVO_URL_MAXLEN);
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_ID))
+                writer.Write(UniverseID);
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_NAME))
+                writer.Write(UniverseName, MediusConstants.UNIVERSENAME_MAXLEN);
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DNS))
+            {
+                writer.Write(DNS, MediusConstants.UNIVERSEDNS_MAXLEN);
+                writer.Write(Port);
+            }
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DESCRIPTION))
+                writer.Write(UniverseDescription, MediusConstants.UNIVERSEDESCRIPTION_MAXLEN);
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_STATUS))
+            {
+                writer.Write(Status);
+                writer.Write(UserCount);
+                writer.Write(MaxUsers);
+            }
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_BILLING))
+            {
+                writer.Write(UniverseBilling, MediusConstants.UNIVERSE_BSP_MAXLEN);
+                writer.Write(BillingSystemName, MediusConstants.UNIVERSE_BSP_NAME_MAXLEN);
+            }
+
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_EXTRAINFO))
+                writer.Write(ExtendedInfo, MediusConstants.UNIVERSE_EXTENDED_INFO_MAXLEN);
+
+            //if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+            //    writer.Write(SvoURL, MediusConstants.UNIVERSE_SVO_URL_MAXLEN);
+
+
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
         }
 
 

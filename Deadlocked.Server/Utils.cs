@@ -204,6 +204,15 @@ namespace Deadlocked.Server
 
         #endregion
 
+        #region MediusUniverseVariableInformationInfoFilter
+
+        public static bool IsSet(this MediusUniverseVariableInformationInfoFilter value, MediusUniverseVariableInformationInfoFilter filter)
+        {
+            return (value & filter) == filter;
+        }
+
+        #endregion
+
         #region MediusComparisonOperator
 
         public static bool Compare(this MediusComparisonOperator op, long lhs, long rhs)

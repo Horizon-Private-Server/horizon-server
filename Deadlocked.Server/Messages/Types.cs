@@ -689,6 +689,33 @@ namespace Deadlocked.Server.Messages
         ClientStatusJoinedSessionMaster,
     }
 
+    [Flags]
+    public enum MediusUniverseVariableInformationInfoFilter : uint
+    {
+        INFO_UNIVERSES = (1 << 0),     ///< Get the universe list.
+        // Standard info regarding universes
+        // (*** Deprecated in v1.50 ***)
+        INFO_NEWS = (1 << 1),     ///< Get the universe news.
+        // Returns News
+        INFO_ID = (1 << 2),     ///< Get the universe ID
+        // Include universe id
+        INFO_NAME = (1 << 3),     ///< Get the universe name
+        // Include universe name
+        INFO_DNS = (1 << 4),     ///< Get the universe DNS entry point
+        // Include universe dns/port
+        INFO_DESCRIPTION = (1 << 5),     ///< Get the universe description.
+        // Include universe description
+        INFO_STATUS = (1 << 6),     ///< Get the universe status
+        // Include universe status/player/max
+        INFO_BILLING = (1 << 7),     ///< Get the universe biling information.
+        // Include universe bsp/bsp name
+        INFO_EXTRAINFO = (1 << 8),     ///< Get the universe extra info.
+        // Include universe extra info
+        INFO_SVO_URL = (1 << 9),     ///< Get the universe SVO URL.
+                                          // Include universe SVO URL
+
+    }
+
     public class NetAddress : IStreamSerializer
     {
         /**

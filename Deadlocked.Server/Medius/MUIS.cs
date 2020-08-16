@@ -14,7 +14,7 @@ namespace Deadlocked.Server.Medius
 {
     public class MUIS : BaseMediusComponent
     {
-        public override int Port => 10071;
+        public override int Port => 10080;
 
         public MUIS()
         {
@@ -88,9 +88,35 @@ namespace Deadlocked.Server.Medius
                         {
                             case MediusAppPacketIds.GetUniverseInformation:
                                 {
+                                    var msg = appMsg as MediusGetUniverseInformationRequest;
+
+                                    // 
                                     responses.Add(new RT_MSG_SERVER_APP() { AppMessage = new MediusUniverseVariableSvoURLResponse() { Result = 1 } });
-                                    responses.Add(new RT_MSG_SERVER_APP() { AppMessage = new RawAppMessage(0x0200) { Contents = Utils.FromString("0411E8010200000000000000A602000000000000310000000000000000000000000000000000000000000000003C03000001000000526174636865743A20446561646C6F636B65642050726F64756374696F6E000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000072617463686574646C2D70726F642E70646F6E6C696E652E736365612E636F6D0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005B270000526174636865743A20446561646C6F636B65642050726F64756374696F6E000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000") } });
-                                    responses.Add(new RT_MSG_SERVER_APP() { AppMessage = new RawAppMessage(0x0200) { Contents = Utils.FromString("0411BE000200010000000000A6020000E801000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001") } });
+
+                                    // 
+                                    responses.Add(new RT_MSG_SERVER_APP()
+                                    {
+                                        AppMessage = new MediusUniverseVariableInformationResponse()
+                                        {
+                                            MessageID = msg.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            InfoFilter = msg.InfoType,
+                                            UniverseID = 1,
+                                            ExtendedInfo = "www.dzo.gg/static/patch.bin",
+                                            UniverseName = "Ratchet: Deadlocked Production",
+                                            UniverseDescription = "Ratchet: Deadlocked Production",
+                                            DNS = "ratchetdl-prod.pdonline.scea.com",
+                                            // DNS = "randc-deadlocked.online.scee.com",
+                                            Port = Program.AuthenticationServer.Port,
+                                            EndOfList = true
+                                        }
+                                    });
+                                    
+                                    break;
+                                }
+                            default:
+                                {
+                                    Console.WriteLine($"UNHANDLED APP MESSAGE ID: {appMsg.Id}");
                                     break;
                                 }
                         }
@@ -106,6 +132,12 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT_WITH_REASON:
                     {
                         client.Disconnect();
+                        break;
+                    }
+                default:
+                    {
+                        Console.WriteLine($"UNHANDLED MESSAGE ID: {message.Id}");
+
                         break;
                     }
             }
