@@ -1234,6 +1234,8 @@ namespace Deadlocked.Server.Medius
                                     var gameList = Program.Games
                                         .Where(x => x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging)
                                         .Where(x => client.Client.IsGameMatch(x))
+                                        .Skip(msg.PageID * msg.PageSize)
+                                        .Take(msg.PageSize)
                                         .Select(x => new MediusGameList_ExtraInfoResponse()
                                         {
                                             MessageID = msg.MessageID,
@@ -1407,14 +1409,16 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.ChannelList:
                                 {
                                     var msg = appMsg as MediusChannelListRequest;
-                                    var gameChannels = Program.Channels.Where(x => x.Type == ChannelType.Game);
                                     List<MediusChannelListResponse> channelResponses = new List<MediusChannelListResponse>();
+
+
+                                    var gameChannels = Program.Channels
+                                        .Where(x => x.Type == ChannelType.Game)
+                                        .Skip(msg.PageID * msg.PageSize)
+                                        .Take(msg.PageSize);
 
                                     foreach (var channel in gameChannels)
                                     {
-                                        if (channel.Type != ChannelType.Game)
-                                            continue;
-
                                         channelResponses.Add(new MediusChannelListResponse()
                                         {
                                             MessageID = msg.MessageID,
@@ -1454,11 +1458,15 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.ChannelList_ExtraInfo:
                                 {
                                     var msg = appMsg as MediusChannelList_ExtraInfoRequest;
+                                    List<MediusChannelList_ExtraInfoResponse> channelResponses = new List<MediusChannelList_ExtraInfoResponse>();
+
 
                                     // Deadlocked only uses this to connect to a non-game channel (lobby)
                                     // So we'll filter by lobby here
-                                    var channels = Program.Channels.Where(x => x.Type == ChannelType.Lobby);
-                                    List<MediusChannelList_ExtraInfoResponse> channelResponses = new List<MediusChannelList_ExtraInfoResponse>();
+                                    var channels = Program.Channels
+                                        .Where(x => x.Type == ChannelType.Lobby)
+                                        .Skip(msg.PageID * msg.PageSize)
+                                        .Take(msg.PageSize);
 
                                     foreach (var channel in channels)
                                     {
