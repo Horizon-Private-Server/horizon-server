@@ -1234,7 +1234,7 @@ namespace Deadlocked.Server.Medius
                                     var gameList = Program.Games
                                         .Where(x => x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging)
                                         .Where(x => client.Client.IsGameMatch(x))
-                                        .Skip(msg.PageID * msg.PageSize)
+                                        .Skip((msg.PageID - 1) * msg.PageSize)
                                         .Take(msg.PageSize)
                                         .Select(x => new MediusGameList_ExtraInfoResponse()
                                         {
@@ -1414,7 +1414,7 @@ namespace Deadlocked.Server.Medius
 
                                     var gameChannels = Program.Channels
                                         .Where(x => x.Type == ChannelType.Game)
-                                        .Skip(msg.PageID * msg.PageSize)
+                                        .Skip((msg.PageID - 1) * msg.PageSize)
                                         .Take(msg.PageSize);
 
                                     foreach (var channel in gameChannels)
@@ -1465,7 +1465,7 @@ namespace Deadlocked.Server.Medius
                                     // So we'll filter by lobby here
                                     var channels = Program.Channels
                                         .Where(x => x.Type == ChannelType.Lobby)
-                                        .Skip(msg.PageID * msg.PageSize)
+                                        .Skip((msg.PageID - 1) * msg.PageSize)
                                         .Take(msg.PageSize);
 
                                     foreach (var channel in channels)
