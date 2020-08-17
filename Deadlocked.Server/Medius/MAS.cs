@@ -373,7 +373,8 @@ namespace Deadlocked.Server.Medius
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
                                                         {
                                                             new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                                            new NetAddress() { AddressType = NetAddressType.NetAddressNone}
+                                                            //new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
                                                         }
                                                 },
                                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
@@ -455,10 +456,11 @@ namespace Deadlocked.Server.Medius
                                                     ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
                                                     AddressList = new NetAddressList()
                                                     {
-                                                        AddressList = new  NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                                        AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
                                                         {
                                                             new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                                            new NetAddress() { AddressType = NetAddressType.NetAddressNone}
+                                                            //new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
                                                         }
                                                     },
                                                     Type = NetConnectionType.NetConnectionTypeClientServerTCP
