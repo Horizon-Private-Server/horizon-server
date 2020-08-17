@@ -34,7 +34,6 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Deserialize(reader);
 
             // 
-            //reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             InfoFilter = reader.Read<MediusUniverseVariableInformationInfoFilter>();
 
@@ -84,7 +83,6 @@ namespace Deadlocked.Server.Messages.Lobby
             base.Serialize(writer);
 
             // 
-            //writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(InfoFilter);
 
@@ -124,7 +122,6 @@ namespace Deadlocked.Server.Messages.Lobby
 
 
             writer.Write(EndOfList);
-            writer.Write(new byte[3]);
         }
 
 

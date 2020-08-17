@@ -6,6 +6,7 @@ using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -71,7 +72,7 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_REQUIRE:
                     {
                         responses.Add(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) });
-                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { UNK_02 = 0x0A, UNK_03 = 0x00, IP = (client.RemoteEndPoint as IPEndPoint)?.Address });
+                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { UNK_02 = 0x00, UNK_03 = 0x00, IP = (client.RemoteEndPoint as IPEndPoint)?.Address });
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP:

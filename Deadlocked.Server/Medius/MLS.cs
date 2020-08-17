@@ -6,6 +6,7 @@ using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -17,28 +18,6 @@ namespace Deadlocked.Server.Medius
     public class MLS : BaseMediusComponent
     {
         public override int Port => Program.Settings.MLSPort;
-        private DateTime ticker = DateTime.UtcNow;
-
-        static string[] INIT_1D_MESSAGES =
-        {
-            "05CDFA00000000080000010000BC9E77B0DC8DDCB08E41C4F637BDDEC9",
-            "05CEFA000078100F00000100001FB479EDE006BE04AA78E639C51FD6F0",
-            "05CFFA000000000C0000010000B5CEA072FCA3BF08C0A05EFA2106A1BE",
-            "05D0FA0000000008000001000093E29AF5051FE14BA91ED2FF17E3C4C4",
-            "05D1FA00000000080000010000BBCBDF273A184FE4BA735F867C25B7B2",
-            "05D2FA000000000800000100000DA0152F16F5184C215A9B5C40299B5F",
-            "05D3FA000000000C0000010000B17C90678DD09703C4AF77CDD5456424",
-            "05D4FA000000000C00000100000DFD1196CE9E1219BFEAB4ED042CCEEE",
-            "05D5FA000000000C0000010000898375D0A30EB86BC4A3A26E80CF675A",
-            "05D6FA000000000C0000010000BFAC60651325AEC1A077262A6AB8312B",
-            "05D7FA000000000C0000010000388DED87E97AF868F663C2B68F7028A5",
-            "05D8FA000000000C0000010000EB12D96C966BB1C50C3D3881138B1306",
-            "05D9FA000000000C000001000077183CF0128767D38DF9E6DE76B424CE",
-            "05DAFA000000000C0000010000636220336C2301E4992F8D98C36A2A06",
-            "05DBFA00000000080000010000A83C2C4AAFC257FF70C03C61F3C71C0F",
-            "05DCFA00000001080000010000170FB1AF29A2A732AFEEA35A5E187E59",
-            "05DDFA00008000080000010000D8360E93C93E708830F92BDF46D3AFC2"
-        };
 
         public MLS()
         {
@@ -59,30 +38,6 @@ namespace Deadlocked.Server.Medius
             // 
             foreach (var msg in recv)
                 HandleCommand(msg, client, ref responses);
-
-
-            if (false && (DateTime.UtcNow - ticker).TotalSeconds > 1)
-            {
-                ticker = DateTime.UtcNow;
-
-                // Enable form party
-                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_MEMORY_POKE)
-                {
-                    Contents = Utils.FromString("24 57 36 01 04 00 00 00 04 00 00 00".Replace(" ", ""))
-                });
-
-                // Add game mode count
-                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_MEMORY_POKE)
-                {
-                    Contents = Utils.FromString("58 79 2A 01 01 00 00 00 06".Replace(" ", ""))
-                });
-
-                // Set infected
-                responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_MEMORY_POKE)
-                {
-                    Contents = Utils.FromString("EC 7A 2A 01 09 00 00 00 49 6E 66 65 63 74 65 64 00".Replace(" ", ""))
-                });
-            }
 
             // 
             var targetMsgs = client.Client?.PullLobbyMessages();
@@ -153,61 +108,6 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_CHEAT_QUERY:
                     {
-                        break;
-                        int id1D = (message as RT_MSG_SERVER_CHEAT_QUERY).UNK_01;
-                        int off1D = id1D - 0xCC;
-                        switch (id1D)
-                        {
-                            case 0xCD:
-                                {
-                                    //responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_APP)
-                                    //{
-                                    //    Contents = Utils.FromString("0132303030303030303000000000000000000000000000000000000000004261646765723431000000000000000000000000000000000000000000000000B02B0000020000000100000000000000A3010000390300004E070000AF050000E3020000610400000000000000010000B454040008D800005AF4000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-                                    //});
-                                    //responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_APP)
-                                    //{
-                                    //    Contents = Utils.FromString("01D73100000000000000000000000000000000000000000000000000000063B2090053686F756C642049205472793F00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-                                    //});
-
-                                    if (off1D > client.ComponentState)
-                                        client.ComponentState = off1D;
-
-                                    // 05CEFA000078100F00000100001FB479EDE006BE04AA78E639C51FD6F0
-                                    responses.Add(new RT_MSG_SERVER_CHEAT_QUERY()
-                                    {
-                                        UNK_00 = 0x05,
-                                        UNK_01 = 0xCE,
-                                        UNK_02 = 0xFA,
-                                        UNK_05 = 0x1078,
-                                        UNK_07 = 0x000F,
-                                        UNK_09 = 0x0100,
-                                        UNK_0D = Utils.FromString("1FB479EDE006BE04AA78E639C51FD6F0")
-                                    });
-                                    break;
-                                }
-                            case 0xCE:
-                                {
-                                    if (off1D > client.ComponentState)
-                                        client.ComponentState = off1D;
-
-                                    responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_CHEAT_QUERY)
-                                    {
-                                        Contents = Utils.FromString(INIT_1D_MESSAGES[client.ComponentState])
-                                    });
-                                    break;
-                                }
-                            case 0xCF:
-                                {
-                                    if (off1D > client.ComponentState)
-                                        client.ComponentState = off1D;
-
-                                    responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_SERVER_CHEAT_QUERY)
-                                    {
-                                        Contents = Utils.FromString(INIT_1D_MESSAGES[client.ComponentState])
-                                    });
-                                    break;
-                                }
-                        }
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
@@ -361,14 +261,17 @@ namespace Deadlocked.Server.Medius
                                 }
                             case MediusAppPacketIds.GenericChatSetFilterRequest:
                                 {
+                                    var msg = appMsg as MediusGenericChatSetFilterRequest;
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusGenericChatSetFilterResponse()
                                         {
+                                            MessageID = msg.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusSuccess,
                                             ChatFilter = new MediusGenericChatFilter()
                                             {
-                                                GenericChatFilterBitfield = Utils.FromString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+                                                GenericChatFilterBitfield = msg.GenericChatFilter.GenericChatFilterBitfield
                                             }
                                         }
                                     });
@@ -376,10 +279,13 @@ namespace Deadlocked.Server.Medius
                                 }
                             case MediusAppPacketIds.SetAutoChatHistoryRequest:
                                 {
+                                    var msg = appMsg as MediusSetAutoChatHistoryRequest;
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusSetAutoChatHistoryResponse()
                                         {
+                                            MessageID = msg.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusSuccess
                                         }
                                     });
@@ -402,10 +308,13 @@ namespace Deadlocked.Server.Medius
                                 }
                             case MediusAppPacketIds.GetAllAnnouncements:
                                 {
+                                    var msg = appMsg as MediusGetAllAnnouncementsRequest;
+
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusGetAnnouncementsResponse()
                                         {
+                                            MessageID = msg.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusSuccess,
                                             Announcement = Program.Settings.Announcement,
                                             AnnouncementID = 0,
@@ -493,6 +402,7 @@ namespace Deadlocked.Server.Medius
                                 }
                             case MediusAppPacketIds.FileDownload:
                                 {
+                                    break;
                                     var fileDownloadReq = appMsg as MediusFileDownloadRequest;
 
                                     // stats maybe?
@@ -1014,7 +924,7 @@ namespace Deadlocked.Server.Medius
                                     var policyReq = appMsg as MediusGetPolicyRequest;
                                     string policyText = policyReq.Policy == MediusPolicyType.Privacy ? Program.Settings.PrivacyPolicy : Program.Settings.UsagePolicy;
 
-                                    responses.AddRange(MediusGetPolicyResponse.FromText(policyText).Select(x => new RT_MSG_SERVER_APP() { AppMessage = x }));
+                                    responses.AddRange(MediusGetPolicyResponse.FromText(policyReq.MessageID, policyText).Select(x => new RT_MSG_SERVER_APP() { AppMessage = x }));
                                     break;
                                 }
                             case MediusAppPacketIds.CreateChannel:

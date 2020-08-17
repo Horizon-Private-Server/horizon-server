@@ -26,6 +26,7 @@ namespace Deadlocked.Server.Messages.Lobby
             StatusCode = reader.Read<MediusCallbackStatus>();
             Policy = reader.ReadString(MediusConstants.POLICY_MAXLEN);
             EndOfText = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -38,6 +39,7 @@ namespace Deadlocked.Server.Messages.Lobby
             writer.Write(StatusCode);
             writer.Write(Policy, MediusConstants.POLICY_MAXLEN);
             writer.Write(EndOfText);
+            writer.Write(new byte[3]);
         }
 
 
@@ -49,7 +51,7 @@ $"Policy:{Policy}" + " " +
 $"EndOfText:{EndOfText}";
         }
 
-        public static List<MediusGetPolicyResponse> FromText(string policy)
+        public static List<MediusGetPolicyResponse> FromText(string messageId, string policy)
         {
             List<MediusGetPolicyResponse> policies = new List<MediusGetPolicyResponse>();
             int i = 0;
@@ -64,6 +66,7 @@ $"EndOfText:{EndOfText}";
                 // Add policy subtext
                 policies.Add(new MediusGetPolicyResponse()
                 {
+                    MessageID = messageId,
                     StatusCode = MediusCallbackStatus.MediusSuccess,
                     Policy = policy.Substring(i, len)
                 });
