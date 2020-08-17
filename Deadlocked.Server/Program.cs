@@ -219,16 +219,6 @@ namespace Deadlocked.Server
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
-
-            // Determine server ip
-            if (!String.IsNullOrEmpty(Settings.ServerIpOverride))
-            {
-                SERVER_IP = IPAddress.Parse(Settings.ServerIpOverride);
-            }
-            else
-            {
-                SERVER_IP = IPAddress.Parse(GetIPAddress());
-            }
         }
 
         /// <summary>
