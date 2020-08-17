@@ -53,7 +53,7 @@ namespace Deadlocked.Server.Messages.RTIME
             return base.ToString() + " " +
                 $"ARG1:{ARG1:X8} " +
                 $"ARG2:{ARG2:X8} " +
-                $"UNK:{BitConverter.ToString(UNK)}";
+                $"UNK:{(UNK == null ? "null" : BitConverter.ToString(UNK))}";
         }
     }
 }

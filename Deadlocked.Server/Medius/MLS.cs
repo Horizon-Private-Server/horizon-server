@@ -1791,7 +1791,7 @@ namespace Deadlocked.Server.Medius
                                                                 {
                                                                     OriginatorAccountID = 0,
                                                                     OriginatorAccountName = "SYSTEM",
-                                                                    Message = $"APlayer {client.Client?.ClientAccount?.AccountName ?? "ERROR"} rolled " + RNG.Next(0, 100).ToString(),
+                                                                    Message = $"A{client.Client?.ClientAccount?.AccountName ?? "ERROR"} rolled " + RNG.Next(0, 100).ToString(),
                                                                     MessageType = genericChatMessage.MessageType,
                                                                     TimeStamp = Utils.GetUnixTime()
                                                                 }
