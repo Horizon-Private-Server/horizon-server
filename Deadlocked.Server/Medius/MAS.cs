@@ -46,11 +46,9 @@ namespace Deadlocked.Server.Medius
 
         protected override int HandleCommand(BaseMessage message, ClientSocket client, ref List<BaseMessage> responses)
         {
-            List<BaseMessage> msgs = null;
-
-            // 
-            if (message.Id != RT_MSG_TYPE.RT_MSG_CLIENT_ECHO)
-                Console.WriteLine(message.ToString());
+            // Log if id is set
+            if (Program.Settings.IsLog(message.Id))
+                Console.WriteLine($"MAS {client}: {message}");
 
             // 
             switch (message.Id)

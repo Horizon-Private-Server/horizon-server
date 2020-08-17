@@ -122,5 +122,13 @@ namespace Deadlocked.Server
 
         #endregion
 
+        public override string ToString()
+        {
+            if (Client?.ClientAccount != null)
+                return Client.ClientAccount.AccountName;
+            else
+                return RemoteEndPoint?.ToString();
+        }
+
     }
 }

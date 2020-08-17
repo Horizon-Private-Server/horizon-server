@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Deadlocked.Server.Messages;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace Deadlocked.Server.Config
@@ -88,5 +91,50 @@ namespace Deadlocked.Server.Config
         /// When set, all DME servers will receive this ip. This bypasses how the DME handles local network servers.
         /// </summary>
         public string DmeIpOverride { get; set; } = null;
+
+        /// <summary>
+        /// Path to the dme binary.
+        /// </summary>
+        public string DmeStartPath { get; set; } = null;
+
+        /// <summary>
+        /// Whether or not to restart the DME server when it is no longer running.
+        /// </summary>
+        public bool DmeRestartOnCrash { get; set; } = false;
+
+        /// <summary>
+        /// Collection of RT messages to print out
+        /// </summary>
+        public string[] RtLogFilter { get; set; } = Enum.GetNames(typeof(RT_MSG_TYPE));
+
+
+        private Dictionary<RT_MSG_TYPE, bool> _rtLogFilters = new Dictionary<RT_MSG_TYPE, bool>();
+
+
+        /// <summary>
+        /// Whether or not the given rt message id should be logged
+        /// </summary>
+        public bool IsLog(RT_MSG_TYPE msgId)
+        {
+            if (_rtLogFilters.TryGetValue(msgId, out var result))
+                return result;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Does some post processing on the deserialized model.
+        /// </summary>
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            // Load rt log filters in dictionary
+            _rtLogFilters.Clear();
+            if (RtLogFilter != null)
+            {
+                foreach (var filter in RtLogFilter)
+                    _rtLogFilters.Add((RT_MSG_TYPE)Enum.Parse(typeof(RT_MSG_TYPE), filter), true);
+            }
+        }
     }
 }

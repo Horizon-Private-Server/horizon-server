@@ -98,9 +98,9 @@ namespace Deadlocked.Server.Medius
 
         protected override int HandleCommand(BaseMessage message, ClientSocket client, ref List<BaseMessage> responses)
         {
-            // 
-            if (message.Id != RT_MSG_TYPE.RT_MSG_CLIENT_ECHO && message.Id != RT_MSG_TYPE.RT_MSG_SERVER_ECHO)
-                Console.WriteLine($"MLS {client?.Client?.ClientAccount?.AccountName}: " + message.ToString());
+            // Log if id is set
+            if (Program.Settings.IsLog(message.Id))
+                Console.WriteLine($"MLS {client}: {message}");
 
             // 
             switch (message.Id)

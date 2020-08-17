@@ -40,10 +40,9 @@ namespace Deadlocked.Server.Medius
 
         protected override int HandleCommand(BaseMessage message, ClientSocket client, ref List<BaseMessage> responses)
         {
-            List<BaseMessage> msgs = null;
-
-            // 
-            Console.WriteLine(message.ToString());
+            // Log if id is set
+            if (Program.Settings.IsLog(message.Id))
+                Console.WriteLine($"MUIS {client}: {message}");
 
             // 
             switch (message.Id)

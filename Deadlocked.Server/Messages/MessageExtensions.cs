@@ -23,8 +23,9 @@ namespace Deadlocked.Server.Messages
 
             foreach (var msg in messages)
             {
-                //
-                Console.WriteLine($"Send to <{String.Join(",", clients.Select(x=>x.Client?.ClientAccount?.AccountName))}> || {msg}");
+                // Log if id is set
+                if (Program.Settings.IsLog(msg.Id))
+                    Console.WriteLine($"Send to <{String.Join(",", clients.Select(x => x.ToString()))}>: {msg}");
 
                 // Serialize
                 msg.Serialize(out var msgBuffers);

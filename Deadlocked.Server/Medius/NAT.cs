@@ -33,7 +33,8 @@ namespace Deadlocked.Server.Medius
 
         public void OnReceive(IPEndPoint source, byte[] buffer)
         {
-            Console.WriteLine($"!!! NAT !!! NEW MSG {source} {BitConverter.ToString(buffer)}");
+            // Log if id is set
+            Console.WriteLine($"NAT {source}: {BitConverter.ToString(buffer)}");
 
             var client = _clients.FirstOrDefault(x => x.EndPoint.Equals(source));
             if (client == null)

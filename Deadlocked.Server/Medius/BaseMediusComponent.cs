@@ -41,7 +41,7 @@ namespace Deadlocked.Server.Medius
                     while (true)
                     {
                         var client = new ClientSocket(Listener.AcceptTcpClient());
-                        Console.WriteLine($"Connection accepted on port {Port}.");
+                        // Console.WriteLine($"Connection accepted on port {Port}.");
                         lock (Clients)
                         {
                             Clients.Add(client);
@@ -80,6 +80,14 @@ namespace Deadlocked.Server.Medius
             {
                 byte[] buffer = new byte[size];
                 Array.Copy(data, 0, buffer, 0, size);
+
+                // Check for PING-PONG message
+                if (size == 4 && Encoding.UTF8.GetString(buffer) == "PING")
+                {
+                    client.Send(Encoding.UTF8.GetBytes("PONG"));
+                    client.Close();
+                    return;
+                }
 
                 var msgs = BaseMessage.Instantiate(buffer, (id, context) =>
                 {

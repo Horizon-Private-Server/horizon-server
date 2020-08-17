@@ -54,16 +54,8 @@ namespace Deadlocked.Server
             Initialize();
 
             int sleepMS = TickMS;
-            string dmeServerPath = null;
             DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
-
-            if (args.Length > 0)
-                dmeServerPath = args[0];
-
-            Console.WriteLine($"ARGS: {String.Join(" ", args)}");
-
-            restart:;
 
             Console.WriteLine("Starting medius components...");
 
@@ -142,9 +134,9 @@ namespace Deadlocked.Server
                 }
 
                 // Check DME
-                if (dmeServerPath != null && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
+                if (Program.Settings.DmeRestartOnCrash && !string.IsNullOrEmpty(Program.Settings.DmeStartPath) && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
                 {
-                    EnsureDMERunning(dmeServerPath);
+                    EnsureDMERunning(Program.Settings.DmeStartPath);
                     lastDMECheck = DateTime.UtcNow;
                 }
 
