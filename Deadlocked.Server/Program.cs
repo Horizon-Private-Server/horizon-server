@@ -56,6 +56,7 @@ namespace Deadlocked.Server
             int sleepMS = TickMS;
             string dmeServerPath = null;
             DateTime lastDMECheck = DateTime.UtcNow;
+            DateTime lastConfigRefresh = DateTime.UtcNow;
 
             if (args.Length > 0)
                 dmeServerPath = args[0];
@@ -66,11 +67,25 @@ namespace Deadlocked.Server
 
             Console.WriteLine("Starting medius components...");
 
+            Console.WriteLine($"Starting MUIS on port {UniverseInfoServer.Port}.");
             UniverseInfoServer.Start();
+            Console.WriteLine($"MUIS started.");
+
+            Console.WriteLine($"Starting MAS on port {AuthenticationServer.Port}.");
             AuthenticationServer.Start();
+            Console.WriteLine($"MUIS started.");
+
+            Console.WriteLine($"Starting MLS on port {LobbyServer.Port}.");
             LobbyServer.Start();
+            Console.WriteLine($"MUIS started.");
+
+            Console.WriteLine($"Starting MPS on port {ProxyServer.Port}.");
             ProxyServer.Start();
+            Console.WriteLine($"MUIS started.");
+
+            Console.WriteLine($"Starting NAT on port {NATServer.Port}.");
             NATServer.Start();
+            Console.WriteLine($"MUIS started.");
 
             // 
             Console.WriteLine("Started.");
@@ -133,6 +148,13 @@ namespace Deadlocked.Server
                     lastDMECheck = DateTime.UtcNow;
                 }
 
+                // Reload config
+                if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                {
+                    RefreshConfig();
+                    lastConfigRefresh = DateTime.UtcNow;
+                }
+
                 Thread.Sleep(sleepMS);
             }
         }
@@ -186,6 +208,35 @@ namespace Deadlocked.Server
                 Name = "Default",
                 Type = ChannelType.Lobby
             });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        static void RefreshConfig()
+        {
+            // 
+            var serializerSettings = new JsonSerializerSettings()
+            {
+                MissingMemberHandling = MissingMemberHandling.Ignore
+            };
+
+            // Load settings
+            if (File.Exists(CONFIG_FILE))
+            {
+                // Populate existing object
+                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
+            }
+
+            // Determine server ip
+            if (!String.IsNullOrEmpty(Settings.ServerIpOverride))
+            {
+                SERVER_IP = IPAddress.Parse(Settings.ServerIpOverride);
+            }
+            else
+            {
+                SERVER_IP = IPAddress.Parse(GetIPAddress());
+            }
         }
 
         /// <summary>

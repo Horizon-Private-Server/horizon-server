@@ -14,7 +14,7 @@ namespace Deadlocked.Server.Medius
 {
     public class MUIS : BaseMediusComponent
     {
-        public override int Port => 10071;
+        public override int Port => Program.Settings.MUISPort;
 
         public MUIS()
         {

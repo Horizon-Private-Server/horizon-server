@@ -18,7 +18,7 @@ namespace Deadlocked.Server.Medius
             public DateTime LastPing;
         }
 
-        public int Port => 10070;
+        public int Port => Program.Settings.NATPort;
 
         protected Queue<BaseMessage> _queue = new Queue<BaseMessage>();
         protected List<UdpClientObject> _clients = new List<UdpClientObject>();

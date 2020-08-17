@@ -3,6 +3,7 @@ using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 
@@ -33,7 +34,24 @@ namespace Deadlocked.Server
 
         public void SetIp(string ip)
         {
-            IP = IPAddress.Parse(ip);
+            switch (Uri.CheckHostName(ip))
+            {
+                case UriHostNameType.IPv4:
+                    {
+                        IP = IPAddress.Parse(ip);
+                        break;
+                    }
+                case UriHostNameType.Dns:
+                    {
+                        IP = Dns.GetHostAddresses(ip).FirstOrDefault()?.MapToIPv4() ?? IPAddress.Any;
+                        break;
+                    }
+                default:
+                    {
+                        Console.WriteLine($"Unhandled UriHostNameType {Uri.CheckHostName(ip)} from {ip} in DMEObject.SetIp()");
+                        break;
+                    }
+            }
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Deadlocked.Server.Medius
 {
     public class MPS : BaseMediusComponent
     {
-        public override int Port => 10079;
+        public override int Port => Program.Settings.MPSPort;
         DateTime lastSend = DateTime.UtcNow;
 
         public MPS()
@@ -162,7 +162,7 @@ namespace Deadlocked.Server.Medius
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
                                                         {
                                                             //new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-#if TRUE || RELEASE
+#if FALSE
                                                             new NetAddress() { Address = (client.RemoteEndPoint as IPEndPoint)?.Address.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
 #else                                                        
                                                             new NetAddress() { Address = (client.Client as DMEObject).IP.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},

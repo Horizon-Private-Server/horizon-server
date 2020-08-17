@@ -15,7 +15,7 @@ namespace Deadlocked.Server.Medius
 {
     public class MAS : BaseMediusComponent
     {
-        public override int Port => 10075;
+        public override int Port => Program.Settings.MASPort;
 
         public MAS()
         {
@@ -136,7 +136,14 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusServerAuthenticationRequest;
 
                                     if (client.Client is DMEObject dmeObject)
+                                    {
+                                        // 
                                         dmeObject.SetIp(msg.AddressList.AddressList[0].Address);
+
+                                        // Override the dme server ip
+                                        if (!string.IsNullOrEmpty(Program.Settings.DmeIpOverride))
+                                            dmeObject.SetIp(Program.Settings.DmeIpOverride);
+                                    }
 
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {

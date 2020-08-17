@@ -7,6 +7,11 @@ namespace Deadlocked.Server.Config
     public class ServerSettings
     {
         /// <summary>
+        /// How many milliseconds before refreshing the config.
+        /// </summary>
+        public int RefreshConfigInterval = 5000;
+
+        /// <summary>
         /// Application id.
         /// </summary>
         public int ApplicationId { get; set; } = 0;
@@ -53,5 +58,35 @@ namespace Deadlocked.Server.Config
         /// Number of ticks per second.
         /// </summary>
         public int TickRate { get; set; } = 10;
+
+        /// <summary>
+        /// Port of the MUIS server.
+        /// </summary>
+        public int MUISPort { get; set; } = 10071;
+
+        /// <summary>
+        /// Port of the MAS server.
+        /// </summary>
+        public int MASPort { get; set; } = 10075;
+
+        /// <summary>
+        /// Port of the MLS server.
+        /// </summary>
+        public int MLSPort { get; set; } = 10078;
+
+        /// <summary>
+        /// Port of the MPS server.
+        /// </summary>
+        public int MPSPort { get; set; } = 10077;
+
+        /// <summary>
+        /// Port of the NAT server.
+        /// </summary>
+        public int NATPort { get; set; } = 10070;
+
+        /// <summary>
+        /// When set, all DME servers will receive this ip. This bypasses how the DME handles local network servers.
+        /// </summary>
+        public string DmeIpOverride { get; set; } = null;
     }
 }

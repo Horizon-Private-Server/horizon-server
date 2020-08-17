@@ -16,7 +16,7 @@ namespace Deadlocked.Server.Medius
 {
     public class MLS : BaseMediusComponent
     {
-        public override int Port => 10078;
+        public override int Port => Program.Settings.MLSPort;
         private DateTime ticker = DateTime.UtcNow;
 
         static string[] INIT_1D_MESSAGES =
