@@ -76,6 +76,13 @@ namespace Deadlocked.Server.Config
         /// </summary>
         public void Save()
         {
+            // 
+            Console.WriteLine("-------------------------------------");
+            Console.WriteLine($"{DateTime.Now} Saving database!!!");
+            Console.WriteLine($"{DateTime.Now} Saving database!!!");
+            Console.WriteLine($"{DateTime.Now} Saving database!!!");
+            Console.WriteLine("-------------------------------------");
+
             // Save accounts
             File.WriteAllText(Program.DB_FILE, JsonConvert.SerializeObject(this, Formatting.Indented));
         }

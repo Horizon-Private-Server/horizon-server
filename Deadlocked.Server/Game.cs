@@ -151,6 +151,10 @@ namespace Deadlocked.Server
 
         private void OnPlayerLeft(GameClient client)
         {
+            // Remove host
+            if (Host == client.Client)
+                Host = null;
+
             if (Clients.Contains(client))
             {
                 // Remove reference
