@@ -24,6 +24,7 @@ namespace Deadlocked.Server
         public int Id = 0;
         public int DMEWorldId = 0;
         public int ChannelId = 0;
+        public int ApplicationId = 0;
         public List<GameClient> Clients = new List<GameClient>();
         public string GameName;
         public string GamePassword;
@@ -61,6 +62,7 @@ namespace Deadlocked.Server
         public Game(ClientObject client, MediusCreateGameRequest createGame, DMEObject dmeServer)
         {
             Id = IdCounter++;
+            ApplicationId = createGame.ApplicationID;
             GameName = createGame.GameName;
             MinPlayers = createGame.MinPlayers;
             MaxPlayers = createGame.MaxPlayers;

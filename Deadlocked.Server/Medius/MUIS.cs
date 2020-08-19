@@ -15,6 +15,7 @@ namespace Deadlocked.Server.Medius
     public class MUIS : BaseMediusComponent
     {
         public override int Port => Program.Settings.MUISPort;
+        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         public MUIS()
         {

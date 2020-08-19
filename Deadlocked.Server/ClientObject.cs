@@ -22,6 +22,7 @@ namespace Deadlocked.Server
         public MediusUserAction Action { get; set; } = MediusUserAction.KeepAlive;
         public MediusPlayerStatus Status { get; set; } = MediusPlayerStatus.MediusPlayerDisconnected;
 
+        public int ApplicationId { get; protected set; } = 0;
 
         private uint gameListFilterIdCounter = 0;
         public List<GameListFilter> GameListFilters = new List<GameListFilter>();
@@ -61,7 +62,7 @@ namespace Deadlocked.Server
         private ConcurrentQueue<BaseMessage> LobbyServerMessages = new ConcurrentQueue<BaseMessage>();
         private ConcurrentQueue<BaseMessage> ProxyServerMessages = new ConcurrentQueue<BaseMessage>();
 
-        public ClientObject(Account clientAccount, string sessionKey)
+        public ClientObject(Account clientAccount, int appId, string sessionKey)
         {
             // Generate new token
             byte[] tokenBuf = new byte[12];
@@ -72,6 +73,9 @@ namespace Deadlocked.Server
             ClientAccount = clientAccount;
             if (ClientAccount != null)
                 ClientAccount.Client = this;
+
+            // Set application id
+            ApplicationId = appId;
 
             // Set session key
             SessionKey = sessionKey;

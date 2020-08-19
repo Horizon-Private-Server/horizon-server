@@ -18,6 +18,7 @@ namespace Deadlocked.Server.Medius
     public class MLS : BaseMediusComponent
     {
         public override int Port => Program.Settings.MLSPort;
+        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         public MLS()
         {
@@ -74,6 +75,7 @@ namespace Deadlocked.Server.Medius
                     {
                         var m00 = message as RT_MSG_CLIENT_CONNECT_TCP;
 
+                        client.ApplicationId = m00.AppId;
                         client.SetToken(m00.AccessToken);
 
                         Console.WriteLine($"CLIENT CONNECTED TO MLS WITH SESSION KEY {m00.SessionKey} and ACCESS TOKEN {m00.AccessToken}");
@@ -1011,7 +1013,7 @@ namespace Deadlocked.Server.Medius
                                                     AccessKey = client.Client.Token,
                                                     SessionKey = client.Client.SessionKey,
                                                     WorldID = channel.Id,
-                                                    ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
+                                                    ServerKey = Program.GlobalAuthPublic,
                                                     AddressList = new NetAddressList()
                                                     {
                                                         AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
@@ -1142,6 +1144,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusGameList_ExtraInfoRequest;
 
                                     var gameList = Program.Games
+                                        .Where(x => x.ApplicationId == client.ApplicationId)
                                         .Where(x => x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging)
                                         .Where(x => client.Client.IsGameMatch(x))
                                         .Skip((msg.PageID - 1) * msg.PageSize)
@@ -1323,6 +1326,7 @@ namespace Deadlocked.Server.Medius
 
 
                                     var gameChannels = Program.Channels
+                                        .Where(x => x.ApplicationId == client.ApplicationId)
                                         .Where(x => x.Type == ChannelType.Game)
                                         .Skip((msg.PageID - 1) * msg.PageSize)
                                         .Take(msg.PageSize);
@@ -1374,6 +1378,7 @@ namespace Deadlocked.Server.Medius
                                     // Deadlocked only uses this to connect to a non-game channel (lobby)
                                     // So we'll filter by lobby here
                                     var channels = Program.Channels
+                                        .Where(x => x.ApplicationId == client.ApplicationId)
                                         .Where(x => x.Type == ChannelType.Lobby)
                                         .Skip((msg.PageID - 1) * msg.PageSize)
                                         .Take(msg.PageSize);

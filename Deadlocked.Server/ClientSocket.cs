@@ -16,6 +16,7 @@ namespace Deadlocked.Server
         public ClientObject Client { get; protected set; }
 
         public int ComponentState { get; set; } = 0;
+        public int ApplicationId { get; set; } = 0;
 
         public ClientSocket(TcpClient client)
         {
@@ -107,7 +108,7 @@ namespace Deadlocked.Server
 
         public void Send(byte[] buffer)
         {
-            if (!Connected)
+            if (!Connected || buffer == null || buffer.Length == 0)
                 return;
 
             try
@@ -117,6 +118,8 @@ namespace Deadlocked.Server
             catch (SocketException e)
             {
                 Console.WriteLine(e);
+                Console.WriteLine(e.InnerException);
+                Console.WriteLine($"SEND TO {ToString()}: {BitConverter.ToString(buffer)}");
             }
         }
 

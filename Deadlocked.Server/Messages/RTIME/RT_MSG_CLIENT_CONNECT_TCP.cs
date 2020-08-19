@@ -16,7 +16,7 @@ namespace Deadlocked.Server.Messages.RTIME
 
         // 
         public uint ARG1;
-        public uint ARG2; // This is like a version identifier or something
+        public int AppId; // This is like a version identifier or something
         public byte[] UNK;
 
         public string SessionKey = null;
@@ -28,7 +28,7 @@ namespace Deadlocked.Server.Messages.RTIME
             AccessToken = null;
 
             ARG1 = reader.ReadUInt32();
-            ARG2 = reader.ReadUInt32();
+            AppId = reader.ReadInt32();
             UNK = reader.ReadBytes(0x40);
 
             if (reader.BaseStream.Position < reader.BaseStream.Length)
@@ -44,7 +44,7 @@ namespace Deadlocked.Server.Messages.RTIME
                 throw new InvalidOperationException($"Unable to serialize {Id} UNK because UNK is either null or not 64 bytes long!");
 
             writer.Write(ARG1);
-            writer.Write(ARG2);
+            writer.Write(AppId);
             writer.Write(UNK);
         }
 
@@ -52,7 +52,7 @@ namespace Deadlocked.Server.Messages.RTIME
         {
             return base.ToString() + " " +
                 $"ARG1:{ARG1:X8} " +
-                $"ARG2:{ARG2:X8} " +
+                $"ARG2:{AppId:X8} " +
                 $"UNK:{(UNK == null ? "null" : BitConverter.ToString(UNK))}";
         }
     }

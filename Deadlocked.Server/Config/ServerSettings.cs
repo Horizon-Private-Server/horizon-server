@@ -50,12 +50,17 @@ namespace Deadlocked.Server.Config
         /// <summary>
         /// Time since last echo response before timing the client out.
         /// </summary>
-        public int ClientTimeoutSeconds { get; set; } = 15;
+        public int ClientTimeoutSeconds { get; set; } = 30;
 
         /// <summary>
         /// Time since game created and host never connected to close the game world.
         /// </summary>
         public int GameTimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// Number of seconds before the server should send an echo to the client.
+        /// </summary>
+        public int ServerEchoInterval { get; set; } = 10;
 
         /// <summary>
         /// Number of ticks per second.
@@ -101,6 +106,12 @@ namespace Deadlocked.Server.Config
         /// Whether or not to restart the DME server when it is no longer running.
         /// </summary>
         public bool DmeRestartOnCrash { get; set; } = false;
+
+        /// <summary>
+        /// Collection of patches to apply to logged in clients.
+        /// Default contains an example patch that is disabled.
+        /// </summary>
+        public List<Patch> Patches { get; set; } = new List<Patch>();
 
         /// <summary>
         /// Collection of RT messages to print out

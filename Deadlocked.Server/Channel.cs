@@ -26,6 +26,7 @@ namespace Deadlocked.Server
         
 
         public int Id = 0;
+        public int ApplicationId = 0;
         public ChannelType Type = ChannelType.Game;
         public string Name = "Default";
         public string Password = null;
@@ -54,6 +55,7 @@ namespace Deadlocked.Server
         {
             Id = IdCounter++;
 
+            ApplicationId = request.ApplicationID;
             Name = request.LobbyName;
             Password = request.LobbyPassword;
             SecurityLevel = string.IsNullOrEmpty(Password) ? MediusWorldSecurityLevelType.WORLD_SECURITY_NONE : MediusWorldSecurityLevelType.WORLD_SECURITY_PLAYER_PASSWORD;

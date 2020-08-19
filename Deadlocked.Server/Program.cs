@@ -1,6 +1,7 @@
 ﻿using Deadlocked.Server.Accounts;
 using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
+using Deadlocked.Server.Messages;
 using Medius.Crypto;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto.Tls;
@@ -23,11 +24,26 @@ namespace Deadlocked.Server
         public const string DB_FILE = "db.json";
         public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
 
-        public static PS2_RSA GlobalAuthKey = new PS2_RSA(
+        public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
             new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
             new BigInteger("17", 10),
             new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
         );
+
+        /// <summary>
+        /// The DME connects to MPS with its own RSA keypair.
+        /// I'm not sure what it's using because this key doesn't appear to work.
+        /// Refer to BaseMessage.Instantiate() for hack solution
+        /// </summary>
+        public readonly static PS2_RSA DmeAuthKey = new PS2_RSA(
+            new BigInteger("9848219843138420844191243034535393511626819869175602765525114154343233366275827782177650840711581912404543790075101312290915342641475187759789398933592597", 10),
+            new BigInteger("17", 10),
+            new BigInteger("5213763446367399270454187488871678917920081107210613228807413375828770605675333161178894352915566278302088822845345481840726284620095756152508903398440785", 10)
+        );
+
+
+        public readonly static RSA_KEY GlobalAuthPublic = new RSA_KEY(GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray());
+        public readonly static RSA_KEY GlobalAuthPrivate = new RSA_KEY(GlobalAuthKey.D.ToByteArrayUnsigned().Reverse().ToArray());
 
         public static List<ClientObject> Clients = new List<ClientObject>();
         public static List<Channel> Channels = new List<Channel>();
@@ -167,6 +183,11 @@ namespace Deadlocked.Server
             }
             else
             {
+                // Add empty patch to default config output
+                // This helps a user understand the format
+                if (Settings.Patches.Count == 0)
+                    Settings.Patches.Add(new Patch());
+
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
@@ -196,6 +217,7 @@ namespace Deadlocked.Server
             Channels.Add(new Channel()
             {
                 Id = Settings.DefaultChannelId,
+                ApplicationId = Program.Settings.ApplicationId,
                 MaxPlayers = 256,
                 Name = "Default",
                 Type = ChannelType.Lobby
@@ -210,12 +232,18 @@ namespace Deadlocked.Server
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
-                MissingMemberHandling = MissingMemberHandling.Ignore
+                MissingMemberHandling = MissingMemberHandling.Ignore,
             };
 
             // Load settings
             if (File.Exists(CONFIG_FILE))
             {
+                // Clear patches to prevent non-stop populating
+                Settings.Patches.Clear();
+
+                // Clear log filters to prevent additive loading
+                Settings.RtLogFilter = new string[0];
+
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }

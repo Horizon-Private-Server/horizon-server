@@ -16,6 +16,9 @@ namespace Deadlocked.Server.Medius
         public static Random RNG = new Random();
         public abstract int Port { get; }
 
+
+        public abstract PS2_RSA AuthKey { get; }
+
         protected Queue<BaseMessage> _queue = new Queue<BaseMessage>();
         protected PS2_RC4 _sessionCipher = null;
         protected TcpListener Listener = null;
@@ -81,31 +84,40 @@ namespace Deadlocked.Server.Medius
                 byte[] buffer = new byte[size];
                 Array.Copy(data, 0, buffer, 0, size);
 
-                // Check for PING-PONG message
-                if (size == 4 && Encoding.UTF8.GetString(buffer) == "PING")
+                try
                 {
-                    client.Send(Encoding.UTF8.GetBytes("PONG"));
-                    client.Close();
-                    return;
+                    // Check for PING-PONG message
+                    if (size == 4 && Encoding.UTF8.GetString(buffer) == "PING")
+                    {
+                        client.Send(Encoding.UTF8.GetBytes("PONG"));
+                        client.Close();
+                        return;
+                    }
+
+                    var msgs = BaseMessage.Instantiate(buffer, (id, context) =>
+                    {
+                        switch (context)
+                        {
+                            case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
+                            case CipherContext.RSA_AUTH: return AuthKey;
+                            default: return null;
+                        }
+                    });
+
+                    lock (_queue)
+                    {
+                        foreach (var msg in msgs)
+                        {
+                            msg.Source = (IPEndPoint)client.RemoteEndPoint;
+                            _queue.Enqueue(msg);
+                        }
+                    }
                 }
-
-                var msgs = BaseMessage.Instantiate(buffer, (id, context) =>
+                catch (Exception e)
                 {
-                    switch (context)
-                    {
-                        case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
-                        case CipherContext.RSA_AUTH: return Program.GlobalAuthKey;
-                        default: return null;
-                    }
-                });
-
-                lock (_queue)
-                {
-                    foreach (var msg in msgs)
-                    {
-                        msg.Source = (IPEndPoint)client.RemoteEndPoint;
-                        _queue.Enqueue(msg);
-                    }
+                    Console.WriteLine(e);
+                    Console.WriteLine($"RECV BUFFER FROM {client}: {(buffer == null ? "<null>" : BitConverter.ToString(buffer))}");
+                    throw e;
                 }
             }
         }
@@ -113,7 +125,7 @@ namespace Deadlocked.Server.Medius
         public void Tick()
         {
             // Determine if should echo
-            if ((DateTime.UtcNow - timeLastEcho).TotalSeconds > 5)
+            if ((DateTime.UtcNow - timeLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
                 shouldEcho = true;
 
             // Collection of clients that have DC'd
@@ -125,17 +137,31 @@ namespace Deadlocked.Server.Medius
             {
                 foreach (var client in Clients)
                 {
-                    if (client == null || !client.Connected)
+                    if (client == null || !client.Connected || (client.Client != null && !client.Client.IsConnected))
                     {
+                        Console.WriteLine($"Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.Client?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.Client?.UtcLastEcho)}");
                         removeQueue.Enqueue(client);
                     }
                     else
                     {
-                        // Receive
-                        Read(client);
+                        try
+                        {
+                            // Receive
+                            Read(client);
 
-                        // Tick
-                        Tick(client);
+                            // Tick
+                            Tick(client);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"Unhandled exception, closing client socket {client}.\n{e}");
+
+                            // close the socket
+                            client.Close();
+                            
+                            // Add to remove queue
+                            removeQueue.Enqueue(client);
+                        }
                     }
                 }
             }
@@ -164,7 +190,7 @@ namespace Deadlocked.Server.Medius
 
         }
 
-        protected void Echo(ClientSocket client, ref List<BaseMessage> responses)
+        protected virtual void Echo(ClientSocket client, ref List<BaseMessage> responses)
         {
             responses.Add(new RT_MSG_SERVER_ECHO() { });
         }

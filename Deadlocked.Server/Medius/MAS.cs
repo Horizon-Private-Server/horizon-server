@@ -18,6 +18,8 @@ namespace Deadlocked.Server.Medius
     {
         public override int Port => Program.Settings.MASPort;
 
+        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
+
         public MAS()
         {
             _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
@@ -66,13 +68,23 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_TCP:
                     {
+                        var msg = message as RT_MSG_CLIENT_CONNECT_TCP;
+
+                        // Set app id of client
+                        client.ApplicationId = msg.AppId;
+
                         responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_REQUIRE:
                     {
                         responses.Add(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) });
-                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP() { UNK_02 = 0x00, UNK_03 = 0x00, IP = (client.RemoteEndPoint as IPEndPoint)?.Address });
+                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                        {
+                            UNK_02 = 0x00,
+                            UNK_03 = 0x00,
+                            IP = (client.RemoteEndPoint as IPEndPoint)?.Address
+                        });
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP:
@@ -102,6 +114,7 @@ namespace Deadlocked.Server.Medius
                                     var clientObject = new DMEObject(msg);
                                     Program.Clients.Add(clientObject);
                                     client.SetToken(clientObject.Token);
+                                    client.ApplicationId = msg.ApplicationID;
 
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
@@ -114,7 +127,7 @@ namespace Deadlocked.Server.Medius
                                                 AccessKey = clientObject.Token,
                                                 SessionKey = clientObject.SessionKey,
                                                 WorldID = 0,
-                                                ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
+                                                ServerKey = Program.GlobalAuthPublic,
                                                 AddressList = new NetAddressList()
                                                 {
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
@@ -133,6 +146,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.MediusServerAuthenticationRequest:
                                 {
                                     var msg = appMsg as MediusServerAuthenticationRequest;
+
 
                                     if (client.Client is DMEObject dmeObject)
                                     {
@@ -155,7 +169,7 @@ namespace Deadlocked.Server.Medius
                                                 AccessKey = client.Client.Token,
                                                 SessionKey = client.Client.SessionKey,
                                                 WorldID = 0,
-                                                ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
+                                                ServerKey = Program.GlobalAuthPublic,
                                                 AddressList = new NetAddressList()
                                                 {
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
@@ -175,7 +189,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.MediusServerSetAttributesRequest:
                                 {
                                     var msg = appMsg as MediusServerSetAttributesRequest;
-
+                                    
                                     responses.Add(new RT_MSG_SERVER_APP()
                                     {
                                         AppMessage = new MediusServerSetAttributesResponse()
@@ -367,7 +381,7 @@ namespace Deadlocked.Server.Medius
                                             {
                                                 SessionKey = msg.SessionKey,
                                                 WorldID = 0,
-                                                ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
+                                                ServerKey = Program.GlobalAuthPublic,
                                                 AddressList = new NetAddressList()
                                                 {
                                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
@@ -428,7 +442,7 @@ namespace Deadlocked.Server.Medius
                                     else
                                     {
                                         // 
-                                        var clientObject = new ClientObject(account, loginMsg.SessionKey);
+                                        var clientObject = new ClientObject(account, client.ApplicationId, loginMsg.SessionKey);
                                         clientObject.Status = MediusPlayerStatus.MediusPlayerInAuthWorld;
 
                                         // 
@@ -440,8 +454,14 @@ namespace Deadlocked.Server.Medius
                                         // 
                                         Console.WriteLine($"LOGGING IN AS {account.AccountName} with access token {clientObject.Token}");
 
+                                        // Send cheats
+                                        if (Program.Settings.Patches != null)
+                                            foreach (var patch in Program.Settings.Patches)
+                                                if (patch.Enabled && patch.ApplicationId == client.ApplicationId)
+                                                    responses.AddRange(patch.Serialize());
+
                                         // Tell client
-                                        responses.Add(new RT_MSG_SERVER_APP()
+                                        responses.Add(new RT_MSG_SERVER_APP() 
                                         {
                                             AppMessage = new MediusAccountLoginResponse()
                                             {
@@ -453,7 +473,7 @@ namespace Deadlocked.Server.Medius
                                                     AccessKey = clientObject.Token,
                                                     SessionKey = loginMsg.SessionKey,
                                                     WorldID = Program.Settings.DefaultChannelId,
-                                                    ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray()),
+                                                    ServerKey = Program.GlobalAuthPublic,
                                                     AddressList = new NetAddressList()
                                                     {
                                                         AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]

@@ -275,8 +275,12 @@ namespace Deadlocked.Server.Messages
 
                             if (cipher.Decrypt(cipherText, hash, out var plain))
                                 msg = Instantiate(classType, id, plain);
+                            // This is a hack to make the dme server connect
+                            // We don't really care what their key is since we're not encrypting our response
+                            else if (id == RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC)
+                                msg = new RT_MSG_CLIENT_CRYPTKEY_PUBLIC();
                             else
-                                msg = Instantiate(classType, id, new byte[0]);
+                                Console.WriteLine($"Unable to decrypt {id} {len}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(cipherText)}");
                         }
                         else
                         {
@@ -284,11 +288,7 @@ namespace Deadlocked.Server.Messages
                         }
 
                         if (msg != null)
-                        {
                             msgs.Add(msg);
-
-                            // Console.WriteLine($"!! RECV !! {BitConverter.ToString(messageBuffer, (int)start, (int)(stream.Position - start))}");
-                        }
                     }
                 }
             }

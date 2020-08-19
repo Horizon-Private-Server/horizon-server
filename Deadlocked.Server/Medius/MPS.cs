@@ -18,6 +18,8 @@ namespace Deadlocked.Server.Medius
     public class MPS : BaseMediusComponent
     {
         public override int Port => Program.Settings.MPSPort;
+        public override PS2_RSA AuthKey => Program.DmeAuthKey;
+
         DateTime lastSend = DateTime.UtcNow;
 
         public MPS()
@@ -100,7 +102,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
                     {
-
+                        client.Client?.OnEcho(DateTime.UtcNow);
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
@@ -211,6 +213,7 @@ namespace Deadlocked.Server.Medius
 
                 case RT_MSG_TYPE.RT_MSG_CLIENT_ECHO:
                     {
+                        client.Client?.OnEcho(DateTime.UtcNow);
                         responses.Add(new RT_MSG_CLIENT_ECHO() { Value = (message as RT_MSG_CLIENT_ECHO).Value });
                         break;
                     }
@@ -334,7 +337,7 @@ namespace Deadlocked.Server.Medius
                             Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
                             WorldID = game.DMEWorldId,
                             SessionKey = request.SessionKey,
-                            ServerKey = new RSA_KEY(Program.GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray())
+                            ServerKey = Program.GlobalAuthPublic
                         }
                     }
                 });

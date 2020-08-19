@@ -20,7 +20,7 @@ namespace Deadlocked.Server
         public IPAddress IP { get; protected set; } = IPAddress.Any;
 
 
-        public DMEObject(MediusServerSessionBeginRequest request) : base(null, Program.GenerateSessionKey())
+        public DMEObject(MediusServerSessionBeginRequest request) : base(null, request.ApplicationID, Program.GenerateSessionKey())
         {
             Port = request.Port;
         }
