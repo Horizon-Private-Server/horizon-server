@@ -137,9 +137,14 @@ namespace Deadlocked.Server.Medius
             {
                 foreach (var client in Clients)
                 {
-                    if (client == null || !client.Connected || (client.Client != null && !client.Client.IsConnected))
+                    if (client == null || !client.Connected)
                     {
-                        Console.WriteLine($"Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.Client?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.Client?.UtcLastEcho)}");
+                        Console.WriteLine($"SOCKET CLOSED: Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.Client?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.Client?.UtcLastEcho)}");
+                        removeQueue.Enqueue(client);
+                    }
+                    else if (client.Client != null && client.Client.Timedout)
+                    {
+                        Console.WriteLine($"TIMEOUT: Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.Client?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.Client?.UtcLastEcho)}");
                         removeQueue.Enqueue(client);
                     }
                     else

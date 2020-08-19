@@ -56,7 +56,9 @@ namespace Deadlocked.Server
         public Account ClientAccount { get; protected set; } = null;
 
 
-        public bool IsConnected => CurrentChannelId >= 0 && (DateTime.UtcNow - UtcLastEcho).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
+        public DateTime? LogoutTime { get; protected set; } = null;
+        public bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public bool IsConnected => !LogoutTime.HasValue && !Timedout;
 
 
         private ConcurrentQueue<BaseMessage> LobbyServerMessages = new ConcurrentQueue<BaseMessage>();
@@ -193,6 +195,9 @@ namespace Deadlocked.Server
 
             // Remove reference to account
             ClientAccount = null;
+
+            //
+            LogoutTime = DateTime.UtcNow;
         }
 
         public GameListFilter SetGameListFilter(MediusSetGameListFilterRequest request)
