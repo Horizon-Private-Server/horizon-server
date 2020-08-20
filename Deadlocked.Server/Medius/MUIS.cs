@@ -45,6 +45,9 @@ namespace Deadlocked.Server.Medius
             if (Program.Settings.IsLog(message.Id))
                 Console.WriteLine($"MUIS {client}: {message}");
 
+            // Update client echo
+            client.ClientObject?.OnEcho(DateTime.UtcNow);
+
             // 
             switch (message.Id)
             {

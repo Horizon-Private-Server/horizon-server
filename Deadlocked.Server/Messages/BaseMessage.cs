@@ -170,7 +170,7 @@ namespace Deadlocked.Server.Messages
                 _messageClassById[id] = type;
         }
 
-        public static List<BaseMessage> InstantiateBruteforce(byte[] messageBuffer, Func<RT_MSG_TYPE, CipherContext, IEnumerable<ICipher>> getCiphersCallback = null)
+        public static List<BaseMessage> Instantiate(byte[] messageBuffer, int index, int size, Func<RT_MSG_TYPE, CipherContext, ICipher> getCipherCallback = null)
         {
             // Init first
             Initialize();
@@ -179,69 +179,7 @@ namespace Deadlocked.Server.Messages
             BaseMessage msg = null;
 
             // 
-            using (MemoryStream stream = new MemoryStream(messageBuffer))
-            {
-                using (BinaryReader reader = new BinaryReader(stream))
-                {
-                    while (reader.BaseStream.CanRead && reader.BaseStream.Position < reader.BaseStream.Length)
-                    {
-                        // Reset
-                        msg = null;
-
-                        // Parse header
-                        byte rawId = reader.ReadByte();
-                        RT_MSG_TYPE id = (RT_MSG_TYPE)(rawId & 0x7F);
-                        bool encrypted = rawId >= 0x80;
-                        ushort len = reader.ReadUInt16();
-
-                        // Get class
-                        if (!_messageClassById.TryGetValue(id, out var classType))
-                            classType = null;
-
-                        // Decrypt
-                        if (len > 0 && encrypted)
-                        {
-                            byte[] hash = reader.ReadBytes(4);
-                            CipherContext context = (CipherContext)(hash[3] >> 5);
-                            var ciphers = getCiphersCallback(id, context);
-                            byte[] cipherText = reader.ReadBytes(len);
-
-                            foreach (var cipher in ciphers)
-                            {
-                                if (cipher.Decrypt(cipherText, hash, out var plain))
-                                {
-                                    msg = Instantiate(classType, id, plain);
-                                    break;
-                                }
-                            }
-
-                            if (msg == null)
-                                Console.WriteLine($"Unable to decrypt {id}: {BitConverter.ToString(messageBuffer).Replace("-", "")}");
-                        }
-                        else
-                        {
-                            msg = Instantiate(classType, id, reader.ReadBytes(len));
-                        }
-
-                        if (msg != null)
-                            msgs.Add(msg);
-                    }
-                }
-            }
-
-            return msgs;
-        }
-
-        public static List<BaseMessage> Instantiate(byte[] messageBuffer, Func<RT_MSG_TYPE, CipherContext, ICipher> getCipherCallback = null)
-        {
-            // Init first
-            Initialize();
-
-            List<BaseMessage> msgs = new List<BaseMessage>();
-            BaseMessage msg = null;
-
-            // 
-            using (MemoryStream stream = new MemoryStream(messageBuffer))
+            using (MemoryStream stream = new MemoryStream(messageBuffer, index, size))
             {
                 using (BinaryReader reader = new BinaryReader(stream))
                 {

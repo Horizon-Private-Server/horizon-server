@@ -41,7 +41,7 @@ namespace Deadlocked.Server.Medius
                 HandleCommand(msg, client, ref responses);
 
             // 
-            if (shouldEcho)
+            if ((DateTime.UtcNow - client.ClientObject?.UtcLastEcho)?.TotalSeconds > Program.Settings.ServerEchoInterval)
                 Echo(client, ref responses);
 
             responses.Send(client);
@@ -52,6 +52,9 @@ namespace Deadlocked.Server.Medius
             // Log if id is set
             if (Program.Settings.IsLog(message.Id))
                 Console.WriteLine($"MAS {client}: {message}");
+
+            // Update client echo
+            client.ClientObject?.OnEcho(DateTime.UtcNow);
 
             // 
             switch (message.Id)
@@ -95,7 +98,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
                     {
-                        client.Client?.OnEcho(DateTime.UtcNow);
+                        client.ClientObject?.OnEcho(DateTime.UtcNow);
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
@@ -148,7 +151,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusServerAuthenticationRequest;
 
 
-                                    if (client.Client is DMEObject dmeObject)
+                                    if (client.ClientObject is DMEObject dmeObject)
                                     {
                                         // 
                                         dmeObject.SetIp(msg.AddressList.AddressList[0].Address);
@@ -166,8 +169,8 @@ namespace Deadlocked.Server.Medius
                                             Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS,
                                             ConnectInfo = new NetConnectionInfo()
                                             {
-                                                AccessKey = client.Client.Token,
-                                                SessionKey = client.Client.SessionKey,
+                                                AccessKey = client.ClientObject.Token,
+                                                SessionKey = client.ClientObject.SessionKey,
                                                 WorldID = 0,
                                                 ServerKey = Program.GlobalAuthPublic,
                                                 AddressList = new NetAddressList()
@@ -336,7 +339,7 @@ namespace Deadlocked.Server.Medius
                                     var status = MediusCallbackStatus.MediusFail;
 
                                     // 
-                                    var account = client.Client?.ClientAccount;
+                                    var account = client.ClientObject?.ClientAccount;
 
                                     // Ensure logged in
                                     if (account != null)
@@ -346,7 +349,7 @@ namespace Deadlocked.Server.Medius
                                         {
                                             // Delete
                                             Program.Database.DeleteAccount(account);
-                                            client.Client.Logout();
+                                            client.ClientObject.Logout();
                                             status = MediusCallbackStatus.MediusSuccess;
                                         }
                                     }
@@ -498,12 +501,12 @@ namespace Deadlocked.Server.Medius
                                     bool success = false;
 
                                     // Check token
-                                    if (client.Client != null && client.Client.ClientAccount != null && msg.SessionKey == client.Client.SessionKey)
+                                    if (client.ClientObject != null && client.ClientObject.ClientAccount != null && msg.SessionKey == client.ClientObject.SessionKey)
                                     {
                                         success = true;
 
                                         // Logout
-                                        client.Client.Logout();
+                                        client.ClientObject.Logout();
                                     }
 
                                     responses.Add(new RT_MSG_SERVER_APP()

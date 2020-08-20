@@ -13,7 +13,7 @@ namespace Deadlocked.Server
 
         public string Token { get; protected set; }
 
-        public ClientObject Client { get; protected set; }
+        public ClientObject ClientObject { get; protected set; }
 
         public int ComponentState { get; set; } = 0;
         public int ApplicationId { get; set; } = 0;
@@ -26,7 +26,7 @@ namespace Deadlocked.Server
         public void SetToken(string token)
         {
             Token = token;
-            Client = Program.Clients.FirstOrDefault(x => x.Token == token);
+            ClientObject = Program.Clients.FirstOrDefault(x => x.Token == token);
         }
 
         #region Sockets
@@ -127,8 +127,8 @@ namespace Deadlocked.Server
 
         public override string ToString()
         {
-            if (Client?.ClientAccount != null)
-                return Client.ClientAccount.AccountName;
+            if (ClientObject?.ClientAccount != null)
+                return ClientObject.ClientAccount.AccountName;
             else
                 return RemoteEndPoint?.ToString();
         }

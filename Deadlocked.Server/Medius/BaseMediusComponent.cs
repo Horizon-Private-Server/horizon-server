@@ -3,6 +3,7 @@ using Deadlocked.Server.Messages.RTIME;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -26,8 +27,7 @@ namespace Deadlocked.Server.Medius
         public List<ClientSocket> Clients = new List<ClientSocket>();
 
         protected DateTime timeLastEcho = DateTime.UtcNow;
-
-        protected bool shouldEcho = false;
+        protected byte[] readBuffer = new byte[1024 * 10];
 
 
         public virtual void Start()
@@ -44,11 +44,15 @@ namespace Deadlocked.Server.Medius
                     while (true)
                     {
                         var client = new ClientSocket(Listener.AcceptTcpClient());
-                        // Console.WriteLine($"Connection accepted on port {Port}.");
+
                         lock (Clients)
                         {
                             Clients.Add(client);
                         }
+
+                        
+                        // Console.WriteLine($"Connection accepted on port {Port}.");
+
                     }
                 }
                 catch (Exception e)
@@ -74,60 +78,55 @@ namespace Deadlocked.Server.Medius
             Listener.Stop();
         }
 
-        protected void Read(ClientSocket client)
+        protected void OnRead(ClientSocket client, byte[] buffer, int index, int count)
         {
-            byte[] data = new byte[4096];
-            int size = client.ReadAvailable(data);
-
-            if (size > 0)
+            try
             {
-                byte[] buffer = new byte[size];
-                Array.Copy(data, 0, buffer, 0, size);
-
-                try
+                // Check for PING-PONG message
+                if (count == 4 && Encoding.UTF8.GetString(buffer, index, count) == "PING")
                 {
-                    // Check for PING-PONG message
-                    if (size == 4 && Encoding.UTF8.GetString(buffer) == "PING")
-                    {
-                        client.Send(Encoding.UTF8.GetBytes("PONG"));
-                        client.Close();
-                        return;
-                    }
-
-                    var msgs = BaseMessage.Instantiate(buffer, (id, context) =>
-                    {
-                        switch (context)
-                        {
-                            case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
-                            case CipherContext.RSA_AUTH: return AuthKey;
-                            default: return null;
-                        }
-                    });
-
-                    lock (_queue)
-                    {
-                        foreach (var msg in msgs)
-                        {
-                            msg.Source = (IPEndPoint)client.RemoteEndPoint;
-                            _queue.Enqueue(msg);
-                        }
-                    }
+                    client.Send(Encoding.UTF8.GetBytes("PONG"));
+                    client.Close();
+                    return;
                 }
-                catch (Exception e)
+
+                var msgs = BaseMessage.Instantiate(buffer, index, count, (id, context) =>
                 {
-                    Console.WriteLine(e);
-                    Console.WriteLine($"RECV BUFFER FROM {client}: {(buffer == null ? "<null>" : BitConverter.ToString(buffer))}");
-                    throw e;
+                    switch (context)
+                    {
+                        case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
+                        case CipherContext.RSA_AUTH: return AuthKey;
+                        default: return null;
+                    }
+                });
+
+                lock (_queue)
+                {
+                    foreach (var msg in msgs)
+                    {
+                        msg.Source = (IPEndPoint)client.RemoteEndPoint;
+                        _queue.Enqueue(msg);
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Console.WriteLine($"RECV BUFFER FROM {client}: {BitConverter.ToString(buffer, index, count)}");
+                throw e;
+            }
+        }
+
+        protected void Read(ClientSocket client)
+        {
+            int size = client.ReadAvailable(readBuffer);
+
+            if (size > 0)
+                OnRead(client, readBuffer, 0, size);
         }
 
         public void Tick()
         {
-            // Determine if should echo
-            if ((DateTime.UtcNow - timeLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
-                shouldEcho = true;
-
             // Collection of clients that have DC'd
             Queue<ClientSocket> removeQueue = new Queue<ClientSocket>();
 
@@ -139,12 +138,12 @@ namespace Deadlocked.Server.Medius
                 {
                     if (client == null || !client.Connected)
                     {
-                        Console.WriteLine($"SOCKET CLOSED: Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.Client?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.Client?.UtcLastEcho)}");
+                        Console.WriteLine($"SOCKET CLOSED: Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.ClientObject?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.ClientObject?.UtcLastEcho)}");
                         removeQueue.Enqueue(client);
                     }
-                    else if (client.Client != null && client.Client.Timedout)
+                    else if (client.ClientObject != null && client.ClientObject.Timedout)
                     {
-                        Console.WriteLine($"TIMEOUT: Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.Client?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.Client?.UtcLastEcho)}");
+                        Console.WriteLine($"TIMEOUT: Removing {client} from {GetType().Name} on port {Port}. SocketConnected:{client?.Connected} ClientObjectConnected:{client.ClientObject?.IsConnected} TimeSinceLastEcho:{(DateTime.UtcNow - client.ClientObject?.UtcLastEcho)}");
                         removeQueue.Enqueue(client);
                     }
                     else
@@ -163,13 +162,14 @@ namespace Deadlocked.Server.Medius
 
                             // close the socket
                             client.Close();
-                            
+
                             // Add to remove queue
                             removeQueue.Enqueue(client);
                         }
                     }
                 }
             }
+
 
             // Remove disconnected clients from collection
             lock (Clients)
@@ -180,13 +180,6 @@ namespace Deadlocked.Server.Medius
                     client.Close();
                     Clients.Remove(client);
                 }
-            }
-
-            // Reset echo timer
-            if (shouldEcho)
-            {
-                shouldEcho = false;
-                timeLastEcho = DateTime.UtcNow;
             }
         }
 

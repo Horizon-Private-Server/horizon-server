@@ -41,12 +41,12 @@ namespace Deadlocked.Server.Medius
                 HandleCommand(msg, client, ref responses);
 
             // 
-            var targetMsgs = client.Client?.PullLobbyMessages();
+            var targetMsgs = client.ClientObject?.PullLobbyMessages();
             if (targetMsgs != null && targetMsgs.Count > 0)
                 responses.AddRange(targetMsgs);
 
             // 
-            if (shouldEcho)
+            if ((DateTime.UtcNow - client.ClientObject?.UtcLastEcho)?.TotalSeconds > Program.Settings.ServerEchoInterval)
                 Echo(client, ref responses);
 
             responses.Send(client);
@@ -57,6 +57,9 @@ namespace Deadlocked.Server.Medius
             // Log if id is set
             if (Program.Settings.IsLog(message.Id))
                 Console.WriteLine($"MLS {client}: {message}");
+
+            // Update client echo
+            client.ClientObject?.OnEcho(DateTime.UtcNow);
 
             // 
             switch (message.Id)
@@ -80,13 +83,13 @@ namespace Deadlocked.Server.Medius
 
                         Console.WriteLine($"CLIENT CONNECTED TO MLS WITH SESSION KEY {m00.SessionKey} and ACCESS TOKEN {m00.AccessToken}");
 
-                        if (client.Client == null)
+                        if (client.ClientObject == null)
                         {
                             responses.Add(new RawMessage(RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT_WITH_REASON) { Contents = new byte[1] });
                         }
                         else
                         {
-                            client.Client.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
+                            client.ClientObject.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
                             responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
                         }
                         break;
@@ -105,7 +108,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
                     {
-                        client.Client?.OnEcho(DateTime.UtcNow);
+                        client.ClientObject?.OnEcho(DateTime.UtcNow);
                         break;
                     }
                 case RT_MSG_TYPE.RT_MSG_SERVER_CHEAT_QUERY:
@@ -115,7 +118,7 @@ namespace Deadlocked.Server.Medius
                 case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
                     {
                         var appMsg = (message as RT_MSG_CLIENT_APP_TOSERVER).AppMessage;
-                        if (appMsg == null || client == null || !client.Connected || client.Client == null)
+                        if (appMsg == null || client == null || !client.Connected || client.ClientObject == null)
                             break;
 
                         switch (appMsg.Id)
@@ -160,7 +163,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.LadderList_ExtraInfo:
                                 {
                                     var msg = appMsg as MediusLadderList_ExtraInfoRequest;
-                                    var account = client.Client.ClientAccount;
+                                    var account = client.ClientObject.ClientAccount;
 
                                     // ERROR -- Need to be logged in
                                     if (account == null)
@@ -194,16 +197,16 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusAccountUpdateStatsRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
                                     // Update stats
-                                    if (client.Client.ClientAccount != null)
+                                    if (client.ClientObject.ClientAccount != null)
                                     {
-                                        client.Client.ClientAccount.Stats = msg.Stats;
+                                        client.ClientObject.ClientAccount.Stats = msg.Stats;
                                         Program.Database.Save();
                                     }
 
@@ -222,7 +225,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusUpdateLadderStatsWideRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -232,7 +235,7 @@ namespace Deadlocked.Server.Medius
                                     {
                                         case MediusLadderType.MediusLadderTypePlayer:
                                             {
-                                                client.Client.ClientAccount.AccountWideStats = msg.Stats;
+                                                client.ClientObject.ClientAccount.AccountWideStats = msg.Stats;
                                                 Program.Database.Save();
 
                                                 responses.Add(new RT_MSG_SERVER_APP()
@@ -360,7 +363,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.GetMyClans:
                                 {
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -374,8 +377,8 @@ namespace Deadlocked.Server.Medius
                                             ClanID = -1,
                                             ApplicationID = Program.Settings.ApplicationId,
                                             ClanName = null,
-                                            LeaderAccountID = client.Client.ClientAccount.AccountId,
-                                            LeaderAccountName = client.Client.ClientAccount.AccountName,
+                                            LeaderAccountID = client.ClientObject.ClientAccount.AccountId,
+                                            LeaderAccountName = client.ClientObject.ClientAccount.AccountName,
                                             Stats = "000000000000000000000000",
                                             Status = MediusClanStatus.ClanDisbanded,
                                             EndOfList = true
@@ -453,7 +456,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusSetGameListFilterRequest;
 
                                     // Set filter
-                                    var filter = client.Client.SetGameListFilter(msg);
+                                    var filter = client.ClientObject.SetGameListFilter(msg);
 
                                     // Give reply
                                     responses.Add(new RT_MSG_SERVER_APP()
@@ -473,7 +476,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusClearGameListFilterRequest;
 
                                     // Remove
-                                    client.Client.ClearGameListFilter(msg.FilterID);
+                                    client.ClientObject.ClearGameListFilter(msg.FilterID);
 
                                     // 
                                     responses.Add(new RT_MSG_SERVER_APP()
@@ -493,7 +496,7 @@ namespace Deadlocked.Server.Medius
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -502,7 +505,7 @@ namespace Deadlocked.Server.Medius
                                     // find target player
                                     if (Program.Database.TryGetAccountById(msg.AccountID, out var targetAccount))
                                     {
-                                        if (client.Client.ClientAccount.Friends.Contains(msg.AccountID))
+                                        if (client.ClientObject.ClientAccount.Friends.Contains(msg.AccountID))
                                         {
 
                                             statusCode = MediusCallbackStatus.MediusAccountAlreadyExists;
@@ -513,7 +516,7 @@ namespace Deadlocked.Server.Medius
 
                                             // Temporarily auto add player as friend
                                             // This should be replaced with a confirm/request system later
-                                            client.Client.ClientAccount.Friends.Add(msg.AccountID);
+                                            client.ClientObject.ClientAccount.Friends.Add(msg.AccountID);
                                             Program.Database.Save();
 
                                             statusCode = MediusCallbackStatus.MediusSuccess;
@@ -536,20 +539,20 @@ namespace Deadlocked.Server.Medius
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
                                     // 
-                                    if (client.Client != null && client.Client.ClientAccount != null)
+                                    if (client.ClientObject != null && client.ClientObject.ClientAccount != null)
                                     {
                                         // find target friend
-                                        if (client.Client.ClientAccount.Friends.Contains(msg.AccountID))
+                                        if (client.ClientObject.ClientAccount.Friends.Contains(msg.AccountID))
                                         {
                                             // remove
-                                            client.Client.ClientAccount.Friends.Remove(msg.AccountID);
+                                            client.ClientObject.ClientAccount.Friends.Remove(msg.AccountID);
                                             Program.Database.Save();
 
                                             statusCode = MediusCallbackStatus.MediusSuccess;
@@ -571,14 +574,14 @@ namespace Deadlocked.Server.Medius
                                     var getBuddyListReq = appMsg as MediusGetBuddyList_ExtraInfoRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
                                     // Get friends
-                                    var friends = client.Client.ClientAccount.Friends?.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
+                                    var friends = client.ClientObject.ClientAccount.Friends?.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
 
                                     // Responses
                                     List<MediusGetBuddyList_ExtraInfoResponse> friendListResponses = new List<MediusGetBuddyList_ExtraInfoResponse>();
@@ -798,7 +801,7 @@ namespace Deadlocked.Server.Medius
                                     var binaryMessage = appMsg as MediusBinaryMessage;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -815,7 +818,7 @@ namespace Deadlocked.Server.Medius
                                                     AppMessage = new MediusBinaryFwdMessage()
                                                     {
                                                         MessageType = binaryMessage.MessageType,
-                                                        OriginatorAccountID = client.Client.ClientAccount.AccountId,
+                                                        OriginatorAccountID = client.ClientObject.ClientAccount.AccountId,
                                                         Message = binaryMessage.Message
                                                     }
                                                 });
@@ -823,7 +826,7 @@ namespace Deadlocked.Server.Medius
                                             }
                                         case MediusBinaryMessageType.BroadcastBinaryMsg:
                                             {
-                                                client.Client.CurrentChannel?.BroadcastBinaryMessage(client.Client, binaryMessage);
+                                                client.ClientObject.CurrentChannel?.BroadcastBinaryMessage(client.ClientObject, binaryMessage);
                                                 break;
                                             }
                                         default:
@@ -839,7 +842,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusGetTotalRankingsRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -934,7 +937,7 @@ namespace Deadlocked.Server.Medius
                                     var createChannelReq = appMsg as MediusCreateChannelRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -963,7 +966,7 @@ namespace Deadlocked.Server.Medius
                                     var joinChannelReq = appMsg as MediusJoinChannelRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -993,14 +996,14 @@ namespace Deadlocked.Server.Medius
                                     else
                                     {
                                         // Tell previous channel player left
-                                        var prevChannel = Program.Channels.FirstOrDefault(x => x.Id == client.Client.CurrentChannelId);
-                                        prevChannel?.OnPlayerLeft(client.Client);
+                                        var prevChannel = Program.Channels.FirstOrDefault(x => x.Id == client.ClientObject.CurrentChannelId);
+                                        prevChannel?.OnPlayerLeft(client.ClientObject);
 
                                         // 
-                                        client.Client.CurrentChannelId = channel.Id;
+                                        client.ClientObject.CurrentChannelId = channel.Id;
 
                                         // Tell channel
-                                        channel.OnPlayerJoined(client.Client);
+                                        channel.OnPlayerJoined(client.ClientObject);
 
                                         responses.Add(new RT_MSG_SERVER_APP()
                                         {
@@ -1010,8 +1013,8 @@ namespace Deadlocked.Server.Medius
                                                 StatusCode = MediusCallbackStatus.MediusSuccess,
                                                 ConnectInfo = new NetConnectionInfo()
                                                 {
-                                                    AccessKey = client.Client.Token,
-                                                    SessionKey = client.Client.SessionKey,
+                                                    AccessKey = client.ClientObject.Token,
+                                                    SessionKey = client.ClientObject.SessionKey,
                                                     WorldID = channel.Id,
                                                     ServerKey = Program.GlobalAuthPublic,
                                                     AddressList = new NetAddressList()
@@ -1069,17 +1072,17 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusPlayerReport;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
                                     // 
-                                    if (client.Client.CurrentGameId == msg.MediusWorldID &&
-                                        client.Client.SessionKey == msg.SessionKey)
+                                    if (client.ClientObject.CurrentGameId == msg.MediusWorldID &&
+                                        client.ClientObject.SessionKey == msg.SessionKey)
                                     {
-                                        client.Client.CurrentGame?.OnPlayerReport(msg);
+                                        client.ClientObject.CurrentGame?.OnPlayerReport(msg);
                                     }
                                     break;
                                 }
@@ -1088,13 +1091,13 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusWorldReport;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
-                                    client.Client.CurrentGame?.OnWorldReport(msg);
+                                    client.ClientObject.CurrentGame?.OnWorldReport(msg);
 
                                     break;
                                 }
@@ -1102,7 +1105,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     var msg = appMsg as MediusGetGameListFilterRequest;
 
-                                    var filters = client.Client.GameListFilters;
+                                    var filters = client.ClientObject.GameListFilters;
 
                                     if (filters == null || filters.Count == 0)
                                     {
@@ -1146,7 +1149,7 @@ namespace Deadlocked.Server.Medius
                                     var gameList = Program.Games
                                         .Where(x => x.ApplicationId == client.ApplicationId)
                                         .Where(x => x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging)
-                                        .Where(x => client.Client.IsGameMatch(x))
+                                        .Where(x => client.ClientObject.IsGameMatch(x))
                                         .Skip((msg.PageID - 1) * msg.PageSize)
                                         .Take(msg.PageSize)
                                         .Select(x => new MediusGameList_ExtraInfoResponse()
@@ -1257,7 +1260,7 @@ namespace Deadlocked.Server.Medius
                                     var msg = appMsg as MediusGameWorldPlayerListRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -1432,7 +1435,7 @@ namespace Deadlocked.Server.Medius
                             case MediusAppPacketIds.EndGameReport:
                                 {
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -1440,7 +1443,7 @@ namespace Deadlocked.Server.Medius
 
                                     if (appMsg is MediusEndGameReport msg)
                                     {
-                                        client.Client.CurrentGame?.OnEndGameReport(msg);
+                                        client.ClientObject.CurrentGame?.OnEndGameReport(msg);
                                     }
 
                                     break;
@@ -1450,7 +1453,7 @@ namespace Deadlocked.Server.Medius
                                     var ignoreListReq = appMsg as MediusGetIgnoreListRequest;
 
                                     // Get ignored players
-                                    var ignored = client.Client.ClientAccount.Ignored.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
+                                    var ignored = client.ClientObject.ClientAccount.Ignored.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
 
                                     // Responses
                                     List<MediusGetIgnoreListResponse> ignoredListResponses = new List<MediusGetIgnoreListResponse>();
@@ -1501,7 +1504,7 @@ namespace Deadlocked.Server.Medius
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -1511,15 +1514,15 @@ namespace Deadlocked.Server.Medius
                                     if (Program.Database.TryGetAccountById(msg.IgnoreAccountID, out var targetAccount))
                                     {
                                         // Ensure they're not already ignored
-                                        if (client.Client.ClientAccount.Ignored.Contains(msg.IgnoreAccountID))
+                                        if (client.ClientObject.ClientAccount.Ignored.Contains(msg.IgnoreAccountID))
                                         {
                                             statusCode = MediusCallbackStatus.MediusAccountAlreadyExists;
                                         }
                                         else
                                         {
                                             // Remove from friends if a friend
-                                            client.Client.ClientAccount.Friends.Remove(msg.IgnoreAccountID);
-                                            client.Client.ClientAccount.Ignored.Add(msg.IgnoreAccountID);
+                                            client.ClientObject.ClientAccount.Friends.Remove(msg.IgnoreAccountID);
+                                            client.ClientObject.ClientAccount.Ignored.Add(msg.IgnoreAccountID);
                                             Program.Database.Save();
 
                                             statusCode = MediusCallbackStatus.MediusSuccess;
@@ -1542,20 +1545,20 @@ namespace Deadlocked.Server.Medius
                                     var statusCode = MediusCallbackStatus.MediusFail;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
                                     // 
-                                    if (client.Client != null && client.Client.ClientAccount != null)
+                                    if (client.ClientObject != null && client.ClientObject.ClientAccount != null)
                                     {
                                         // find target ignored
-                                        if (client.Client.ClientAccount.Ignored.Contains(msg.IgnoreAccountID))
+                                        if (client.ClientObject.ClientAccount.Ignored.Contains(msg.IgnoreAccountID))
                                         {
                                             // remove
-                                            client.Client.ClientAccount.Ignored.Remove(msg.IgnoreAccountID);
+                                            client.ClientObject.ClientAccount.Ignored.Remove(msg.IgnoreAccountID);
                                             Program.Database.Save();
 
                                             statusCode = MediusCallbackStatus.MediusSuccess;
@@ -1578,22 +1581,22 @@ namespace Deadlocked.Server.Medius
                                     bool success = false;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
                                     // Check token
-                                    if (accountLogoutReq.SessionKey == client.Client.SessionKey)
+                                    if (accountLogoutReq.SessionKey == client.ClientObject.SessionKey)
                                     {
                                         success = true;
 
                                         // 
-                                        Console.WriteLine($"{client.Client.ClientAccount.AccountName} has logged out.");
+                                        Console.WriteLine($"{client.ClientObject.ClientAccount.AccountName} has logged out.");
 
                                         // Logout
-                                        client.Client.Logout();
+                                        client.ClientObject.Logout();
                                     }
 
                                     responses.Add(new RT_MSG_SERVER_APP()
@@ -1610,20 +1613,20 @@ namespace Deadlocked.Server.Medius
                                     var updateUserReq = appMsg as MediusUpdateUserState;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
                                     }
 
-                                    client.Client.Action = updateUserReq.UserAction;
+                                    client.ClientObject.Action = updateUserReq.UserAction;
 
                                     switch (updateUserReq.UserAction)
                                     {
                                         case MediusUserAction.JoinedChatWorld:
                                         case MediusUserAction.LeftGameWorld:
                                             {
-                                                client.Client.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
+                                                client.ClientObject.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
                                                 break;
                                             }
                                     }
@@ -1649,7 +1652,7 @@ namespace Deadlocked.Server.Medius
                                     var createGameReq = appMsg as MediusCreateGameRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -1663,7 +1666,7 @@ namespace Deadlocked.Server.Medius
                                     var joinGameReq = appMsg as MediusJoinGameRequest;
 
                                     // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
+                                    if (client.ClientObject.ClientAccount == null)
                                     {
                                         client.Disconnect();
                                         break;
@@ -1684,7 +1687,7 @@ namespace Deadlocked.Server.Medius
 
 
                                     // Check token
-                                    if (sessionEndReq.SessionKey == client.Client.SessionKey)
+                                    if (sessionEndReq.SessionKey == client.ClientObject.SessionKey)
                                     {
                                         // 
                                         success = true;
@@ -1732,14 +1735,14 @@ namespace Deadlocked.Server.Medius
 
         private void ProcessGenericChatMessage(ClientSocket client, MediusGenericChatMessage chatMessage)
         {
-            var channel = client.Client.CurrentChannel;
-            var game = client.Client.CurrentGame;
+            var channel = client.ClientObject.CurrentChannel;
+            var game = client.ClientObject.CurrentGame;
             var allPlayers = channel.Clients.Select(x => x.Client);
-            var allButSender = channel.Clients.Where(x => x.Client != client.Client).Select(x => x.Client);
+            var allButSender = channel.Clients.Where(x => x.Client != client.ClientObject).Select(x => x.Client);
             List<BaseMessage> chatResponses = new List<BaseMessage>();
 
             // ERROR -- Need to be logged in
-            if (client.Client.ClientAccount == null)
+            if (client.ClientObject.ClientAccount == null)
             {
                 client.Disconnect();
                 return;
@@ -1765,13 +1768,13 @@ namespace Deadlocked.Server.Medius
                                 {
                                     channel.BroadcastSystemMessage(
                                         allPlayers,
-                                        $"{client.Client?.ClientAccount?.AccountName ?? "ERROR"} rolled {RNG.Next(0, 100)}"
+                                        $"{client.ClientObject?.ClientAccount?.AccountName ?? "ERROR"} rolled {RNG.Next(0, 100)}"
                                     );
                                     break;
                                 }
                             case "!gm":
                                 {
-                                    if (game != null && game.Host == client.Client)
+                                    if (game != null && game.Host == client.ClientObject)
                                     {
                                         // Get arg1 if it exists
                                         string arg1 = words.Length > 1 ? words[1].ToLower() : null;
@@ -1781,7 +1784,7 @@ namespace Deadlocked.Server.Medius
 
                                         if (arg1 == null)
                                         {
-                                            channel.SendSystemMessage(client.Client, $"Gamemode is {game.CustomGamemode?.FullName ?? "default"}");
+                                            channel.SendSystemMessage(client.ClientObject, $"Gamemode is {game.CustomGamemode?.FullName ?? "default"}");
                                         }
                                         else if (arg1 == "reset" || arg1 == "r")
                                         {
@@ -1798,7 +1801,7 @@ namespace Deadlocked.Server.Medius
                                 }
                             default:
                                 {
-                                    channel.BroadcastChatMessage(allButSender, client.Client.ClientAccount.AccountId, message);
+                                    channel.BroadcastChatMessage(allButSender, client.ClientObject.ClientAccount.AccountId, message);
                                     break;
                                 }
                         }
