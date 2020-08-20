@@ -1,5 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.SCERT.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,7 +56,7 @@ namespace Deadlocked.Server.Mods
         /// </summary>
         public void Apply(IEnumerable<ClientObject> clients)
         {
-            List<BaseMessage> messages = new List<BaseMessage>();
+            List<BaseScertMessage> messages = new List<BaseScertMessage>();
 
             // Add paylaod
             messages.AddRange(RT_MSG_SERVER_MEMORY_POKE.FromPayload(address, File.ReadAllBytes(BinPath)));

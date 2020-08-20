@@ -1,5 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.SCERT.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -56,9 +56,9 @@ namespace Deadlocked.Server.Mods
         /// <summary>
         /// Turns patch into a collection of pokes.
         /// </summary>
-        public List<BaseMessage> Serialize()
+        public List<BaseScertMessage> Serialize()
         {
-            List<BaseMessage> results = new List<BaseMessage>();
+            List<BaseScertMessage> results = new List<BaseScertMessage>();
 
             if (File.Exists(BinPath))
             {

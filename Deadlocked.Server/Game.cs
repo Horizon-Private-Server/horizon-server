@@ -2,7 +2,7 @@
 using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.MGCL;
-using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.Mods;
 using System;
 using System.Collections.Generic;

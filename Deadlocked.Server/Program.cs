@@ -3,7 +3,9 @@ using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
 using Deadlocked.Server.Messages;
 using Deadlocked.Server.Mods;
+using DotNetty.Common.Internal.Logging;
 using Medius.Crypto;
+using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto.Tls;
 using Org.BouncyCastle.Math;
@@ -34,7 +36,7 @@ namespace Deadlocked.Server
         /// <summary>
         /// The DME connects to MPS with its own RSA keypair.
         /// I'm not sure what it's using because this key doesn't appear to work.
-        /// Refer to BaseMessage.Instantiate() for hack solution
+        /// Refer to BaseScertMessage.Instantiate() for hack solution
         /// </summary>
         public readonly static PS2_RSA DmeAuthKey = new PS2_RSA(
             new BigInteger("9848219843138420844191243034535393511626819869175602765525114154343233366275827782177650840711581912404543790075101312290915342641475187759789398933592597", 10),
@@ -69,6 +71,10 @@ namespace Deadlocked.Server
 
         static void Main(string[] args)
         {
+            // 
+            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Microsoft.Extensions.Logging.LogLevel.Information, false));
+
+
             Initialize();
 
             DateTime lastDMECheck = DateTime.UtcNow;

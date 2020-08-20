@@ -1,6 +1,6 @@
 ﻿using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
-using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.SCERT.Models;
 using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;

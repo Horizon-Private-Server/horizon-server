@@ -2,7 +2,7 @@
 using Deadlocked.Server.Messages.DME;
 using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.MGCL;
-using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.Stream;
 using Medius.Crypto;
 using System;
@@ -29,8 +29,8 @@ namespace Deadlocked.Server.Medius
 
         protected override void Tick(ClientSocket client)
         {
-            List<BaseMessage> recv = new List<BaseMessage>();
-            List<BaseMessage> responses = new List<BaseMessage>();
+            List<BaseScertMessage> recv = new List<BaseScertMessage>();
+            List<BaseScertMessage> responses = new List<BaseScertMessage>();
 
             lock (_queue)
             {
@@ -54,7 +54,7 @@ namespace Deadlocked.Server.Medius
             responses.Send(client);
         }
 
-        protected override int HandleCommand(BaseMessage message, ClientSocket client, ref List<BaseMessage> responses)
+        protected override int HandleCommand(BaseScertMessage message, ClientSocket client, ref List<BaseScertMessage> responses)
         {
             // Log if id is set
             if (Program.Settings.IsLog(message.Id))

@@ -61,8 +61,8 @@ namespace Deadlocked.Server
         public bool IsConnected => !LogoutTime.HasValue && !Timedout;
 
 
-        private ConcurrentQueue<BaseMessage> LobbyServerMessages = new ConcurrentQueue<BaseMessage>();
-        private ConcurrentQueue<BaseMessage> ProxyServerMessages = new ConcurrentQueue<BaseMessage>();
+        private ConcurrentQueue<BaseScertMessage> LobbyServerMessages = new ConcurrentQueue<BaseScertMessage>();
+        private ConcurrentQueue<BaseScertMessage> ProxyServerMessages = new ConcurrentQueue<BaseScertMessage>();
 
         public ClientObject(Account clientAccount, int appId, string sessionKey)
         {
@@ -99,7 +99,7 @@ namespace Deadlocked.Server
         /// 
         /// </summary>
         /// <param name="messages"></param>
-        public void AddLobbyMessages(IEnumerable<BaseMessage> messages)
+        public void AddLobbyMessages(IEnumerable<BaseScertMessage> messages)
         {
             lock (LobbyServerMessages)
             {
@@ -112,7 +112,7 @@ namespace Deadlocked.Server
         /// 
         /// </summary>
         /// <param name="message"></param>
-        public void AddLobbyMessage(BaseMessage message)
+        public void AddLobbyMessage(BaseScertMessage message)
         {
             lock (LobbyServerMessages)
             {
@@ -124,9 +124,9 @@ namespace Deadlocked.Server
         /// 
         /// </summary>
         /// <returns></returns>
-        public List<BaseMessage> PullLobbyMessages()
+        public List<BaseScertMessage> PullLobbyMessages()
         {
-            List<BaseMessage> messages = new List<BaseMessage>();
+            List<BaseScertMessage> messages = new List<BaseScertMessage>();
 
             lock (LobbyServerMessages)
             {
@@ -141,7 +141,7 @@ namespace Deadlocked.Server
         /// 
         /// </summary>
         /// <param name="messages"></param>
-        public void AddProxyMessages(IEnumerable<BaseMessage> messages)
+        public void AddProxyMessages(IEnumerable<BaseScertMessage> messages)
         {
             lock (ProxyServerMessages)
             {
@@ -154,7 +154,7 @@ namespace Deadlocked.Server
         /// 
         /// </summary>
         /// <param name="message"></param>
-        public void AddProxyMessage(BaseMessage message)
+        public void AddProxyMessage(BaseScertMessage message)
         {
             lock (ProxyServerMessages)
             {
@@ -166,9 +166,9 @@ namespace Deadlocked.Server
         /// 
         /// </summary>
         /// <returns></returns>
-        public List<BaseMessage> PullProxyMessages()
+        public List<BaseScertMessage> PullProxyMessages()
         {
-            List<BaseMessage> messages = new List<BaseMessage>();
+            List<BaseScertMessage> messages = new List<BaseScertMessage>();
 
             lock (ProxyServerMessages)
             {

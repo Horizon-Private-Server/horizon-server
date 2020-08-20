@@ -1,6 +1,6 @@
 ﻿using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.DME;
-using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.SCERT.Models;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ namespace Deadlocked.Server.Medius
 
         public int Port => Program.Settings.NATPort;
 
-        protected Queue<BaseMessage> _queue = new Queue<BaseMessage>();
+        protected Queue<BaseScertMessage> _queue = new Queue<BaseScertMessage>();
         protected List<UdpClientObject> _clients = new List<UdpClientObject>();
 
         private UDPSocket _udpServer = new UDPSocket();
