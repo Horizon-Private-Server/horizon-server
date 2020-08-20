@@ -1,4 +1,5 @@
 ﻿using Deadlocked.Server.Messages;
+using Deadlocked.Server.Mods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -109,9 +110,13 @@ namespace Deadlocked.Server.Config
 
         /// <summary>
         /// Collection of patches to apply to logged in clients.
-        /// Default contains an example patch that is disabled.
         /// </summary>
         public List<Patch> Patches { get; set; } = new List<Patch>();
+
+        /// <summary>
+        /// Collection of custom game modes.
+        /// </summary>
+        public List<Gamemode> Gamemodes { get; set; } = new List<Gamemode>();
 
         /// <summary>
         /// Collection of RT messages to print out

@@ -2,6 +2,7 @@
 using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
 using Deadlocked.Server.Messages;
+using Deadlocked.Server.Mods;
 using Medius.Crypto;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto.Tls;
@@ -63,13 +64,13 @@ namespace Deadlocked.Server
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
 
         private static ulong _sessionKeyCounter = 0;
+        private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
 
         static void Main(string[] args)
         {
             Initialize();
 
-            int sleepMS = TickMS;
             DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
 
@@ -188,6 +189,10 @@ namespace Deadlocked.Server
                 if (Settings.Patches.Count == 0)
                     Settings.Patches.Add(new Patch());
 
+                // Add empty game mode to default config output
+                if (Settings.Gamemodes.Count == 0)
+                    Settings.Gamemodes.Add(new Gamemode());
+
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
@@ -222,6 +227,9 @@ namespace Deadlocked.Server
                 Name = "Default",
                 Type = ChannelType.Lobby
             });
+
+            // Load tick time into sleep ms for main loop
+            sleepMS = TickMS;
         }
 
         /// <summary>
@@ -238,15 +246,17 @@ namespace Deadlocked.Server
             // Load settings
             if (File.Exists(CONFIG_FILE))
             {
-                // Clear patches to prevent non-stop populating
+                // Clear collections to prevent additive loading
                 Settings.Patches.Clear();
-
-                // Clear log filters to prevent additive loading
+                Settings.Gamemodes.Clear();
                 Settings.RtLogFilter = new string[0];
 
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+
+            // Load tick time into sleep ms for main loop
+            sleepMS = TickMS;
         }
 
         /// <summary>

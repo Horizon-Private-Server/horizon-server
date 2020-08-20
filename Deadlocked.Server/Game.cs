@@ -3,6 +3,7 @@ using Deadlocked.Server.Messages;
 using Deadlocked.Server.Messages.Lobby;
 using Deadlocked.Server.Messages.MGCL;
 using Deadlocked.Server.Messages.RTIME;
+using Deadlocked.Server.Mods;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -49,6 +50,8 @@ namespace Deadlocked.Server
         public DMEObject DMEServer;
         public Channel ChatChannel;
         public ClientObject Host;
+
+        public Gamemode CustomGamemode = null;
 
         private DateTime utcTimeCreated;
         private DateTime? utcTimeEmpty;
@@ -149,6 +152,9 @@ namespace Deadlocked.Server
 
             client.Status = MediusPlayerStatus.MediusPlayerInGameWorld;
             client.CurrentGameId = Id;
+
+            if (CustomGamemode != null)
+                client.CurrentChannel?.SendSystemMessage(client, $"Gamemode is {CustomGamemode.FullName}.");
         }
 
         private void OnPlayerLeft(GameClient client)
@@ -213,7 +219,18 @@ namespace Deadlocked.Server
             // This gives the host a "Game Name Already Exists" when they try to remake with the same name.
             // This just fixes that. At the cost of the game not showing after a host leaves a game.
             if (WorldStatus != MediusWorldStatus.WorldClosed)
+            {
+                // When game starts, send game mode payload
+                if (report.WorldStatus == MediusWorldStatus.WorldActive && WorldStatus != MediusWorldStatus.WorldActive)
+                {
+                    if (CustomGamemode != null)
+                        CustomGamemode.Apply(Clients.Select(x => x.Client));
+                    else
+                        Gamemode.Disable(Clients.Select(x => x.Client));
+                }
+
                 WorldStatus = report.WorldStatus;
+            }
         }
 
         public void EndGame()

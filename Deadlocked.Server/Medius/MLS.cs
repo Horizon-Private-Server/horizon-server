@@ -1674,75 +1674,7 @@ namespace Deadlocked.Server.Medius
                                 }
                             case MediusAppPacketIds.GenericChatMessage:
                                 {
-                                    var genericChatMessage = appMsg as MediusGenericChatMessage;
-                                    var channel = client.Client.CurrentChannel;
-                                    List<BaseMessage> chatResponses = new List<BaseMessage>();
-
-                                    // ERROR -- Need to be logged in
-                                    if (client.Client.ClientAccount == null)
-                                    {
-                                        client.Disconnect();
-                                        break;
-                                    }
-
-                                    // Need to be in a channel
-                                    if (channel == null)
-                                        break;
-
-                                    switch (genericChatMessage.MessageType)
-                                    {
-                                        case MediusChatMessageType.Broadcast:
-                                            {
-                                                IEnumerable<ClientObject> players = null;
-
-                                                switch (genericChatMessage.Message.Substring(1))
-                                                {
-                                                    case "/roll":
-                                                        {
-                                                            players = channel.Clients.Select(x => x.Client);
-                                                            chatResponses.Add(new RT_MSG_SERVER_APP()
-                                                            {
-                                                                AppMessage = new MediusGenericChatFwdMessage()
-                                                                {
-                                                                    OriginatorAccountID = 0,
-                                                                    OriginatorAccountName = "SYSTEM",
-                                                                    Message = $"A{client.Client?.ClientAccount?.AccountName ?? "ERROR"} rolled " + RNG.Next(0, 100).ToString(),
-                                                                    MessageType = genericChatMessage.MessageType,
-                                                                    TimeStamp = Utils.GetUnixTime()
-                                                                }
-                                                            });
-                                                            break;
-                                                        }
-                                                    default:
-                                                        {
-                                                            players = channel.Clients.Where(x => x.Client != client.Client).Select(x => x.Client);
-                                                            chatResponses.Add(new RT_MSG_SERVER_APP()
-                                                            {
-                                                                AppMessage = new MediusGenericChatFwdMessage()
-                                                                {
-                                                                    OriginatorAccountID = client.Client.ClientAccount.AccountId,
-                                                                    OriginatorAccountName = client.Client.ClientAccount.AccountName,
-                                                                    Message = genericChatMessage.Message,
-                                                                    MessageType = genericChatMessage.MessageType,
-                                                                    TimeStamp = Utils.GetUnixTime()
-                                                                }
-                                                            });
-                                                            break;
-                                                        }
-                                                }
-
-                                                // 
-                                                if (chatResponses != null && chatResponses.Count > 0 && players != null)
-                                                    foreach (var player in players)
-                                                        player.AddLobbyMessages(chatResponses);
-                                                break;
-                                            }
-                                        default:
-                                            {
-                                                Console.WriteLine($"Unhandled generic chat message type:{genericChatMessage.MessageType} {genericChatMessage}");
-                                                break;
-                                            }
-                                    }
+                                    ProcessGenericChatMessage(client, appMsg as MediusGenericChatMessage);
                                     break;
                                 }
                             case MediusAppPacketIds.SessionEnd:
@@ -1795,6 +1727,89 @@ namespace Deadlocked.Server.Medius
             }
 
             return 0;
+        }
+
+
+        private void ProcessGenericChatMessage(ClientSocket client, MediusGenericChatMessage chatMessage)
+        {
+            var channel = client.Client.CurrentChannel;
+            var game = client.Client.CurrentGame;
+            var allPlayers = channel.Clients.Select(x => x.Client);
+            var allButSender = channel.Clients.Where(x => x.Client != client.Client).Select(x => x.Client);
+            List<BaseMessage> chatResponses = new List<BaseMessage>();
+
+            // ERROR -- Need to be logged in
+            if (client.Client.ClientAccount == null)
+            {
+                client.Disconnect();
+                return;
+            }
+
+            // Need to be in a channel
+            if (channel == null)
+                return;
+
+            // 
+            string message = chatMessage.Message.Substring(1);
+            string[] words = message.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words == null || words.Length == 0)
+                return;
+
+            switch (chatMessage.MessageType)
+            {
+                case MediusChatMessageType.Broadcast:
+                    {
+                        switch (words[0].ToLower())
+                        {
+                            case "!roll":
+                                {
+                                    channel.BroadcastSystemMessage(
+                                        allPlayers,
+                                        $"{client.Client?.ClientAccount?.AccountName ?? "ERROR"} rolled {RNG.Next(0, 100)}"
+                                    );
+                                    break;
+                                }
+                            case "!gm":
+                                {
+                                    if (game != null && game.Host == client.Client)
+                                    {
+                                        // Get arg1 if it exists
+                                        string arg1 = words.Length > 1 ? words[1].ToLower() : null;
+
+                                        // 
+                                        var gamemode = Program.Settings.Gamemodes.FirstOrDefault(x => x.IsValid(game.ApplicationId) && x.Keys != null && x.Keys.Contains(arg1));
+
+                                        if (arg1 == null)
+                                        {
+                                            channel.SendSystemMessage(client.Client, $"Gamemode is {game.CustomGamemode?.FullName ?? "default"}");
+                                        }
+                                        else if (arg1 == "reset" || arg1 == "r")
+                                        {
+                                            channel.BroadcastSystemMessage(allPlayers, "Gamemode set to default.");
+                                            game.CustomGamemode = null;
+                                        }
+                                        else if (gamemode != null)
+                                        {
+                                            channel.BroadcastSystemMessage(allPlayers, $"Gamemode set to {gamemode.FullName}.");
+                                            game.CustomGamemode = gamemode;
+                                        }
+                                    }
+                                    break;
+                                }
+                            default:
+                                {
+                                    channel.BroadcastChatMessage(allButSender, client.Client.ClientAccount.AccountId, message);
+                                    break;
+                                }
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        Console.WriteLine($"Unhandled generic chat message type:{chatMessage.MessageType} {chatMessage}");
+                        break;
+                    }
+            }
         }
     }
 }
