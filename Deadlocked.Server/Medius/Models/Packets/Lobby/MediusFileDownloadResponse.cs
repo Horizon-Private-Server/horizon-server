@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.FileDownloadResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileDownloadResponse)]
     public class MediusFileDownloadResponse : BaseLobbyMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.FileDownloadResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.FileDownloadResponse;
 
         public byte[] Data = new byte[MediusConstants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE];
         public int iStartByteIndex;

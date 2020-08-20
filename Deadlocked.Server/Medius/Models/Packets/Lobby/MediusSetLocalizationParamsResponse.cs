@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.SetLocalizationParamsResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.SetLocalizationParamsResponse)]
     public class MediusSetLocalizationParamsResponse : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.SetLocalizationParamsResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.SetLocalizationParamsResponse;
 
         public MediusCallbackStatus StatusCode;
 

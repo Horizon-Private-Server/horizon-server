@@ -1,16 +1,16 @@
-﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.DME;
-using Deadlocked.Server.SCERT.Models;
+﻿using Deadlocked.Server.SCERT.Models;
+using Deadlocked.Server.SCERT.Models.Packets;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Deadlocked.Server.Medius
 {
-    public class NAT : IMediusComponent
+    public class NAT
     {
         public class UdpClientObject
         {
@@ -18,6 +18,7 @@ namespace Deadlocked.Server.Medius
             public DateTime LastPing;
         }
 
+        public string Name => "NAT";
         public int Port => Program.Settings.NATPort;
 
         protected Queue<BaseScertMessage> _queue = new Queue<BaseScertMessage>();
@@ -34,7 +35,7 @@ namespace Deadlocked.Server.Medius
         public void OnReceive(IPEndPoint source, byte[] buffer)
         {
             // Log if id is set
-            Console.WriteLine($"NAT {source}: {BitConverter.ToString(buffer)}");
+            Console.WriteLine($"{Name} {source}: {BitConverter.ToString(buffer)}");
 
             var client = _clients.FirstOrDefault(x => x.EndPoint.Equals(source));
             if (client == null)

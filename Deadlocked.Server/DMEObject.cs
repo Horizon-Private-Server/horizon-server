@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Messages.MGCL;
+﻿using Deadlocked.Server.Medius.Models.Packets.MGCL;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Ocsp;
 using System;
@@ -20,8 +20,9 @@ namespace Deadlocked.Server
         public IPAddress IP { get; protected set; } = IPAddress.Any;
 
 
-        public DMEObject(MediusServerSessionBeginRequest request) : base(null, request.ApplicationID, Program.GenerateSessionKey())
+        public DMEObject(MediusServerSessionBeginRequest request)
         {
+            ApplicationId = request.ApplicationID;
             Port = request.Port;
         }
 

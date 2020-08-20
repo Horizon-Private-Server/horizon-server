@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Messages;
+﻿using Deadlocked.Server.Medius.Models.Packets;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

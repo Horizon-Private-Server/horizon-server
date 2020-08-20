@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.UniverseVariableSvoURLResponse)]
-    public class MediusUniverseVariableSvoURLResponse : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.UniverseVariableSvoURLResponse)]
+    public class MediusUniverseVariableSvoURLResponse : BaseLobbyExtMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.UniverseVariableSvoURLResponse;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.UniverseVariableSvoURLResponse;
 
         public ushort Result;
 

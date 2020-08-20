@@ -1,9 +1,11 @@
-﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.DME;
-using Deadlocked.Server.Messages.Lobby;
-using Deadlocked.Server.Messages.MGCL;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.Lobby;
+using Deadlocked.Server.Medius.Models.Packets.MGCL;
 using Deadlocked.Server.SCERT.Models;
+using Deadlocked.Server.SCERT.Models.Packets;
 using Deadlocked.Server.Stream;
+using DotNetty.Common.Internal.Logging;
+using DotNetty.Transport.Channels;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
@@ -12,11 +14,16 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Deadlocked.Server.Medius
 {
     public class MPS : BaseMediusComponent
     {
+        static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<MPS>();
+
+        protected override IInternalLogger Logger => _logger;
+        public override string Name => "MPS";
         public override int Port => Program.Settings.MPSPort;
         public override PS2_RSA AuthKey => Program.DmeAuthKey;
 
@@ -27,314 +34,277 @@ namespace Deadlocked.Server.Medius
             _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
         }
 
-        protected override void Tick(ClientSocket client)
+        protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ClientObject clientObject)
         {
-            List<BaseScertMessage> recv = new List<BaseScertMessage>();
-            List<BaseScertMessage> responses = new List<BaseScertMessage>();
-
-            lock (_queue)
+            // 
+            switch (message)
             {
-                while (_queue.Count > 0)
-                    recv.Add(_queue.Dequeue());
-            }
-
-            foreach (var msg in recv)
-                HandleCommand(msg, client, ref responses);
-
-            // 
-            var targetMsgs = client.ClientObject?.PullProxyMessages();
-            if (targetMsgs != null && targetMsgs.Count > 0)
-                responses.AddRange(targetMsgs);
-
-            // 
-            if ((DateTime.UtcNow - client.ClientObject?.UtcLastEcho)?.TotalSeconds > Program.Settings.ServerEchoInterval)
-                Echo(client, ref responses);
-
-            // 
-            responses.Send(client);
-        }
-
-        protected override int HandleCommand(BaseScertMessage message, ClientSocket client, ref List<BaseScertMessage> responses)
-        {
-            // Log if id is set
-            if (Program.Settings.IsLog(message.Id))
-                Console.WriteLine($"MPS {client}: {message}");
-
-            // Update client echo
-            client.ClientObject?.OnEcho(DateTime.UtcNow);
-
-            // 
-            switch (message.Id)
-            {
-                case RT_MSG_TYPE.RT_MSG_CLIENT_HELLO:
+                case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        responses.Add(new RT_MSG_SERVER_HELLO());
-
+                        Queue(new RT_MSG_SERVER_HELLO(), clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC:
+                case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
-                        responses.Add(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) });
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_TCP:
+                case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
-                        var m00 = message as RT_MSG_CLIENT_CONNECT_TCP;
-                        client.SetToken(m00.AccessToken);
-
-                        responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
+                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_REQUIRE:
+                case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        responses.Add(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) });
-                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) }, clientObject);
+                        Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,
                             UNK_01 = 0,
-                            UNK_02 = 0x01,
-                            UNK_06 = 0x01,
-                            IP = (client.RemoteEndPoint as IPEndPoint)?.Address
-                        });
+                            UNK_02 = 0,
+                            UNK_03 = 0,
+                            UNK_04 = 0,
+                            UNK_05 = 0,
+                            UNK_06 = 0x0001,
+                            IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                        }, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP:
+                case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
-                        responses.Add(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 });
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientObject);
+                        Queue(new RT_MSG_SERVER_ECHO(), clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
+                case RT_MSG_SERVER_ECHO serverEchoReply:
                     {
-                        client.ClientObject?.OnEcho(DateTime.UtcNow);
+
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
+                case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        var appMsg = (message as RT_MSG_CLIENT_APP_TOSERVER).AppMessage;
-
-                        switch (appMsg.Id)
-                        {
-                            case MediusAppPacketIds.MediusServerCreateGameWithAttributesResponse:
-                                {
-                                    var msg = appMsg as MediusServerCreateGameWithAttributesResponse;
-
-                                    int gameId = int.Parse(msg.MessageID.Split('-')[0]);
-                                    int accountId = int.Parse(msg.MessageID.Split('-')[1]);
-                                    string msgId = msg.MessageID.Split('-')[2];
-                                    var game = Program.GetGameById(gameId);
-                                    var rClient = Program.GetClientByAccountId(accountId);
-                                    game.DMEWorldId = msg.WorldID;
-
-                                    rClient.AddLobbyMessage(new RT_MSG_SERVER_APP()
-                                    {
-                                        AppMessage = new MediusCreateGameResponse()
-                                        {
-                                            MessageID = msgId,
-                                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            MediusWorldID = game.Id
-                                        }
-                                    });
-
-
-                                    break;
-                                }
-                            case MediusAppPacketIds.MediusServerJoinGameResponse:
-                                {
-                                    var msg = appMsg as MediusServerJoinGameResponse;
-
-                                    int gameId = int.Parse(msg.MessageID.Split('-')[0]);
-                                    int accountId = int.Parse(msg.MessageID.Split('-')[1]);
-                                    string msgId = msg.MessageID.Split('-')[2];
-                                    var game = Program.GetGameById(gameId);
-                                    var rClient = Program.GetClientByAccountId(accountId);
-
-                                    game.OnPlayerJoined(rClient);
-                                    rClient.AddLobbyMessage(new RT_MSG_SERVER_APP()
-                                    {
-                                        AppMessage = new MediusJoinGameResponse()
-                                        {
-                                            MessageID = msgId,
-                                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            GameHostType = game.GameHostType,
-                                            ConnectInfo = new NetConnectionInfo()
-                                            {
-                                                AccessKey = msg.AccessKey,
-                                                SessionKey = rClient.SessionKey,
-                                                WorldID = game.DMEWorldId,
-                                                ServerKey = msg.pubKey,
-                                                AddressList = new NetAddressList()
-                                                {
-                                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
-                                                        {
-                                                            //new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-#if FALSE
-                                                            new NetAddress() { Address = (client.RemoteEndPoint as IPEndPoint)?.Address.ToString(), Port = (uint)(client.Client as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
-#else                                                        
-                                                            new NetAddress() { Address = (client.ClientObject as DMEObject).IP.ToString(), Port = (uint)(client.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
-#endif
-                                                            new NetAddress() { AddressType = NetAddressType.NetAddressNone},
-                                                        }
-                                                },
-                                                Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP
-                                            }
-                                        }
-                                    });
-                                    break;
-                                }
-
-                            case MediusAppPacketIds.MediusServerReport:
-                                {
-                                    (client.ClientObject as DMEObject)?.OnWorldReport(appMsg as MediusServerReport);
-
-                                    break;
-                                }
-                            case MediusAppPacketIds.MediusServerConnectNotification:
-                                {
-                                    var msg = appMsg as MediusServerConnectNotification;
-
-                                    Program.GetGameById((int)msg.MediusWorldUID)?.OnMediusServerConnectNotification(msg);
-                                    
-
-                                    break;
-                                }
-
-                            case MediusAppPacketIds.MediusServerEndGameResponse:
-                                {
-                                    var msg = appMsg as MediusServerEndGameResponse;
-
-                                    break;
-                                }
-
-                            default:
-                                {
-                                    Console.WriteLine($"MPS Unhandled App Message: {appMsg.Id} {appMsg}");
-                                    break;
-                                }
-                        }
+                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientObject);
+                        break;
+                    }
+                case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
+                    {
+                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, clientObject);
                         break;
                     }
 
-                case RT_MSG_TYPE.RT_MSG_CLIENT_ECHO:
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        client.ClientObject?.OnEcho(DateTime.UtcNow);
-                        responses.Add(new RT_MSG_CLIENT_ECHO() { Value = (message as RT_MSG_CLIENT_ECHO).Value });
-                        break;
-                    }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT:
-                case RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT_WITH_REASON:
-                    {
-                        client.Disconnect();
+                        await clientChannel.DisconnectAsync();
                         break;
                     }
                 default:
                     {
-                        Console.WriteLine($"MPS Unhandled Medius Command: {message.Id} {message}");
+                        Logger.Warn($"{Name} UNHANDLED MESSAGE: {message}");
+
                         break;
                     }
             }
 
-            return 0;
+            return;
         }
 
+        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ClientObject clientObject)
+        {
+            if (message == null)
+                return;
 
-        protected ClientSocket GetFreeDme()
+
+            switch (message)
+            {
+                case MediusServerCreateGameWithAttributesResponse createGameWithAttrResponse:
+                    {
+                        int gameId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[0]);
+                        int accountId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[1]);
+                        string msgId = createGameWithAttrResponse.MessageID.Split('-')[2];
+                        var game = Program.GetGameById(gameId);
+                        var rClient = Program.GetClientByAccountId(accountId);
+                        game.DMEWorldId = createGameWithAttrResponse.WorldID;
+
+                        Program.LobbyServer.Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusCreateGameResponse()
+                            {
+                                MessageID = msgId,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                MediusWorldID = game.Id
+                            }
+                        }, rClient);
+
+
+                        break;
+                    }
+                case MediusServerJoinGameResponse joinGameResponse:
+                    {
+                        int gameId = int.Parse(joinGameResponse.MessageID.Split('-')[0]);
+                        int accountId = int.Parse(joinGameResponse.MessageID.Split('-')[1]);
+                        string msgId = joinGameResponse.MessageID.Split('-')[2];
+                        var game = Program.GetGameById(gameId);
+                        var rClient = Program.GetClientByAccountId(accountId);
+
+                        game.OnPlayerJoined(rClient);
+
+                        Program.LobbyServer.Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusJoinGameResponse()
+                            {
+                                MessageID = msgId,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                GameHostType = game.GameHostType,
+                                ConnectInfo = new NetConnectionInfo()
+                                {
+                                    AccessKey = joinGameResponse.AccessKey,
+                                    SessionKey = rClient.SessionKey,
+                                    WorldID = game.DMEWorldId,
+                                    ServerKey = joinGameResponse.pubKey,
+                                    AddressList = new NetAddressList()
+                                    {
+                                        AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                            {
+                                                new NetAddress() { Address = (clientChannel.RemoteAddress as IPEndPoint)?.Address.ToString(), Port = (uint)(clientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
+                                                new NetAddress() { AddressType = NetAddressType.NetAddressNone},
+                                            }
+                                    },
+                                    Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP
+                                }
+                            }
+                        }, rClient);
+                        break;
+                    }
+
+                case MediusServerReport serverReport:
+                    {
+                        (clientObject as DMEObject)?.OnWorldReport(serverReport);
+
+                        break;
+                    }
+                case MediusServerConnectNotification connectNotification:
+                    {
+                        Program.GetGameById((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
+
+
+                        break;
+                    }
+
+                case MediusServerEndGameResponse endGameResponse:
+                    {
+
+                        break;
+                    }
+
+                default:
+                    {
+                        Logger.Warn($"{Name} Unhandled Medius Message: {message}");
+                        break;
+                    }
+            }
+        }
+
+        protected DMEObject GetFreeDme()
         {
             try
             {
-                return Clients.Where(x => x.ClientObject is DMEObject).MinBy(x => (x.ClientObject as DMEObject).CurrentWorlds);
+                return _scertHandler.Group
+                    .Select(x => _nettyToClientObject[x.Id.AsLongText()])
+                    .Where(x => x is DMEObject)
+                    .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
             }
             catch (InvalidOperationException e)
             {
-                Console.WriteLine(e);
+                Logger.Error(e);
             }
 
             return null;
         }
 
 
-        public void CreateGame(ClientSocket client, MediusCreateGameRequest request)
+        public void CreateGame(ClientObject client, MediusCreateGameRequest request)
         {
             // Ensure the name is unique
             // If the host leaves then we unreserve the name
             if (Program.Games.Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == request.GameName && x.Host != null && x.Host.IsConnected))
             {
-                client.ClientObject.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                Program.LobbyServer.Queue(new RT_MSG_SERVER_APP()
                 {
-                    AppMessage = new MediusCreateGameResponse()
+                    Message = new MediusCreateGameResponse()
                     {
                         MessageID = request.MessageID,
                         MediusWorldID = -1,
                         StatusCode = MediusCallbackStatus.MediusGameNameExists
                     }
-                });
+                }, client);
                 return;
             }
 
             // 
-            var dme = GetFreeDme()?.ClientObject as DMEObject;
+            var dme = GetFreeDme();
             if (dme == null)
             {
-                client.ClientObject.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                Program.LobbyServer.Queue(new RT_MSG_SERVER_APP()
                 {
-                    AppMessage = new MediusCreateGameResponse()
+                    Message = new MediusCreateGameResponse()
                     {
                         MessageID = request.MessageID,
                         MediusWorldID = -1,
                         StatusCode = MediusCallbackStatus.MediusExceedsMaxWorlds
                     }
-                });
+                }, client);
                 return;
             }
 
-            var game = new Game(client.ClientObject, request, dme);
+            var game = new Game(client, request, dme);
             Program.Games.Add(game);
 
-            dme.AddProxyMessage(new RT_MSG_SERVER_APP()
+            Queue(new RT_MSG_SERVER_APP()
             {
-                AppMessage = new MediusServerCreateGameWithAttributesRequest()
+                Message = new MediusServerCreateGameWithAttributesRequest()
                 {
-                    MessageID = $"{game.Id}-{client.ClientObject.ClientAccount.AccountId}-{request.MessageID}",
+                    MessageID = $"{game.Id}-{client.ClientAccount.AccountId}-{request.MessageID}",
                     MediusWorldUID = (uint)game.Id,
                     Attributes = game.Attributes,
                     ApplicationID = Program.Settings.ApplicationId,
                     MaxClients = game.MaxPlayers
                 }
-            });
+            }, dme);
         }
 
-        public void JoinGame(ClientSocket client, MediusJoinGameRequest request)
+        public void JoinGame(ClientObject client, MediusJoinGameRequest request)
         {
             var game = Program.GetGameById(request.MediusWorldID);
             if (game == null)
             {
-                client.ClientObject.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                Program.LobbyServer.Queue(new RT_MSG_SERVER_APP()
                 {
-                    AppMessage = new MediusJoinGameResponse()
+                    Message = new MediusJoinGameResponse()
                     {
                         MessageID = request.MessageID,
                         StatusCode = MediusCallbackStatus.MediusGameNotFound
                     }
-                });
+                }, client);
             }
             else if (game.GamePassword != null && game.GamePassword != string.Empty && game.GamePassword != request.GamePassword)
             {
-                client.ClientObject.AddLobbyMessage(new RT_MSG_SERVER_APP()
+                Program.LobbyServer.Queue(new RT_MSG_SERVER_APP()
                 {
-                    AppMessage = new MediusJoinGameResponse()
+                    Message = new MediusJoinGameResponse()
                     {
                         MessageID = request.MessageID,
                         StatusCode = MediusCallbackStatus.MediusInvalidPassword
                     }
-                });
+                }, client);
             }
             else
             {
                 var dme = game.DMEServer;
-                dme.AddProxyMessage(new RT_MSG_SERVER_APP()
+                Queue(new RT_MSG_SERVER_APP()
                 {
-                    AppMessage = new MediusServerJoinGameRequest()
+                    Message = new MediusServerJoinGameRequest()
                     {
-                        MessageID = $"{game.Id}-{client.ClientObject.ClientAccount.AccountId}-{request.MessageID}",
+                        MessageID = $"{game.Id}-{client.ClientAccount.AccountId}-{request.MessageID}",
                         ConnectInfo = new NetConnectionInfo()
                         {
                             Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
@@ -343,7 +313,7 @@ namespace Deadlocked.Server.Medius
                             ServerKey = Program.GlobalAuthPublic
                         }
                     }
-                });
+                }, dme);
             }
         }
     }

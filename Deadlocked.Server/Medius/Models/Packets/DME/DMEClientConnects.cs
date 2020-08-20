@@ -11,7 +11,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
     public class DMEClientConnects : BaseDMEMessage
     {
 
-        public override byte MessageType => (byte)MediusDmeMessageIds.ClientConnects;
+        public override byte PacketType => (byte)MediusDmeMessageIds.ClientConnects;
 
         public byte UNK_00 = 0x02;
         public byte PlayerIndex = 0;

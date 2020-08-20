@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerSetAttributesRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerSetAttributesRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerSetAttributesRequest;
 
         public int Attributes;
         public NetAddress ListenServerAddress;

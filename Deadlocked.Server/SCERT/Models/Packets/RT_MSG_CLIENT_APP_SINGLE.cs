@@ -15,7 +15,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
 
         public override void Deserialize(BinaryReader reader)
         {
-            Contents = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+            Contents = reader.ReadRest();
         }
 
         protected override void Serialize(BinaryWriter writer)

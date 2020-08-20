@@ -1,11 +1,10 @@
-﻿using Deadlocked.Server.Messages.Lobby;
-using Deadlocked.Server.Messages.DME;
-using Deadlocked.Server.Stream;
+﻿using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Deadlocked.Server.Medius.Models.Packets;
 
 namespace Deadlocked.Server.SCERT.Models.Packets
 {
@@ -14,25 +13,27 @@ namespace Deadlocked.Server.SCERT.Models.Packets
     {
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_SERVER_APP;
 
-        public BaseAppMessage AppMessage = null;
+        public BaseMediusMessage Message { get; set; } = null;
 
         public override void Deserialize(BinaryReader reader)
         {
-            MediusAppPacketIds id = reader.Read<MediusAppPacketIds>();
-            AppMessage = BaseAppMessage.Instantiate(id, reader);
+            Message = BaseMediusMessage.Instantiate(reader);
         }
 
         protected override void Serialize(BinaryWriter writer)
         {
-            // Write normal unfragmented message
-            writer.Write(AppMessage.Id);
-            AppMessage.Serialize(writer);
+            if (Message != null)
+            {
+                writer.Write(Message.PacketClass);
+                writer.Write(Message.PacketType);
+                Message.Serialize(writer);
+            }
         }
 
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"AppMessage:{AppMessage}";
+                $"Message:{Message}";
         }
     }
 }

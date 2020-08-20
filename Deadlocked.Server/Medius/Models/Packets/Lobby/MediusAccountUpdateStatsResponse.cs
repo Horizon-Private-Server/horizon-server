@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,12 +6,12 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.AccountUpdateStatsResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountUpdateStatsResponse)]
     public class MediusAccountUpdateStatsResponse : BaseLobbyMessage
     {
-        public override TypesAAA MessageType => TypesAAA.AccountUpdateStatsResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.AccountUpdateStatsResponse;
 
-        public uint Response = 0;
+        public MediusCallbackStatus StatusCode;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -20,7 +20,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 
             // 
             reader.ReadBytes(3);
-            Response = reader.ReadUInt32();
+            StatusCode = reader.Read<MediusCallbackStatus>();
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -30,14 +30,14 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 
             // 
             writer.Write(new byte[3]);
-            writer.Write(Response);
+            writer.Write(StatusCode);
         }
 
 
         public override string ToString()
         {
             return base.ToString() + " " +
-             $"Response:{Response}" + " ";
+             $"StatusCode:{StatusCode}" + " ";
         }
     }
 }

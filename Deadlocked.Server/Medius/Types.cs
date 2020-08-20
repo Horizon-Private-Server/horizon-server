@@ -523,7 +523,7 @@ namespace Deadlocked.Server.Medius.Models.Packets
         GetMyIPResponse = 0x1C,
         CreateGameRequest0 = 0x1D,
         CreateGameResponse = 0x1E,
-        CreateGameOnSelf = 0x1F01,
+        CreateGameOnSelf = 0x1F,
         CreateGameOnSelfResponse = 0x20,
         CreateChannelRequest0 = 0x21,
         CreateChannelResponse = 0x22,

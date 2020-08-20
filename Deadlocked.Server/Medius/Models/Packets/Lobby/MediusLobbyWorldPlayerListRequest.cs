@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.LobbyWorldPlayerList)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.LobbyWorldPlayerList)]
     public class MediusLobbyWorldPlayerListRequest : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.LobbyWorldPlayerList;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.LobbyWorldPlayerList;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public int MediusWorldID;

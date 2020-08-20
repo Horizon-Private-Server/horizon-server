@@ -1,6 +1,10 @@
-﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.Lobby;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.Lobby;
+using Deadlocked.Server.SCERT;
 using Deadlocked.Server.SCERT.Models;
+using Deadlocked.Server.SCERT.Models.Packets;
+using DotNetty.Common.Internal.Logging;
+using DotNetty.Transport.Channels;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
@@ -9,11 +13,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Deadlocked.Server.Medius
 {
     public class MUIS : BaseMediusComponent
     {
+        static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<MUIS>();
+
+        protected override IInternalLogger Logger => _logger;
+        public override string Name => "MUIS";
         public override int Port => Program.Settings.MUISPort;
         public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
@@ -22,54 +31,30 @@ namespace Deadlocked.Server.Medius
             _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
         }
 
-        protected override void Tick(ClientSocket client)
+        protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ClientObject clientObject)
         {
-            List<BaseScertMessage> recv = new List<BaseScertMessage>();
-            List<BaseScertMessage> responses = new List<BaseScertMessage>();
-
-            lock (_queue)
-            {
-                while (_queue.Count > 0)
-                    recv.Add(_queue.Dequeue());
-            }
-
-            foreach (var msg in recv)
-                HandleCommand(msg, client, ref responses);
-
-            responses.Send(client);
-        }
-
-        protected override int HandleCommand(BaseScertMessage message, ClientSocket client, ref List<BaseScertMessage> responses)
-        {
-            // Log if id is set
-            if (Program.Settings.IsLog(message.Id))
-                Console.WriteLine($"MUIS {client}: {message}");
-
-            // Update client echo
-            client.ClientObject?.OnEcho(DateTime.UtcNow);
-
             // 
-            switch (message.Id)
+            switch (message)
             {
-                case RT_MSG_TYPE.RT_MSG_CLIENT_HELLO: //Connecting 1
-
-                    responses.Add(new RT_MSG_SERVER_HELLO());
-
-                    break;
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC:
+                case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        responses.Add(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) });
+                        Queue(new RT_MSG_SERVER_HELLO(), clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_TCP:
+                case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
-                        responses.Add(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") });
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_REQUIRE:
+                case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
-                        responses.Add(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) });
-                        responses.Add(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientObject);
+                        break;
+                    }
+                case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
+                    {
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) }, clientObject);
+                        Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,
                             UNK_01 = 0,
@@ -78,84 +63,85 @@ namespace Deadlocked.Server.Medius
                             UNK_04 = 0,
                             UNK_05 = 0,
                             UNK_06 = 0x0001,
-                            IP = (client.RemoteEndPoint as IPEndPoint)?.Address
-                        });
+                            IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                        }, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP:
+                case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
-                        responses.Add(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 });
-                        responses.Add(new RT_MSG_SERVER_ECHO());
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientObject);
+                        Queue(new RT_MSG_SERVER_ECHO(), clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_SERVER_ECHO:
+                case RT_MSG_SERVER_ECHO serverEchoReply:
                     {
 
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_APP_TOSERVER:
+                case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        var appMsg = (message as RT_MSG_CLIENT_APP_TOSERVER).AppMessage;
-
-                        switch (appMsg.Id)
-                        {
-                            case MediusAppPacketIds.GetUniverseInformation:
-                                {
-                                    var msg = appMsg as MediusGetUniverseInformationRequest;
-
-                                    // 
-                                    responses.Add(new RT_MSG_SERVER_APP() { AppMessage = new MediusUniverseVariableSvoURLResponse() { Result = 1 } });
-
-                                    // 
-                                    responses.Add(new RT_MSG_SERVER_APP()
-                                    {
-                                        AppMessage = new MediusUniverseVariableInformationResponse()
-                                        {
-                                            MessageID = msg.MessageID,
-                                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                                            InfoFilter = msg.InfoType,
-                                            UniverseID = 1,
-                                            ExtendedInfo = "",
-                                            UniverseName = "Ratchet: Deadlocked Production",
-                                            UniverseDescription = "Ratchet: Deadlocked Production",
-                                            DNS = "ratchetdl-prod.pdonline.scea.com",
-                                            // DNS = "randc-deadlocked.online.scee.com",
-                                            Port = Program.AuthenticationServer.Port,
-                                            EndOfList = true
-                                        }
-                                    });
-                                    
-                                    break;
-                                }
-                            default:
-                                {
-                                    Console.WriteLine($"UNHANDLED APP MESSAGE ID: {appMsg.Id}");
-                                    break;
-                                }
-                        }
-                        
+                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_ECHO:
+                case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
-                        responses.Add(new RT_MSG_CLIENT_ECHO() { Value = (message as RT_MSG_CLIENT_ECHO).Value });
+                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, clientObject);
                         break;
                     }
-                case RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT:
-                case RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT_WITH_REASON:
+
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        client.Disconnect();
+                        await clientChannel.DisconnectAsync();
                         break;
                     }
                 default:
                     {
-                        Console.WriteLine($"UNHANDLED MESSAGE ID: {message.Id}");
-
+                        Logger.Warn($"{Name} UNHANDLED MESSAGE: {message}");
                         break;
                     }
             }
 
-            return 0;
+            return;
+        }
+
+        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ClientObject clientObject)
+        {
+            if (message == null)
+                return;
+
+            switch (message)
+            {
+                case MediusGetUniverseInformationRequest getUniverseInfo:
+                    {
+                        // 
+                        Queue(new RT_MSG_SERVER_APP() { Message = new MediusUniverseVariableSvoURLResponse() { Result = 1 } }, clientObject);
+
+                        // 
+                        Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusUniverseVariableInformationResponse()
+                            {
+                                MessageID = getUniverseInfo.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                InfoFilter = getUniverseInfo.InfoType,
+                                UniverseID = 1,
+                                ExtendedInfo = "",
+                                UniverseName = "Ratchet: Deadlocked Production",
+                                UniverseDescription = "Ratchet: Deadlocked Production",
+                                DNS = "ratchetdl-prod.pdonline.scea.com",
+                                Port = Program.AuthenticationServer.Port,
+                                EndOfList = true
+                            }
+                        }, clientObject);
+
+                        break;
+                    }
+                default:
+                    {
+                        Logger.Warn($"{Name} UNHANDLED MEDIUS MESSAGE: {message}");
+                        break;
+                    }
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetServerTimeResponse)]
-    public class MediusGetServerTimeResponse : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GetServerTimeResponse)]
+    public class MediusGetServerTimeResponse : BaseLobbyExtMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetServerTimeResponse;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GetServerTimeResponse;
 
         public MediusCallbackStatus StatusCode;
         public uint GMT_time = Utils.GetUnixTime();

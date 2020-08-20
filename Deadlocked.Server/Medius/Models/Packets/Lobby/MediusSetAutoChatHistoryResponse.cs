@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.SetAutoChatHistoryResponse)]
-    public class MediusSetAutoChatHistoryResponse : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.SetAutoChatHistoryResponse)]
+    public class MediusSetAutoChatHistoryResponse : BaseLobbyExtMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.SetAutoChatHistoryResponse;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.SetAutoChatHistoryResponse;
 
         public MediusCallbackStatus StatusCode;
 

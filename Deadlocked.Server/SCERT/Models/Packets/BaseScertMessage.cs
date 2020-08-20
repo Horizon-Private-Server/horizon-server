@@ -1,4 +1,6 @@
-﻿using DotNetty.Buffers;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.DME;
+using DotNetty.Buffers;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
@@ -36,25 +38,54 @@ namespace Deadlocked.Server.SCERT.Models.Packets
         public List<byte[]> Serialize()
         {
             var results = new List<byte[]>();
-            byte[] result = new byte[1024 * 4];
-            int length;
+            byte[] result = null;
+            var buffer = new byte[1024 * 10];
+            int length = 0;
 
             // Serialize message
-            using (MemoryStream stream = new MemoryStream(result, true))
+            using (MemoryStream stream = new MemoryStream(buffer, true))
             {
                 using (BinaryWriter writer = new BinaryWriter(stream))
                 {
-                    writer.Write((byte)this.Id);
-                    writer.Write((ushort)0);
                     Serialize(writer);
-                    length = (int)writer.BaseStream.Position - HEADER_SIZE;
-
-                    writer.Seek(1, SeekOrigin.Begin);
-                    writer.Write((ushort)length);
+                    length = (int)writer.BaseStream.Position;
                 }
             }
 
-            results.Add(result);
+            // Check for fragmentation
+            if (Id == RT_MSG_TYPE.RT_MSG_SERVER_APP && length > MediusConstants.MEDIUS_MESSAGE_MAXLEN)
+            {
+                var msgClass = (NetMessageTypes)buffer[0];
+                var msgType = buffer[1];
+                var fragments = DMETypePacketFragment.FromPayload(msgClass, msgType, buffer, 2, length - 2);
+
+                foreach (var frag in fragments)
+                {
+                    // Serialize message
+                    using (MemoryStream stream = new MemoryStream(buffer, true))
+                    {
+                        using (BinaryWriter writer = new BinaryWriter(stream))
+                        {
+                            new RT_MSG_SERVER_APP() { Message = frag }.Serialize(writer);
+                            result = new byte[stream.Position];
+                            Array.Copy(buffer, 0, result, 0, result.Length);
+                            results.Add(result);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Add id and length to header
+                result = new byte[length + 3];
+                result[0] = (byte)this.Id;
+                result[1] = (byte)(length & 0xFF);
+                result[2] = (byte)((length >> 8) & 0xFF);
+
+                Array.Copy(buffer, 0, result, 3, length);
+                results.Add(result);
+            }
+
             return results;
         }
 

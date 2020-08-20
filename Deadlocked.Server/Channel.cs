@@ -1,5 +1,5 @@
-﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.Lobby;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.Lobby;
 using Deadlocked.Server.SCERT.Models;
 using Org.BouncyCastle.Ocsp;
 using System;
@@ -112,21 +112,12 @@ namespace Deadlocked.Server
 
         public void BroadcastBinaryMessage(ClientObject source, MediusBinaryMessage msg)
         {
-            foreach (var client in Clients)
+            Program.LobbyServer.Queue(new MediusBinaryFwdMessage()
             {
-                if (client.Client != null && client.Client.IsConnected && client.Client.ClientAccount != null && client.Client != source)
-                {
-                    client.Client?.AddLobbyMessage(new RT_MSG_SERVER_APP()
-                    {
-                        AppMessage = new MediusBinaryFwdMessage()
-                        {
-                            MessageType = msg.MessageType,
-                            OriginatorAccountID = client.Client.ClientAccount.AccountId,
-                            Message = msg.Message
-                        }
-                    });
-                }
-            }
+                MessageType = msg.MessageType,
+                OriginatorAccountID = source.ClientAccount.AccountId,
+                Message = msg.Message
+            }, Clients.Select(x => x.Client));
         }
 
 
@@ -136,56 +127,38 @@ namespace Deadlocked.Server
             if (Program.Database.TryGetAccountById(sourceAccountId, out var account))
                 accountName = account.AccountName;
 
-            var msg = new RT_MSG_SERVER_APP()
+            Program.LobbyServer.Queue(new MediusGenericChatFwdMessage()
             {
-                AppMessage = new MediusGenericChatFwdMessage()
-                {
-                    OriginatorAccountID = sourceAccountId,
-                    OriginatorAccountName = "",
-                    Message = "A" + message,
-                    MessageType = MediusChatMessageType.Broadcast,
-                    TimeStamp = Utils.GetUnixTime()
-                }
-            };
-
-
-            if (targets != null && message != null)
-                foreach (var target in targets)
-                    target.AddLobbyMessage(msg);
+                OriginatorAccountID = sourceAccountId,
+                OriginatorAccountName = "",
+                Message = "A" + message,
+                MessageType = MediusChatMessageType.Broadcast,
+                TimeStamp = Utils.GetUnixTime()
+            }, Clients.Select(x => x.Client));
         }
 
         public void SendSystemMessage(ClientObject client, string message)
         {
-            client?.AddLobbyMessage(new RT_MSG_SERVER_APP()
+            Program.LobbyServer.Queue(new MediusGenericChatFwdMessage()
             {
-                AppMessage = new MediusGenericChatFwdMessage()
-                {
-                    OriginatorAccountID = 0,
-                    OriginatorAccountName = "SYSTEM",
-                    Message = "A" + message,
-                    MessageType = MediusChatMessageType.Broadcast,
-                    TimeStamp = Utils.GetUnixTime()
-                }
-            });
+                OriginatorAccountID = 0,
+                OriginatorAccountName = "SYSTEM",
+                Message = "A" + message,
+                MessageType = MediusChatMessageType.Broadcast,
+                TimeStamp = Utils.GetUnixTime()
+            }, client);
         }
 
         public void BroadcastSystemMessage(IEnumerable<ClientObject> targets, string message)
         {
-            var msg = new RT_MSG_SERVER_APP()
+            Program.LobbyServer.Queue(new MediusGenericChatFwdMessage()
             {
-                AppMessage = new MediusGenericChatFwdMessage()
-                {
-                    OriginatorAccountID = 0,
-                    OriginatorAccountName = "SYSTEM",
-                    Message = "A" + message,
-                    MessageType = MediusChatMessageType.Broadcast,
-                    TimeStamp = Utils.GetUnixTime()
-                }
-            };
-
-            if (targets != null && message != null)
-                foreach (var target in targets)
-                    target.AddLobbyMessage(msg);
+                OriginatorAccountID = 0,
+                OriginatorAccountName = "SYSTEM",
+                Message = "A" + message,
+                MessageType = MediusChatMessageType.Broadcast,
+                TimeStamp = Utils.GetUnixTime()
+            }, targets);
         }
     }
 }

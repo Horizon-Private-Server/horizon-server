@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerCreateGameWithAttributesRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerCreateGameWithAttributesRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerCreateGameWithAttributesRequest;
 
         public int ApplicationID;
         public int MaxClients;

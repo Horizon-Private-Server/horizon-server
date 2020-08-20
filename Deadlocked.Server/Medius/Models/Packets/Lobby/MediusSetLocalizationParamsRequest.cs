@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.SetLocalizationParams)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.SetLocalizationParams)]
     public class MediusSetLocalizationParamsRequest : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.SetLocalizationParams;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.SetLocalizationParams;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public MediusCharacterEncodingType CharacterEncoding;

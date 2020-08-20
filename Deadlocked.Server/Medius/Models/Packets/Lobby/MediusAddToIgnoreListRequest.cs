@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.AddToIgnoreList)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AddToIgnoreList)]
     public class MediusAddToIgnoreListRequest : BaseLobbyMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.AddToIgnoreList;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.AddToIgnoreList;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public int IgnoreAccountID;

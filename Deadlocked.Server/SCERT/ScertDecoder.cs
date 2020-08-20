@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Deadlocked.Server.SCERT.Models;
+using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Transport.Channels;
@@ -129,7 +130,8 @@ namespace Deadlocked.Server.SCERT
             }
 
             // extract frame
-            IByteBuffer messageContents = input.ReadBytes(frameLengthInt);
+            byte[] messageContents = new byte[frameLengthInt];
+            input.ReadBytes(messageContents);
 
             // 
             return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, getCipher);

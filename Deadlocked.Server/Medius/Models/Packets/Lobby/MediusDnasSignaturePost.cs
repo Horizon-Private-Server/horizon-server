@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.DnasSignaturePost)]
-    public class MediusDnasSignaturePost : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.DnasSignaturePost)]
+    public class MediusDnasSignaturePost : BaseLobbyExtMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.DnasSignaturePost;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.DnasSignaturePost;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public MediusDnasCategory DnasSignatureType;

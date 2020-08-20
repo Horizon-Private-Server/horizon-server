@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,11 +7,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetMyIPResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetMyIPResponse)]
     public class MediusGetMyIPResponse : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetMyIPResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.GetMyIPResponse;
 
         public IPAddress IP = IPAddress.Any;
         public MediusCallbackStatus StatusCode;

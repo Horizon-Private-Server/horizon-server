@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using Org.BouncyCastle.Asn1.Mozilla;
 using System;
 using System.Collections.Generic;
@@ -7,11 +7,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetBuddyList_ExtraInfoResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetBuddyList_ExtraInfoResponse)]
     public class MediusGetBuddyList_ExtraInfoResponse : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetBuddyList_ExtraInfoResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.GetBuddyList_ExtraInfoResponse;
 
         public MediusCallbackStatus StatusCode;
         public int AccountID;

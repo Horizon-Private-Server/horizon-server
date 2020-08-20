@@ -1,5 +1,5 @@
-﻿using Deadlocked.Server.Messages;
-using Deadlocked.Server.SCERT.Models;
+﻿using Deadlocked.Server.SCERT.Models;
+using Deadlocked.Server.SCERT.Models.Packets;
 using System;
 using System.Collections.Generic;
 using System.IO;

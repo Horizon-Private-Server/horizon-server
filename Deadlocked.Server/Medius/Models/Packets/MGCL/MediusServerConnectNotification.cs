@@ -9,8 +9,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectNotification)]
     public class MediusServerConnectNotification : BaseMediusMessage
     {
-
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerConnectNotification;
+        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyReport;
+        public override byte PacketType => (byte)MediusMGCLMessageIds.ServerConnectNotification;
 
         public MGCL_EVENT_TYPE ConnectEventType;
         public uint MediusWorldUID;

@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.PolicyResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.PolicyResponse)]
     public class MediusGetPolicyResponse : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.PolicyResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.PolicyResponse;
 
         public MediusCallbackStatus StatusCode;
         public string Policy; // POLICY_MAXLEN

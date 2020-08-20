@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerConnectGamesRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerConnectGamesRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerConnectGamesRequest;
 
         public string ServerIP; // MGCL_SERVERIP_MAXLEN
         public int ServerPort;

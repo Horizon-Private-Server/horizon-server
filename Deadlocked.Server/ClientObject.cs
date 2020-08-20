@@ -1,6 +1,7 @@
 ﻿using Deadlocked.Server.Accounts;
-using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.Lobby;
+using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.Lobby;
+using Deadlocked.Server.SCERT.Models.Packets;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Ocsp;
 using System;
@@ -15,8 +16,10 @@ namespace Deadlocked.Server
     public class ClientObject
     {
         public static Random RNG = new Random();
+
         public string Token { get; protected set; }
         public string SessionKey { get; protected set; }
+        public string DotNettyId { get; set; }
         public DateTime UtcLastEcho { get; protected set; } = DateTime.UtcNow;
 
         public MediusUserAction Action { get; set; } = MediusUserAction.KeepAlive;
@@ -64,23 +67,9 @@ namespace Deadlocked.Server
         private ConcurrentQueue<BaseScertMessage> LobbyServerMessages = new ConcurrentQueue<BaseScertMessage>();
         private ConcurrentQueue<BaseScertMessage> ProxyServerMessages = new ConcurrentQueue<BaseScertMessage>();
 
-        public ClientObject(Account clientAccount, int appId, string sessionKey)
+        public ClientObject()
         {
-            // Generate new token
-            byte[] tokenBuf = new byte[12];
-            RNG.NextBytes(tokenBuf);
-            Token = Convert.ToBase64String(tokenBuf);
-
-            // Set account
-            ClientAccount = clientAccount;
-            if (ClientAccount != null)
-                ClientAccount.Client = this;
-
-            // Set application id
-            ApplicationId = appId;
-
-            // Set session key
-            SessionKey = sessionKey;
+            SessionKey = Program.GenerateSessionKey();
         }
 
         /// <summary>
@@ -198,6 +187,25 @@ namespace Deadlocked.Server
 
             //
             LogoutTime = DateTime.UtcNow;
+
+            // Remove from program list
+            Program.Clients.Remove(this);
+        }
+
+        public void Login(Account account)
+        {
+            // Generate new token
+            byte[] tokenBuf = new byte[12];
+            RNG.NextBytes(tokenBuf);
+            Token = Convert.ToBase64String(tokenBuf);
+
+            // Set account
+            ClientAccount = account;
+            if (ClientAccount != null)
+                ClientAccount.Client = this;
+
+            // Add to program clients list
+            Program.Clients.Add(this);
         }
 
         public GameListFilter SetGameListFilter(MediusSetGameListFilterRequest request)

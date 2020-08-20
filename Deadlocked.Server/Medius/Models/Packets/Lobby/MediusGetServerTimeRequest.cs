@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetServerTimeRequest)]
-    public class MediusGetServerTimeRequest : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GetServerTimeRequest)]
+    public class MediusGetServerTimeRequest : BaseLobbyExtMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetServerTimeRequest;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GetServerTimeRequest;
 
 
 

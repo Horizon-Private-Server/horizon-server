@@ -1,4 +1,4 @@
-﻿using Medius.Crypto;
+using Medius.Crypto;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +9,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
     public abstract class BaseLobbyMessage : BaseMediusMessage
     {
-        public override NetMessageTypes MessageClass => NetMessageTypes.MessageClassLobby;
+        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobby;
 
         /// <summary>
         /// 

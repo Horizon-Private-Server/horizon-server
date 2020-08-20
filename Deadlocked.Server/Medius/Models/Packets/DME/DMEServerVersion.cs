@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
     public class DMEServerVersion : BaseDMEMessage
     {
 
-        public override byte MessageType => (byte)MediusDmeMessageIds.ServerVersion;
+        public override byte PacketType => (byte)MediusDmeMessageIds.ServerVersion;
 
         public string Version = "2.10.1143227940";
 

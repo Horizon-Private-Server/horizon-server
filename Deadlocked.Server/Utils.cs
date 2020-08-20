@@ -1,10 +1,14 @@
-﻿using Deadlocked.Server.Messages;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.SCERT.Models.Packets;
+using DotNetty.Transport.Channels;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Deadlocked.Server
 {
@@ -108,6 +112,43 @@ namespace Deadlocked.Server
                 return Encoding.UTF8.GetString(buffer, 0, i);
             else
                 return string.Empty;
+        }
+
+        #endregion
+
+        #region BaseScertMessage
+
+        /// <summary>
+        /// Sends a collection of messages to the clients.
+        /// </summary>
+        public static async Task Send(this IEnumerable<BaseScertMessage> messages, params IChannel[] clients)
+        {
+            if (messages == null || messages.Count() == 0 || clients == null || clients.Length == 0)
+                return;
+
+            List<byte[]> msgs = new List<byte[]>();
+
+            foreach (var msg in messages)
+            {
+                // Log if id is set
+                if (Program.Settings.IsLog(msg.Id))
+                    Console.WriteLine($"Send to <{String.Join(",", clients.Select(x => x.ToString()))}>: {msg}");
+
+                // Serialize and add
+                msgs.AddRange(msg.Serialize());
+            }
+
+            // Condense as much as possible
+            var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < MediusConstants.MEDIUS_MESSAGE_MAXLEN).SelectMany(x => x);
+
+            // 
+            foreach (var client in clients)
+            {
+                foreach (var msg in condensedMsgs)
+                {
+                    await client.WriteAndFlushAsync(msg);
+                }
+            }
         }
 
         #endregion

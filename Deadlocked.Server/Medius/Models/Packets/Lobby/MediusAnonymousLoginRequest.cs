@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.AnonymousLogin)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AnonymousLogin)]
     public class MediusAnonymousLoginRequest : BaseLobbyMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.AnonymousLogin;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.AnonymousLogin;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public string SessionDisplayName; // ACCOUNTNAME_MAXLEN

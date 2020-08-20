@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerDisconnectPlayerRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerDisconnectPlayerRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerDisconnectPlayerRequest;
 
         public int DmeWorldID;
         public int DmeClientIndex;

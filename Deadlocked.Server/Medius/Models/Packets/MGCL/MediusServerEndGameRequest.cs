@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerEndGameRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerEndGameRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerEndGameRequest;
 
         public int WorldID;
         public bool BrutalFlag;

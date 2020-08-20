@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,12 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GenericChatFwdMessage)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GenericChatFwdMessage)]
     public class MediusGenericChatFwdMessage : BaseMediusMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.GenericChatFwdMessage;
+		public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyExt;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GenericChatFwdMessage;
 
         public uint TimeStamp;
         public int OriginatorAccountID;

@@ -9,8 +9,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerReport)]
     public class MediusServerReport : BaseMediusMessage
     {
-
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerReport;
+        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyReport;
+        public override byte PacketType => (byte)MediusMGCLMessageIds.ServerReport;
 
         public string SessionKey; // MGCL_SESSIONKEY_MAXLEN
         public short MaxWorlds;

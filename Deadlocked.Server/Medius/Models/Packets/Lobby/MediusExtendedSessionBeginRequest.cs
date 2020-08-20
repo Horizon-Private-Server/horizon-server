@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,12 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.ExtendedSessionBeginRequest)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.ExtendedSessionBeginRequest)]
     public class MediusExtendedSessionBeginRequest : MediusSessionBeginRequest
     {
 
-        public override TypesAAA MessageType => TypesAAA.ExtendedSessionBeginRequest;
+		public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyExt;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.ExtendedSessionBeginRequest;
 
         public int ClientVersionMajor;
         public int ClientVersionMinor;

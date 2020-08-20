@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerAuthenticationRequest : BaseMGCLMessage
     {
 
-        public override byte MessageType => (byte)MediusMGCLMessageIds.ServerAuthenticationRequest;
+        public override byte PacketType => (byte)MediusMGCLMessageIds.ServerAuthenticationRequest;
 
         public MGCL_TRUST_LEVEL TrustLevel;
         public NetAddressList AddressList;

@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.LadderPosition_ExtraInfoResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.LadderPosition_ExtraInfoResponse)]
     public class MediusLadderPosition_ExtraInfoResponse : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.LadderPosition_ExtraInfoResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.LadderPosition_ExtraInfoResponse;
 
         public MediusCallbackStatus StatusCode;
         public uint LadderPosition;

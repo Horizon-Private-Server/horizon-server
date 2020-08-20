@@ -2,27 +2,28 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets
 {
-    public class RawAppMessage : BaseMediusMessage
+    public class RawMediusMessage : BaseMediusMessage
     {
 
         protected NetMessageTypes _class;
-        public override NetMessageTypes MessageClass => _class;
+        public override NetMessageTypes PacketClass => _class;
 
         protected byte _messageType;
-        public override byte MessageType => _messageType;
+        public override byte PacketType => _messageType;
 
         public byte[] Contents { get; set; }
 
-        public RawAppMessage()
+        public RawMediusMessage()
         {
 
         }
 
-        public RawAppMessage(NetMessageTypes msgClass, byte messageType)
+        public RawMediusMessage(NetMessageTypes msgClass, byte messageType)
         {
             _class = msgClass;
             _messageType = messageType;
@@ -41,8 +42,7 @@ namespace Deadlocked.Server.Medius.Models.Packets
 
         public override string ToString()
         {
-            return base.ToString() + $" MsgClass:{MessageType} MsgType:{MessageType} Contents:{BitConverter.ToString(Contents)}";
+            return base.ToString() + $" MsgClass:{PacketType} MsgType:{PacketType} Contents:{BitConverter.ToString(Contents)}";
         }
-
     }
 }

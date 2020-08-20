@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetBuddyList_ExtraInfo)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetBuddyList_ExtraInfo)]
     public class MediusGetBuddyList_ExtraInfoRequest : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetBuddyList_ExtraInfo;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.GetBuddyList_ExtraInfo;
 
         public override void Deserialize(BinaryReader reader)
         {

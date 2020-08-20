@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetUniverseInformation)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetUniverseInformation)]
     public class MediusGetUniverseInformationRequest : BaseLobbyMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetUniverseInformation;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.GetUniverseInformation;
 
         public MediusUniverseVariableInformationInfoFilter InfoType;
         public MediusCharacterEncodingType CharacterEncoding;

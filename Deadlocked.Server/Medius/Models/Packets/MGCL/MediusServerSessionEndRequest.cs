@@ -9,7 +9,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionEndRequest)]
     public class MediusServerSessionEndRequest : BaseMGCLMessage
     {
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerSessionEndRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerSessionEndRequest;
 
 
         public override string ToString()

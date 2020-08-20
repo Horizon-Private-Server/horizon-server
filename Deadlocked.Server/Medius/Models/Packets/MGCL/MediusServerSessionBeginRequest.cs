@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerSessionBeginRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerSessionBeginRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerSessionBeginRequest;
 
         public int LocationID;
         public int ApplicationID;

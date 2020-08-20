@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GetGameListFilterResponse)]
-    public class MediusGetGameListFilterResponse : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GetGameListFilterResponse)]
+    public class MediusGetGameListFilterResponse : BaseLobbyExtMessage
     {
-
-        public override TypesAAA MessageType => TypesAAA.GetGameListFilterResponse;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GetGameListFilterResponse;
 
         public MediusCallbackStatus StatusCode;
         public uint FilterID;

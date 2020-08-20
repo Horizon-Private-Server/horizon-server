@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
     public class DMETypePacketFragment : BaseDMEMessage
     {
 
-        public override byte MessageType => (byte)MediusDmeMessageIds.PacketFragment;
+        public override byte PacketType => (byte)MediusDmeMessageIds.PacketFragment;
 
         public byte FragmentMessageClass;
         public byte FragmentMessageType;

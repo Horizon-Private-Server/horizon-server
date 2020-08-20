@@ -11,7 +11,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
     public class DMEUpdateClientStatus : BaseDMEMessage
     {
 
-        public override byte MessageType => (byte)MediusDmeMessageIds.UpdateClientStatus;
+        public override byte PacketType => (byte)MediusDmeMessageIds.UpdateClientStatus;
 
         public NetClientStatus Status = NetClientStatus.ClientStatusJoined;
         public byte PlayerIndex = 0;

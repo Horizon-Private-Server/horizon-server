@@ -9,7 +9,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
     public abstract class BaseLobbyExtMessage : BaseMediusMessage
     {
-        public override NetMessageTypes MessageClass => NetMessageTypes.MessageClassLobbyExt;
+        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyExt;
 
         /// <summary>
         /// 

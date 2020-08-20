@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.AccountLogin)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountLogin)]
     public class MediusAccountLoginRequest : BaseLobbyMessage
     {
-        public override TypesAAA MessageType => TypesAAA.AccountLogin;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.AccountLogin;
 
         public string SessionKey = "13088";
         public string Username;

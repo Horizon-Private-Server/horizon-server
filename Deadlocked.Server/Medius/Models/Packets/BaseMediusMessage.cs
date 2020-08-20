@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using Deadlocked.Server.Stream;
 
 namespace Deadlocked.Server.Medius.Models.Packets
 {
@@ -43,12 +44,12 @@ namespace Deadlocked.Server.Medius.Models.Packets
         /// <summary>
         /// Message class.
         /// </summary>
-        public abstract NetMessageTypes MessageClass { get; }
+        public abstract NetMessageTypes PacketClass { get; }
 
         /// <summary>
         /// Message type.
         /// </summary>
-        public abstract byte MessageType { get; }
+        public abstract byte PacketType { get; }
 
         public BaseMediusMessage()
         {
@@ -131,13 +132,16 @@ namespace Deadlocked.Server.Medius.Models.Packets
             }
         }
 
-        public static BaseMediusMessage Instantiate(NetMessageTypes msgClass, byte msgType, BinaryReader reader)
+        public static BaseMediusMessage Instantiate(BinaryReader reader)
         {
             BaseMediusMessage msg;
             Type classType = null;
 
             // Init
             Initialize();
+
+            NetMessageTypes msgClass = reader.Read<NetMessageTypes>();
+            var msgType = reader.ReadByte();
 
             switch (msgClass)
             {
@@ -169,7 +173,7 @@ namespace Deadlocked.Server.Medius.Models.Packets
 
             // Instantiate
             if (classType == null)
-                msg = new RawAppMessage(msgClass, msgType);
+                msg = new RawMediusMessage(msgClass, msgType);
             else
                 msg = (BaseMediusMessage)Activator.CreateInstance(classType);
 

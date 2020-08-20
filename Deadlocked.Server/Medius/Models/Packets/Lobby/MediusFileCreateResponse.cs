@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.FileCreateResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileCreateResponse)]
     public class MediusFileCreateResponse : BaseLobbyMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.FileCreateResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.FileCreateResponse;
 
         public MediusFile MediusFileInfo = new MediusFile();
         public MediusCallbackStatus StatusCode;

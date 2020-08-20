@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,10 +6,10 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.SessionBeginResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.SessionBeginResponse)]
     public class MediusSessionBeginResponse : BaseLobbyMessage
     {
-        public override TypesAAA MessageType => TypesAAA.SessionBeginResponse;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.SessionBeginResponse;
 
         public MediusCallbackStatus StatusCode;
         public string SessionKey; // SESSIONKEY_MAXLEN

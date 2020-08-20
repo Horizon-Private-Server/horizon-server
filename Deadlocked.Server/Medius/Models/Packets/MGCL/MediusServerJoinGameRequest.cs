@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerJoinGameRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerJoinGameRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerJoinGameRequest;
 
         public NetConnectionInfo ConnectInfo;
 

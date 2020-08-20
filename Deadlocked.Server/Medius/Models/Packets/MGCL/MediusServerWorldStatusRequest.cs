@@ -10,7 +10,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
     public class MediusServerWorldStatusRequest : BaseMGCLMessage
     {
 
-		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerWorldStatusRequest;
+		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerWorldStatusRequest;
 
         public int WorldID;
 

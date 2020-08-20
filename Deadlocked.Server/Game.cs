@@ -1,7 +1,4 @@
 ﻿using Deadlocked.Server.Medius;
-using Deadlocked.Server.Messages;
-using Deadlocked.Server.Messages.Lobby;
-using Deadlocked.Server.Messages.MGCL;
 using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.Mods;
 using System;
@@ -9,6 +6,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.Lobby;
+using Deadlocked.Server.Medius.Models.Packets.MGCL;
 
 namespace Deadlocked.Server
 {
@@ -246,14 +246,11 @@ namespace Deadlocked.Server
             }
 
             // Send end game
-            DMEServer.AddProxyMessage(new RT_MSG_SERVER_APP()
+            Program.ProxyServer.Queue(new MediusServerEndGameRequest()
             {
-                AppMessage = new MediusServerEndGameRequest()
-                {
-                    WorldID = this.DMEWorldId,
-                    BrutalFlag = false
-                }
-            });
+                WorldID = this.DMEWorldId,
+                BrutalFlag = false
+            }, DMEServer);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;

@@ -1,4 +1,5 @@
 ﻿using Deadlocked.Server.SCERT.Models;
+using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Codecs;
 using DotNetty.Transport.Channels;
 using System;

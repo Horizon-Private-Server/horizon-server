@@ -1,7 +1,7 @@
 ﻿using Deadlocked.Server.Accounts;
 using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
-using Deadlocked.Server.Messages;
+using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Mods;
 using DotNetty.Common.Internal.Logging;
 using Medius.Crypto;
@@ -18,6 +18,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Deadlocked.Server
 {
@@ -69,14 +70,8 @@ namespace Deadlocked.Server
         private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
 
-        static void Main(string[] args)
+        static async Task StartServerAsync()
         {
-            // 
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Microsoft.Extensions.Logging.LogLevel.Information, false));
-
-
-            Initialize();
-
             DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
 
@@ -119,10 +114,10 @@ namespace Deadlocked.Server
                 }
 
                 // Tick
-                UniverseInfoServer.Tick();
-                AuthenticationServer.Tick();
-                LobbyServer.Tick();
-                ProxyServer.Tick();
+                await UniverseInfoServer.Tick();
+                await AuthenticationServer.Tick();
+                await LobbyServer.Tick();
+                await ProxyServer.Tick();
                 NATServer.Tick();
 
                 // Tick channels
@@ -172,6 +167,18 @@ namespace Deadlocked.Server
 
                 Thread.Sleep(sleepMS);
             }
+        }
+
+        static void Main(string[] args)
+        {
+            // 
+            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Microsoft.Extensions.Logging.LogLevel.Information, false));
+
+            // 
+            Initialize();
+
+            // 
+            StartServerAsync().Wait();
         }
 
         static void Initialize()

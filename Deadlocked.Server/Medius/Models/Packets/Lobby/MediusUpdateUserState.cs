@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,12 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.UpdateUserState)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.UpdateUserState)]
     public class MediusUpdateUserState : BaseMediusMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.UpdateUserState;
+		public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobby;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.UpdateUserState;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public MediusUserAction UserAction;

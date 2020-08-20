@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.GameList_ExtraInfo)]
-    public class MediusGameList_ExtraInfoRequest : BaseLobbyMessage
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GameList_ExtraInfo)]
+    public class MediusGameList_ExtraInfoRequest : BaseLobbyExtMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.GameList_ExtraInfo;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GameList_ExtraInfo;
 
         public ushort PageID;
         public ushort PageSize;

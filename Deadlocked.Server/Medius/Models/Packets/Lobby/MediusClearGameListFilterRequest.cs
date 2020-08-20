@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.ClearGameListFilter)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.ClearGameListFilter)]
     public class MediusClearGameListFilterRequest : BaseLobbyMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.ClearGameListFilter;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.ClearGameListFilter;
 
         public uint FilterID;
 

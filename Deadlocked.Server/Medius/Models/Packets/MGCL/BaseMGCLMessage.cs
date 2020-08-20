@@ -9,7 +9,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
     public abstract class BaseMGCLMessage : BaseMediusMessage
     {
-        public override NetMessageTypes MessageClass => NetMessageTypes.MessageClassLobbyReport;
+        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyReport;
 
         /// <summary>
         /// 

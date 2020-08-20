@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
-    [MediusMessage(TypesAAA.AccountDelete)]
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountDelete)]
     public class MediusAccountDeleteRequest : BaseLobbyMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.AccountDelete;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.AccountDelete;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public string MasterPassword; // PASSWORD_MAXLEN
