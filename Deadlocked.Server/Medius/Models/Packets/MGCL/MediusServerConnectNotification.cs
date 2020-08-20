@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
-    [MediusMessage(TypesAAA.MediusServerConnectNotification)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectNotification)]
     public class MediusServerConnectNotification : BaseMediusMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.MediusServerConnectNotification;
+		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerConnectNotification;
 
         public MGCL_EVENT_TYPE ConnectEventType;
         public uint MediusWorldUID;

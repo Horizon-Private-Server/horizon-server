@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
-    [MediusMessage(TypesAAA.MediusServerSessionBeginRequest)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginRequest)]
     public class MediusServerSessionBeginRequest : BaseMGCLMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.MediusServerSessionBeginRequest;
+		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerSessionBeginRequest;
 
         public int LocationID;
         public int ApplicationID;

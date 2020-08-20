@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
-    [MediusMessage(TypesAAA.MediusServerDisconnectPlayerRequest)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerDisconnectPlayerRequest)]
     public class MediusServerDisconnectPlayerRequest : BaseMGCLMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.MediusServerDisconnectPlayerRequest;
+		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerDisconnectPlayerRequest;
 
         public int DmeWorldID;
         public int DmeClientIndex;

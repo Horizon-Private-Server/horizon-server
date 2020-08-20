@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
-    [MediusMessage(TypesAAA.MediusServerCreateGameOnMeResponse)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerCreateGameOnMeResponse)]
     public class MediusServerCreateGameOnMeResponse : BaseMGCLMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.MediusServerCreateGameOnMeResponse;
+		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerCreateGameOnMeResponse;
 
         public MGCL_ERROR_CODE Confirmation;
         public int MediusWorldID;

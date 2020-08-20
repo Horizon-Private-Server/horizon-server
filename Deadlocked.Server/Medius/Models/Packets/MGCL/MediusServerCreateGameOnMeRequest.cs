@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
-    [MediusMessage(TypesAAA.MediusServerCreateGameOnMeRequest)]
+	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerCreateGameOnMeRequest)]
     public class MediusServerCreateGameOnMeRequest : BaseMGCLMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.MediusServerCreateGameOnMeRequest;
+		public override byte MessageType => (byte)MediusMGCLMessageIds.ServerCreateGameOnMeRequest;
 
         public string GameName; // MGCL_GAMENAME_MAXLEN
         public byte[] GameStats = new byte[MediusConstants.MGCL_GAMESTATS_MAXLEN];

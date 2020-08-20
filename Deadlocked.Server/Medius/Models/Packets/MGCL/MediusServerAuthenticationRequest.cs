@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Stream;
+using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 {
-    [MediusMessage(TypesAAA.MediusServerAuthenticationRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerAuthenticationRequest)]
     public class MediusServerAuthenticationRequest : BaseMGCLMessage
     {
 
-        public override TypesAAA MessageType => TypesAAA.MediusServerAuthenticationRequest;
+        public override byte MessageType => (byte)MediusMGCLMessageIds.ServerAuthenticationRequest;
 
         public MGCL_TRUST_LEVEL TrustLevel;
         public NetAddressList AddressList;
