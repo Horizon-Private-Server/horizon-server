@@ -188,7 +188,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
                                     {
-                                        new NetAddress() { Address = (clientChannel.RemoteAddress as IPEndPoint)?.Address?.MapToIPv4().ToString(), Port = (uint)(data.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
+                                        new NetAddress() { Address = (data.ClientObject as DMEObject).IP.MapToIPv4().ToString(), Port = (uint)(data.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                         new NetAddress() { AddressType = NetAddressType.NetAddressNone},
                                     }
                                 },

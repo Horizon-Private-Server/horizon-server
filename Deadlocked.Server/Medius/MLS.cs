@@ -1859,6 +1859,10 @@ namespace Deadlocked.Server.Medius
             {
                 case MediusChatMessageType.Broadcast:
                     {
+                        // Relay
+                        channel.BroadcastChatMessage(allButSender, clientObject.ClientAccount.AccountId, message);
+
+                        // Handle commands
                         switch (words[0].ToLower())
                         {
                             case "!roll":
@@ -1871,7 +1875,7 @@ namespace Deadlocked.Server.Medius
                                 }
                             case "!gm":
                                 {
-                                    if (game != null && game.Host == clientObject)
+                                    if (game != null)
                                     {
                                         // Get arg1 if it exists
                                         string arg1 = words.Length > 1 ? words[1].ToLower() : null;
@@ -1883,22 +1887,17 @@ namespace Deadlocked.Server.Medius
                                         {
                                             channel.SendSystemMessage(clientObject, $"Gamemode is {game.CustomGamemode?.FullName ?? "default"}");
                                         }
-                                        else if (arg1 == "reset" || arg1 == "r")
+                                        else if (game.Host == clientObject && arg1 == "reset" || arg1 == "r")
                                         {
                                             channel.BroadcastSystemMessage(allPlayers, "Gamemode set to default.");
                                             game.CustomGamemode = null;
                                         }
-                                        else if (gamemode != null)
+                                        else if (game.Host == clientObject && gamemode != null)
                                         {
                                             channel.BroadcastSystemMessage(allPlayers, $"Gamemode set to {gamemode.FullName}.");
                                             game.CustomGamemode = gamemode;
                                         }
                                     }
-                                    break;
-                                }
-                            default:
-                                {
-                                    channel.BroadcastChatMessage(allButSender, clientObject.ClientAccount.AccountId, message);
                                     break;
                                 }
                         }
