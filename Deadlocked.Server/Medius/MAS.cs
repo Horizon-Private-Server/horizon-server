@@ -506,6 +506,50 @@ namespace Deadlocked.Server.Medius
                         break;
                     }
 
+                #region Deadlocked No-op Messages (MAS)
+
+                case MediusGetBuddyList_ExtraInfoRequest getBuddyList_ExtraInfoRequest:
+                    {
+                        Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusGetBuddyList_ExtraInfoResponse()
+                            {
+                                MessageID = getBuddyList_ExtraInfoRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            }
+                        }, clientChannel);
+                        break;
+                    }
+                case MediusGetIgnoreListRequest getIgnoreListRequest:
+                    {
+                        Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusGetIgnoreListResponse()
+                            {
+                                MessageID = getIgnoreListRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            }
+                        }, clientChannel);
+                        break;
+                    }
+                case MediusGetMyClansRequest getMyClansRequest:
+                    {
+                        Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusGetMyClansResponse()
+                            {
+                                MessageID = getMyClansRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            }
+                        }, clientChannel);
+                        break;
+                    }
+
+                #endregion
+
                 default:
                     {
                         Logger.Warn($"{Name} Unhandled Medius Message: {message}");
