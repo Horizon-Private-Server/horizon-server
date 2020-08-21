@@ -37,5 +37,9 @@ namespace Deadlocked.Server.SCERT.Models.Packets
 
         #endregion
 
+        public override string ToString()
+        {
+            return base.ToString() + $" Id:{Id} (0x{Id:X2}) Contents:{BitConverter.ToString(Contents)}";
+        }
     }
 }

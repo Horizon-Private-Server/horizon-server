@@ -31,29 +31,30 @@ namespace Deadlocked.Server.Medius
             _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
         }
 
-        protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ClientObject clientObject)
+        protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
             // 
             switch (message)
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        Queue(new RT_MSG_SERVER_HELLO(), clientObject);
+                        Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientObject);
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
-                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientObject);
+                        data.ApplicationId = clientConnectTcp.AppId;
+                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) }, clientObject);
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) }, clientChannel);
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,
@@ -64,13 +65,12 @@ namespace Deadlocked.Server.Medius
                             UNK_05 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
-                        }, clientObject);
+                        }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
-                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientObject);
-                        Queue(new RT_MSG_SERVER_ECHO(), clientObject);
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -80,12 +80,12 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientObject);
+                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
-                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, clientObject);
+                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
 
@@ -104,7 +104,7 @@ namespace Deadlocked.Server.Medius
             return;
         }
 
-        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ClientObject clientObject)
+        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             if (message == null)
                 return;
@@ -114,7 +114,13 @@ namespace Deadlocked.Server.Medius
                 case MediusGetUniverseInformationRequest getUniverseInfo:
                     {
                         // 
-                        Queue(new RT_MSG_SERVER_APP() { Message = new MediusUniverseVariableSvoURLResponse() { Result = 1 } }, clientObject);
+                        Queue(new RT_MSG_SERVER_APP()
+                        {
+                            Message = new MediusUniverseVariableSvoURLResponse()
+                            {
+                                Result = 1
+                            }
+                        }, clientChannel);
 
                         // 
                         Queue(new RT_MSG_SERVER_APP()
@@ -132,7 +138,7 @@ namespace Deadlocked.Server.Medius
                                 Port = Program.AuthenticationServer.Port,
                                 EndOfList = true
                             }
-                        }, clientObject);
+                        }, clientChannel);
 
                         break;
                     }

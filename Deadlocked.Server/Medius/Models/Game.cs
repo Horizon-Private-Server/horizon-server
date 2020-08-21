@@ -9,11 +9,14 @@ using System.Text;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.Lobby;
 using Deadlocked.Server.Medius.Models.Packets.MGCL;
+using DotNetty.Common.Internal.Logging;
 
-namespace Deadlocked.Server
+namespace Deadlocked.Server.Medius.Models
 {
     public class Game
     {
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Game>();
+
         public static int IdCounter = 1;
 
         public class GameClient
@@ -92,6 +95,8 @@ namespace Deadlocked.Server
             ChatChannel = Program.GetChannelById(ChannelId);
             ChatChannel?.RegisterGame(this);
             Host = client;
+
+            Logger.Info($"Game {Id}:{GameName}: Created by {client}");
         }
 
         public void Tick()
@@ -119,7 +124,6 @@ namespace Deadlocked.Server
         public void OnMediusServerConnectNotification(MediusServerConnectNotification notification)
         {
             var player = Clients.FirstOrDefault(x => x.Client.SessionKey == notification.PlayerSessionKey);
-
             if (player == null)
                 return;
 
@@ -145,6 +149,9 @@ namespace Deadlocked.Server
             if (Clients.Any(x => x.Client == client))
                 return;
 
+            // 
+            Logger.Info($"Game {Id}:{GameName}: {client} joined.");
+
             Clients.Add(new GameClient()
             {
                 Client = client
@@ -159,6 +166,9 @@ namespace Deadlocked.Server
 
         private void OnPlayerLeft(GameClient client)
         {
+            // 
+            Logger.Info($"Game {Id}:{GameName}: {client} left.");
+
             // Remove host
             if (Host == client.Client)
                 Host = null;
@@ -175,11 +185,6 @@ namespace Deadlocked.Server
 
         public void OnEndGameReport(MediusEndGameReport report)
         {
-            Console.WriteLine($"---------------------------------------");
-            Console.WriteLine($"----- END GAME REPORT {GameName} {Id} -----");
-            Console.WriteLine($"----- {report} -----");
-            Console.WriteLine($"---------------------------------------");
-
             WorldStatus = MediusWorldStatus.WorldClosed;
         }
 
@@ -235,6 +240,9 @@ namespace Deadlocked.Server
 
         public void EndGame()
         {
+            // 
+            Logger.Info($"Game {Id}:{GameName}: EndGame() called.");
+
             // Unregister from channel
             ChatChannel?.UnregisterGame(this);
 
@@ -246,11 +254,11 @@ namespace Deadlocked.Server
             }
 
             // Send end game
-            Program.ProxyServer.Queue(new MediusServerEndGameRequest()
+            DMEServer?.Queue(new MediusServerEndGameRequest()
             {
                 WorldID = this.DMEWorldId,
                 BrutalFlag = false
-            }, DMEServer);
+            });
         }
     }
 }

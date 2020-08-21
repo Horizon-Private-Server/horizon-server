@@ -1,4 +1,5 @@
-﻿using Deadlocked.Server.Medius.Models.Packets;
+﻿using Deadlocked.Server.Medius.Models;
+using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.SCERT;
 using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.SCERT.Models.Packets;
@@ -38,9 +39,15 @@ namespace Deadlocked.Server.Medius
         protected IChannel _boundChannel = null;
         protected ScertServerHandler _scertHandler = null;
 
-        protected ConcurrentDictionary<string, ClientObject> _nettyToClientObject = new ConcurrentDictionary<string, ClientObject>();
-        protected ConcurrentDictionary<string, ConcurrentQueue<BaseScertMessage>> _nettyToClientRecvMessageQueue = new ConcurrentDictionary<string, ConcurrentQueue<BaseScertMessage>>();
-        protected ConcurrentDictionary<string, ConcurrentQueue<BaseScertMessage>> _nettyToClientSendMessageQueue = new ConcurrentDictionary<string, ConcurrentQueue<BaseScertMessage>>();
+        protected internal class ChannelData
+        {
+            public int ApplicationId { get; set; } = 0;
+            public ClientObject ClientObject { get; set; } = null;
+            public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+            public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+        }
+
+        protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
 
         protected PS2_RC4 _sessionCipher = null;
 
@@ -53,7 +60,7 @@ namespace Deadlocked.Server.Medius
             _bossGroup = new MultithreadEventLoopGroup(1);
             _workerGroup = new MultithreadEventLoopGroup();
 
-            var scertDecoder = new ScertDecoder(1500, true, (id, context) =>
+            Func<RT_MSG_TYPE, CipherContext, ICipher> getCipher = (id, context) =>
             {
                 switch (context)
                 {
@@ -61,42 +68,36 @@ namespace Deadlocked.Server.Medius
                     case CipherContext.RSA_AUTH: return AuthKey;
                     default: return null;
                 }
-            });
-            var scertEncoder = new ScertEncoder();
+            };
             _scertHandler = new ScertServerHandler();
 
             // Add client on connect
             _scertHandler.OnChannelActive += (channel) =>
             {
                 string key = channel.Id.AsLongText();
-                var clientObject = new ClientObject() { DotNettyId = key };
-                Program.Clients.Add(clientObject);
-                _nettyToClientObject.TryAdd(key, clientObject);
-                _nettyToClientRecvMessageQueue.TryAdd(key, new ConcurrentQueue<BaseScertMessage>());
-                _nettyToClientSendMessageQueue.TryAdd(key, new ConcurrentQueue<BaseScertMessage>());
+                _channelDatas.TryAdd(key, new ChannelData());
             };
 
             // Remove client on disconnect
             _scertHandler.OnChannelInactive += (channel) =>
             {
                 string key = channel.Id.AsLongText();
-                _nettyToClientObject.TryRemove(key, out _);
-                _nettyToClientRecvMessageQueue.TryRemove(key, out _);
-                _nettyToClientSendMessageQueue.TryRemove(key, out _);
+                _channelDatas.TryRemove(key, out _);
             };
 
             // Queue all incoming messages
             _scertHandler.OnChannelMessage += (channel, message) =>
             {
                 string key = channel.Id.AsLongText();
-                if (_nettyToClientRecvMessageQueue.TryGetValue(key, out var queue))
-                    queue.Enqueue(message);
-                if (_nettyToClientObject.TryGetValue(key, out var clientObject))
-                    clientObject.OnEcho(DateTime.UtcNow);
+                if (_channelDatas.TryGetValue(key, out var data))
+                {
+                    data.RecvQueue.Enqueue(message);
+                    data.ClientObject?.OnEcho(DateTime.UtcNow);
+                }
 
                 // Log if id is set
                 if (Program.Settings.IsLog(message.Id))
-                    Logger.Info($"{Name} {clientObject}: {message}");
+                    Logger.Info($"{Name} {data?.ClientObject},{channel}: {message}");
             };
 
             try
@@ -107,11 +108,18 @@ namespace Deadlocked.Server.Medius
                     .Channel<TcpServerSocketChannel>()
                     .Option(ChannelOption.SoBacklog, 100)
                     .Handler(new LoggingHandler(LogLevel.INFO))
+                    .ChildOption(ChannelOption.TcpNodelay, true)
+                    .ChildOption(ChannelOption.RcvbufAllocator, new FixedRecvByteBufAllocator(1024 * 4))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
 
-                        pipeline.AddLast(scertEncoder, scertDecoder, _scertHandler);
+                        pipeline.AddLast(new ByteArrayEncoder());
+                        pipeline.AddLast(new ScertEncoder());
+                        pipeline.AddLast(new ScertIEnumerableEncoder());
+                        pipeline.AddLast(new ScertLengthFieldBasedFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, true));
+                        pipeline.AddLast(new ScertDecoder(getCipher));
+                        pipeline.AddLast(_scertHandler);
                     }));
 
                 _boundChannel = await bootstrap.BindAsync(Port);
@@ -138,6 +146,9 @@ namespace Deadlocked.Server.Medius
 
         public async Task Tick()
         {
+            if (_scertHandler == null || _scertHandler.Group == null)
+                return;
+
             await Task.WhenAll(_scertHandler.Group.Select(c => Tick(c)));
         }
 
@@ -146,28 +157,48 @@ namespace Deadlocked.Server.Medius
             if (clientChannel == null)
                 return;
 
-
+            // 
             List<BaseScertMessage> responses = new List<BaseScertMessage>();
             string key = clientChannel.Id.AsLongText();
 
-            // 
-            if (_nettyToClientObject.TryGetValue(key, out var clientObject) && _nettyToClientRecvMessageQueue.TryGetValue(key, out var queue))
+            try
             {
-                // Process all messages in queue
-                while (queue.TryDequeue(out var message))
-                    await ProcessMessage(message, clientChannel, clientObject);
-
-                // Add send queue to responses
-                if (_nettyToClientSendMessageQueue.TryGetValue(key, out var sendQueue))
-                    while (sendQueue.TryDequeue(out var message))
-                        responses.Add(message);
-
-                // Echo
-                if ((DateTime.UtcNow - clientObject.UtcLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
-                    Echo(ref responses);
-
                 // 
-                await responses.Send(clientChannel);
+                if (_channelDatas.TryGetValue(key, out var data))
+                {
+                    // Process all messages in queue
+                    while (data.RecvQueue.TryDequeue(out var message))
+                        await ProcessMessage(message, clientChannel, data);
+
+                    // Send if writeable
+                    if (clientChannel.IsWritable)
+                    {
+                        // Add send queue to responses
+                        while (data.SendQueue.TryDequeue(out var message))
+                            responses.Add(message);
+
+                        if (data.ClientObject != null)
+                        {
+                            // Add client object's send queue to responses
+                            while (data.ClientObject.SendMessageQueue.TryDequeue(out var message))
+                                responses.Add(message);
+
+                            // Echo
+                            if ((DateTime.UtcNow - data.ClientObject.UtcLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
+                                Echo(ref responses);
+                        }
+
+                        //
+                        //await responses.Send(clientChannel);
+                        if (responses.Count > 0)
+                            await clientChannel.WriteAndFlushAsync(responses);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+                await DisconnectClient(clientChannel);
             }
         }
 
@@ -176,7 +207,7 @@ namespace Deadlocked.Server.Medius
             responses.Add(new RT_MSG_SERVER_ECHO() { });
         }
 
-        protected abstract Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ClientObject clientObject);
+        protected abstract Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data);
 
         #region Channel
 
@@ -196,60 +227,31 @@ namespace Deadlocked.Server.Medius
 
         #region Queue
 
-        public void Queue(BaseScertMessage message, params ClientObject[] clientObjects)
+        public void Queue(BaseScertMessage message, params IChannel[] clientChannels)
         {
-            Queue(message, (IEnumerable<ClientObject>)clientObjects);
+            Queue(message, (IEnumerable<IChannel>)clientChannels);
         }
 
-        public void Queue(BaseScertMessage message, IEnumerable<ClientObject> clientObjects)
+        public void Queue(BaseScertMessage message, IEnumerable<IChannel> clientChannels)
         {
-            foreach (var clientObject in clientObjects)
-                if (clientObject != null)
-                    if (_nettyToClientSendMessageQueue.TryGetValue(clientObject.DotNettyId, out var sendQueue))
-                        sendQueue.Enqueue(message);
+            foreach (var clientChannel in clientChannels)
+                if (clientChannel != null)
+                    if (_channelDatas.TryGetValue(clientChannel.Id.AsLongText(), out var data))
+                        data.SendQueue.Enqueue(message);
         }
 
-        public void Queue(IEnumerable<BaseScertMessage> messages, params ClientObject[] clientObjects)
+        public void Queue(IEnumerable<BaseScertMessage> messages, params IChannel[] clientChannels)
         {
-            Queue(messages, (IEnumerable<ClientObject>)clientObjects);
+            Queue(messages, (IEnumerable<IChannel>)clientChannels);
         }
 
-        public void Queue(IEnumerable<BaseScertMessage> messages, IEnumerable<ClientObject> clientObjects)
+        public void Queue(IEnumerable<BaseScertMessage> messages, IEnumerable<IChannel> clientChannels)
         {
-            foreach (var clientObject in clientObjects)
-                if (clientObject != null)
-                    if (_nettyToClientSendMessageQueue.TryGetValue(clientObject.DotNettyId, out var sendQueue))
+            foreach (var clientChannel in clientChannels)
+                if (clientChannel != null)
+                    if (_channelDatas.TryGetValue(clientChannel.Id.AsLongText(), out var data))
                         foreach (var message in messages)
-                            sendQueue.Enqueue(message);
-        }
-
-        public void Queue(BaseMediusMessage message, params ClientObject[] clientObjects)
-        {
-            Queue(message, (IEnumerable<ClientObject>)clientObjects);
-        }
-
-        public void Queue(BaseMediusMessage message, IEnumerable<ClientObject> clientObjects)
-        {
-            var scertMessage = new RT_MSG_SERVER_APP() { Message = message };
-            foreach (var clientObject in clientObjects)
-                if (clientObject != null)
-                    if (_nettyToClientSendMessageQueue.TryGetValue(clientObject.DotNettyId, out var sendQueue))
-                        sendQueue.Enqueue(scertMessage);
-        }
-
-        public void Queue(IEnumerable<BaseMediusMessage> messages, params ClientObject[] clientObjects)
-        {
-            Queue(messages, (IEnumerable<ClientObject>)clientObjects);
-        }
-
-        public void Queue(IEnumerable<BaseMediusMessage> messages, IEnumerable<ClientObject> clientObjects)
-        {
-            var scertMessages = messages.Select(x => new RT_MSG_SERVER_APP() { Message = x });
-            foreach (var clientObject in clientObjects)
-                if (clientObject != null)
-                    if (_nettyToClientSendMessageQueue.TryGetValue(clientObject.DotNettyId, out var sendQueue))
-                        foreach (var scertMessage in scertMessages)
-                            sendQueue.Enqueue(scertMessage);
+                            data.SendQueue.Enqueue(message);
         }
 
         #endregion

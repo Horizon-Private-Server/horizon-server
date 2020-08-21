@@ -1,4 +1,6 @@
 ﻿using Deadlocked.Server.Medius.Models.Packets.MGCL;
+using DotNetty.Common.Internal.Logging;
+using Org.BouncyCastle.Asn1.Cms;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Ocsp;
 using System;
@@ -7,10 +9,12 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Deadlocked.Server
+namespace Deadlocked.Server.Medius.Models
 {
     public class DMEObject : ClientObject
     {
+        static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<DMEObject>();
+        protected override IInternalLogger Logger => _logger;
 
         public int MaxWorlds { get; protected set; } = 0;
         public int CurrentWorlds { get; protected set; } = 0;
@@ -19,11 +23,22 @@ namespace Deadlocked.Server
         public int Port { get; protected set; } = 0;
         public IPAddress IP { get; protected set; } = IPAddress.Any;
 
+        public override bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.GameTimeoutSeconds;
+        public override bool IsConnected => !Timedout;
+
 
         public DMEObject(MediusServerSessionBeginRequest request)
         {
             ApplicationId = request.ApplicationID;
             Port = request.Port;
+
+            // Generate new session key
+            SessionKey = Program.GenerateSessionKey();
+
+            // Generate new token
+            byte[] tokenBuf = new byte[12];
+            RNG.NextBytes(tokenBuf);
+            Token = Convert.ToBase64String(tokenBuf);
         }
 
         public void OnWorldReport(MediusServerReport report)
@@ -49,7 +64,7 @@ namespace Deadlocked.Server
                     }
                 default:
                     {
-                        Console.WriteLine($"Unhandled UriHostNameType {Uri.CheckHostName(ip)} from {ip} in DMEObject.SetIp()");
+                        Logger.Error($"Unhandled UriHostNameType {Uri.CheckHostName(ip)} from {ip} in DMEObject.SetIp()");
                         break;
                     }
             }

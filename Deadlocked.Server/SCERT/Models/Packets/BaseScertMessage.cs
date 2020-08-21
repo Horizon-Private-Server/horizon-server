@@ -66,8 +66,20 @@ namespace Deadlocked.Server.SCERT.Models.Packets
                     {
                         using (BinaryWriter writer = new BinaryWriter(stream))
                         {
+                            // Serialize header
+                            writer.Write((byte)this.Id);
+                            writer.Write((ushort)0);
+
+                            // Serialize message
                             new RT_MSG_SERVER_APP() { Message = frag }.Serialize(writer);
-                            result = new byte[stream.Position];
+                            length = (int)stream.Position;
+
+                            // Write length
+                            writer.Seek(1, SeekOrigin.Begin);
+                            writer.Write((ushort)length);
+
+
+                            result = new byte[length + HEADER_SIZE];
                             Array.Copy(buffer, 0, result, 0, result.Length);
                             results.Add(result);
                         }
@@ -149,6 +161,8 @@ namespace Deadlocked.Server.SCERT.Models.Packets
             {
                 CipherContext context = (CipherContext)(hash[3] >> 5);
                 var cipher = getCipherCallback(id, context);
+                if (cipher == null)
+                    return null;
 
                 if (cipher.Decrypt(messageBuffer, hash, out var plain))
                 {

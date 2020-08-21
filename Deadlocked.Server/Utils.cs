@@ -55,26 +55,6 @@ namespace Deadlocked.Server
             return buffer;
         }
 
-        public static void PrettyPrintByteArray(byte[] buffer)
-        {
-            string str = "";
-            for (int i = 0; i < buffer.Length; ++i)
-            {
-                char c = (char)buffer[i];
-                Console.Write(buffer[i].ToString("X2") + " ");
-                str += char.IsControl(c) ? '.' : c;
-            }
-
-            Console.WriteLine();
-            Console.WriteLine(" STR: " + str);
-        }
-
-        public static void PrintByteArray(byte[] buffer)
-        {
-            for (int i = 0; i < buffer.Length; ++i)
-                Console.Write(buffer[i].ToString("X2"));
-        }
-
         #region Serialization
 
         public static void Write(this BinaryWriter writer, IPAddress ip)
@@ -82,7 +62,7 @@ namespace Deadlocked.Server
             if (ip == null)
                 writer.Write(new byte[16]);
             else
-                writer.Write(Encoding.UTF8.GetBytes(ip.ToString().PadRight(16, '\0')));
+                writer.Write(Encoding.UTF8.GetBytes(ip.MapToIPv4().ToString().PadRight(16, '\0')));
         }
 
         public static IPAddress ReadIPAddress(this BinaryReader reader)
@@ -123,30 +103,29 @@ namespace Deadlocked.Server
         /// </summary>
         public static async Task Send(this IEnumerable<BaseScertMessage> messages, params IChannel[] clients)
         {
-            if (messages == null || messages.Count() == 0 || clients == null || clients.Length == 0)
+            if (messages == null || clients == null || clients.Length == 0)
                 return;
 
             List<byte[]> msgs = new List<byte[]>();
 
             foreach (var msg in messages)
             {
-                // Log if id is set
-                if (Program.Settings.IsLog(msg.Id))
-                    Console.WriteLine($"Send to <{String.Join(",", clients.Select(x => x.ToString()))}>: {msg}");
-
                 // Serialize and add
                 msgs.AddRange(msg.Serialize());
             }
 
-            // Condense as much as possible
-            var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < MediusConstants.MEDIUS_MESSAGE_MAXLEN).SelectMany(x => x);
-
-            // 
-            foreach (var client in clients)
+            if (msgs.Count > 0)
             {
-                foreach (var msg in condensedMsgs)
+                // Condense as much as possible
+                var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < MediusConstants.MEDIUS_MESSAGE_MAXLEN).SelectMany(x => x);
+
+                // 
+                foreach (var client in clients)
                 {
-                    await client.WriteAndFlushAsync(msg);
+                    foreach (var msg in condensedMsgs)
+                    {
+                        await client.WriteAndFlushAsync(msg);
+                    }
                 }
             }
         }

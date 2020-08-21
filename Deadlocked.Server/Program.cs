@@ -1,15 +1,18 @@
 ﻿using Deadlocked.Server.Accounts;
 using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
+using Deadlocked.Server.Medius.Models;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Mods;
 using DotNetty.Common.Internal.Logging;
 using Medius.Crypto;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto.Tls;
 using Org.BouncyCastle.Math;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -70,109 +73,123 @@ namespace Deadlocked.Server
         private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
 
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
+
         static async Task StartServerAsync()
         {
             DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
 
-            Console.WriteLine("Starting medius components...");
+            Logger.Info("Starting medius components...");
 
-            Console.WriteLine($"Starting MUIS on port {UniverseInfoServer.Port}.");
+            Logger.Info($"Starting MUIS on port {UniverseInfoServer.Port}.");
             UniverseInfoServer.Start();
-            Console.WriteLine($"MUIS started.");
+            Logger.Info($"MUIS started.");
 
-            Console.WriteLine($"Starting MAS on port {AuthenticationServer.Port}.");
+            Logger.Info($"Starting MAS on port {AuthenticationServer.Port}.");
             AuthenticationServer.Start();
-            Console.WriteLine($"MUIS started.");
+            Logger.Info($"MAS started.");
 
-            Console.WriteLine($"Starting MLS on port {LobbyServer.Port}.");
+            Logger.Info($"Starting MLS on port {LobbyServer.Port}.");
             LobbyServer.Start();
-            Console.WriteLine($"MUIS started.");
+            Logger.Info($"MLS started.");
 
-            Console.WriteLine($"Starting MPS on port {ProxyServer.Port}.");
+            Logger.Info($"Starting MPS on port {ProxyServer.Port}.");
             ProxyServer.Start();
-            Console.WriteLine($"MUIS started.");
+            Logger.Info($"MPS started.");
 
-            Console.WriteLine($"Starting NAT on port {NATServer.Port}.");
+            Logger.Info($"Starting NAT on port {NATServer.Port}.");
             NATServer.Start();
-            Console.WriteLine($"MUIS started.");
+            Logger.Info($"NAT started.");
 
             // 
-            Console.WriteLine("Started.");
-            while (true)
+            Logger.Info("Started.");
+
+            try
             {
-                // Remove old clients
-                for (int i = 0; i < Clients.Count; ++i)
+                while (true)
                 {
-                    if (Clients[i] == null || !Clients[i].IsConnected)
+                    // Remove old clients
+                    for (int i = 0; i < Clients.Count; ++i)
                     {
-                        Console.WriteLine($"Destroying Client SK:{Clients[i].SessionKey} Token:{Clients[i].Token} Name:{Clients[i].ClientAccount?.AccountName}");
-                        Clients[i]?.Logout();
-                        Clients.RemoveAt(i);
-                        --i;
+                        if (Clients[i] == null || !Clients[i].IsConnected)
+                        {
+                            Logger.Info($"Destroying Client SK:{Clients[i]} Name:{Clients[i].ClientAccount?.AccountName}");
+                            Clients[i]?.Logout();
+                            Clients.RemoveAt(i);
+                            --i;
+                        }
                     }
-                }
 
-                // Tick
-                await UniverseInfoServer.Tick();
-                await AuthenticationServer.Tick();
-                await LobbyServer.Tick();
-                await ProxyServer.Tick();
-                NATServer.Tick();
+                    // Tick
+                    await UniverseInfoServer.Tick();
+                    await AuthenticationServer.Tick();
+                    await LobbyServer.Tick();
+                    await ProxyServer.Tick();
+                    NATServer.Tick();
 
-                // Tick channels
-                for (int i = 0; i < Channels.Count; ++i)
-                {
-                    if (Channels[i].ReadyToDestroy)
+                    // Tick channels
+                    for (int i = 0; i < Channels.Count; ++i)
                     {
-                        Console.WriteLine($"Destroying Channel Id:{Channels[i].Id} Name:{Channels[i].Name}");
-                        Channels.RemoveAt(i);
-                        --i;
+                        if (Channels[i].ReadyToDestroy)
+                        {
+                            Logger.Info($"Destroying Channel Id:{Channels[i].Id} Name:{Channels[i].Name}");
+                            Channels.RemoveAt(i);
+                            --i;
+                        }
+                        else
+                        {
+                            Channels[i].Tick();
+                        }
                     }
-                    else
+
+                    // Tick games
+                    for (int i = 0; i < Games.Count; ++i)
                     {
-                        Channels[i].Tick();
+                        if (Games[i].ReadyToDestroy)
+                        {
+                            Logger.Info($"Destroying Game Id:{Games[i].Id} Name:{Games[i].GameName}");
+                            Games[i].EndGame();
+                            Games.RemoveAt(i);
+                            --i;
+                        }
+                        else
+                        {
+                            Games[i].Tick();
+                        }
                     }
-                }
 
-                // Tick games
-                for (int i = 0; i < Games.Count; ++i)
-                {
-                    if (Games[i].ReadyToDestroy)
+                    // Check DME
+                    if (Program.Settings.DmeRestartOnCrash && !string.IsNullOrEmpty(Program.Settings.DmeStartPath) && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
                     {
-                        Console.WriteLine($"Destroying Game Id:{Games[i].Id} Name:{Games[i].GameName}");
-                        Games[i].EndGame();
-                        Games.RemoveAt(i);
-                        --i;
+                        EnsureDMERunning(Program.Settings.DmeStartPath);
+                        lastDMECheck = DateTime.UtcNow;
                     }
-                    else
+
+                    // Reload config
+                    if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                     {
-                        Games[i].Tick();
+                        RefreshConfig();
+                        lastConfigRefresh = DateTime.UtcNow;
                     }
-                }
 
-                // Check DME
-                if (Program.Settings.DmeRestartOnCrash && !string.IsNullOrEmpty(Program.Settings.DmeStartPath) && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
-                {
-                    EnsureDMERunning(Program.Settings.DmeStartPath);
-                    lastDMECheck = DateTime.UtcNow;
+                    Thread.Sleep(sleepMS);
                 }
-
-                // Reload config
-                if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
-                {
-                    RefreshConfig();
-                    lastConfigRefresh = DateTime.UtcNow;
-                }
-
-                Thread.Sleep(sleepMS);
+            }
+            finally
+            {
+                await UniverseInfoServer.Stop();
+                await AuthenticationServer.Stop();
+                await LobbyServer.Stop();
+                await ProxyServer.Stop();
+                NATServer.Stop();
             }
         }
 
         static void Main(string[] args)
         {
             // 
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Microsoft.Extensions.Logging.LogLevel.Information, false));
+            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, false));
 
             // 
             Initialize();
@@ -215,7 +232,7 @@ namespace Deadlocked.Server
             {
                 // Populate existing object
                 try { JsonConvert.PopulateObject(File.ReadAllText(DB_FILE), Database, serializerSettings); }
-                catch (Exception e) { Console.WriteLine(e); }
+                catch (Exception e) { Logger.Error(e); }
             }
 
             // Save db
@@ -300,15 +317,14 @@ namespace Deadlocked.Server
         {
             if (!File.Exists(dmePath))
             {
-                Console.WriteLine($"Unable to find DmeServer binary at {dmePath}");
+                Logger.Error($"Unable to find DmeServer binary at {dmePath}");
                 return;
             }
 
             var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName.Contains("DmeServer"));
-
             if (process == null)
             {
-                Console.WriteLine("Dme Server not running. Starting...");
+                Logger.Error("Dme Server not running. Starting...");
 
                 if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {

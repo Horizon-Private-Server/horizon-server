@@ -1,5 +1,6 @@
 ﻿using Deadlocked.Server.Mods;
 using Deadlocked.Server.SCERT;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -117,6 +118,11 @@ namespace Deadlocked.Server.Config
         /// Collection of custom game modes.
         /// </summary>
         public List<Gamemode> Gamemodes { get; set; } = new List<Gamemode>();
+
+        /// <summary>
+        /// Log level.
+        /// </summary>
+        public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
         /// <summary>
         /// Collection of RT messages to print out

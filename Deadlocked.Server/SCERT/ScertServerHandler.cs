@@ -32,10 +32,17 @@ namespace Deadlocked.Server.SCERT
                 {
                     if (Group == null)
                     {
-                        Group = new DefaultChannelGroup(ctx.Executor);
+                        Group = g = new DefaultChannelGroup(ctx.Executor);
                     }
                 }
             }
+
+            // Detect when client disconnects
+            ctx.Channel.CloseCompletion.ContinueWith((x) =>
+            {
+                Logger.Info("Channel Closed");
+                OnChannelInactive?.Invoke(ctx.Channel);
+            });
 
             // Add to channels list
             g.Add(ctx.Channel);
@@ -48,30 +55,29 @@ namespace Deadlocked.Server.SCERT
         public override void ChannelInactive(IChannelHandlerContext ctx)
         {
             IChannelGroup g = Group;
-            if (g == null)
-            {
-                lock (this)
-                {
-                    if (Group == null)
-                    {
-                        Group = new DefaultChannelGroup(ctx.Executor);
-                    }
-                }
-            }
 
             Logger.Info("Client disconnected");
 
             // Remove
-            g.Remove(ctx.Channel);
+            g?.Remove(ctx.Channel);
 
             // Send event upstream
             OnChannelInactive?.Invoke(ctx.Channel);
         }
 
+
         protected override void ChannelRead0(IChannelHandlerContext ctx, BaseScertMessage message)
         {
             // Send upstream
             OnChannelMessage?.Invoke(ctx.Channel, message);
+        }
+
+        public override void ChannelReadComplete(IChannelHandlerContext context) => context.Flush();
+
+        public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
+        {
+            Logger.Error(exception);
+            context.CloseAsync();
         }
     }
 }

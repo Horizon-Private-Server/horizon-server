@@ -7,7 +7,7 @@ using System.Text;
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryFwdMessage)]
-    public class MediusBinaryFwdMessage : BaseLobbyMessage
+    public class MediusBinaryFwdMessage : BaseLobbyExtMessage
     {
 
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.BinaryFwdMessage;

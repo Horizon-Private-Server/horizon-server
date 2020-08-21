@@ -32,7 +32,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(IP?.ToString(), MediusConstants.IP_MAXLEN);
+            writer.Write(IP?.MapToIPv4()?.ToString(), MediusConstants.IP_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
         }

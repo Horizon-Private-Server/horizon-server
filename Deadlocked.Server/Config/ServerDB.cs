@@ -1,4 +1,5 @@
 ﻿using Deadlocked.Server.Accounts;
+using DotNetty.Common.Internal.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,8 @@ namespace Deadlocked.Server.Config
 {
     public class ServerDB
     {
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ServerDB>();
+
         #region Accounts
 
         /// <summary>
@@ -77,11 +80,7 @@ namespace Deadlocked.Server.Config
         public void Save()
         {
             // 
-            Console.WriteLine("-------------------------------------");
-            Console.WriteLine($"{DateTime.Now} Saving database!!!");
-            Console.WriteLine($"{DateTime.Now} Saving database!!!");
-            Console.WriteLine($"{DateTime.Now} Saving database!!!");
-            Console.WriteLine("-------------------------------------");
+            Logger.Warn("Saving Database!");
 
             // Save accounts
             File.WriteAllText(Program.DB_FILE, JsonConvert.SerializeObject(this, Formatting.Indented));

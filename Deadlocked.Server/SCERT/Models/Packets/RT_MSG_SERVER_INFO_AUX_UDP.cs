@@ -25,7 +25,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
 
         protected override void Serialize(BinaryWriter writer)
         {
-            writer.Write(Ip.ToString(), 16);
+            writer.Write(Ip?.MapToIPv4()?.ToString(), 16);
             writer.Write(Port);
         }
     }

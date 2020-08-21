@@ -1,4 +1,5 @@
-﻿using Deadlocked.Server.SCERT.Models;
+﻿using Deadlocked.Server.Medius.Models;
+using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.SCERT.Models.Packets;
 using System;
 using System.Collections.Generic;
@@ -74,9 +75,8 @@ namespace Deadlocked.Server.Mods
             });
 
             // Send each
-            foreach (var target in clients)
-                if (target != null && target.IsConnected)
-                    target.AddLobbyMessages(messages);
+            foreach (var client in clients)
+                client?.Queue(messages);
         }
 
         /// <summary>
@@ -86,8 +86,10 @@ namespace Deadlocked.Server.Mods
         {
             // reset
             var modulePokes = RT_MSG_SERVER_MEMORY_POKE.FromPayload(0x000CF000 + (0 * 16), new byte[16]);
-            foreach (var player in clients)
-                player.AddLobbyMessages(modulePokes);
+
+            // Send each
+            foreach (var client in clients)
+                client?.Queue(modulePokes);
         }
 
         [OnDeserialized]

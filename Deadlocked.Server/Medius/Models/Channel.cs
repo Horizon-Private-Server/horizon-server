@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Deadlocked.Server
+namespace Deadlocked.Server.Medius.Models
 {
     public enum ChannelType
     {
@@ -112,14 +112,16 @@ namespace Deadlocked.Server
 
         public void BroadcastBinaryMessage(ClientObject source, MediusBinaryMessage msg)
         {
-            Program.LobbyServer.Queue(new MediusBinaryFwdMessage()
+            foreach (var client in Clients.Where(x => x.Client != source).Select(x => x.Client))
             {
-                MessageType = msg.MessageType,
-                OriginatorAccountID = source.ClientAccount.AccountId,
-                Message = msg.Message
-            }, Clients.Select(x => x.Client));
+                client?.Queue(new MediusBinaryFwdMessage()
+                {
+                    MessageType = msg.MessageType,
+                    OriginatorAccountID = source.ClientAccount.AccountId,
+                    Message = msg.Message
+                });
+            }
         }
-
 
         public void BroadcastChatMessage(IEnumerable<ClientObject> targets, int sourceAccountId, string message)
         {
@@ -127,38 +129,44 @@ namespace Deadlocked.Server
             if (Program.Database.TryGetAccountById(sourceAccountId, out var account))
                 accountName = account.AccountName;
 
-            Program.LobbyServer.Queue(new MediusGenericChatFwdMessage()
+            foreach (var target in targets)
             {
-                OriginatorAccountID = sourceAccountId,
-                OriginatorAccountName = "",
-                Message = "A" + message,
-                MessageType = MediusChatMessageType.Broadcast,
-                TimeStamp = Utils.GetUnixTime()
-            }, Clients.Select(x => x.Client));
+                target?.Queue(new MediusGenericChatFwdMessage()
+                {
+                    OriginatorAccountID = sourceAccountId,
+                    OriginatorAccountName = accountName,
+                    Message = "A" + message,
+                    MessageType = MediusChatMessageType.Broadcast,
+                    TimeStamp = Utils.GetUnixTime()
+                });
+            }
         }
 
         public void SendSystemMessage(ClientObject client, string message)
         {
-            Program.LobbyServer.Queue(new MediusGenericChatFwdMessage()
+            client.Queue(new MediusGenericChatFwdMessage()
             {
                 OriginatorAccountID = 0,
                 OriginatorAccountName = "SYSTEM",
                 Message = "A" + message,
                 MessageType = MediusChatMessageType.Broadcast,
                 TimeStamp = Utils.GetUnixTime()
-            }, client);
+            });
         }
 
         public void BroadcastSystemMessage(IEnumerable<ClientObject> targets, string message)
         {
-            Program.LobbyServer.Queue(new MediusGenericChatFwdMessage()
+            foreach (var target in targets)
             {
-                OriginatorAccountID = 0,
-                OriginatorAccountName = "SYSTEM",
-                Message = "A" + message,
-                MessageType = MediusChatMessageType.Broadcast,
-                TimeStamp = Utils.GetUnixTime()
-            }, targets);
+                target?.Queue(new MediusGenericChatFwdMessage()
+                {
+                    OriginatorAccountID = 0,
+                    OriginatorAccountName = "SYSTEM",
+                    Message = "A" + message,
+                    MessageType = MediusChatMessageType.Broadcast,
+                    TimeStamp = Utils.GetUnixTime()
+                });
+            }
         }
     }
 }
