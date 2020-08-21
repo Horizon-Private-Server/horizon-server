@@ -235,7 +235,7 @@ namespace Deadlocked.Server.Medius
                     .Where(x => x is DMEObject && x != null)
                     .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
             }
-            catch (InvalidOperationException e)
+            catch (Exception e)
             {
                 Logger.Error(e);
             }
