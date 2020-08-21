@@ -110,6 +110,11 @@ namespace Deadlocked.Server.Config
         public bool DmeRestartOnCrash { get; set; } = false;
 
         /// <summary>
+        /// Time, in seconds, before timing out a Dme server.
+        /// </summary>
+        public int DmeTimeoutSeconds { get; set; } = 60;
+
+        /// <summary>
         /// Collection of patches to apply to logged in clients.
         /// </summary>
         public List<Patch> Patches { get; set; } = new List<Patch>();

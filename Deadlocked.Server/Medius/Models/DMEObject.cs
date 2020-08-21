@@ -23,7 +23,7 @@ namespace Deadlocked.Server.Medius.Models
         public int Port { get; protected set; } = 0;
         public IPAddress IP { get; protected set; } = IPAddress.Any;
 
-        public override bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.GameTimeoutSeconds;
+        public override bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.DmeTimeoutSeconds;
         public override bool IsConnected => !Timedout;
 
 
