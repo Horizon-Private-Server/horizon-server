@@ -58,9 +58,7 @@ namespace Deadlocked.Server.Medius
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,
-                            UNK_01 = 0,
-                            UNK_02 = 0,
-                            UNK_03 = 0,
+                            UNK_02 = GenerateNewScertClientId(),
                             UNK_04 = 0,
                             UNK_05 = 0,
                             UNK_06 = 0x0001,

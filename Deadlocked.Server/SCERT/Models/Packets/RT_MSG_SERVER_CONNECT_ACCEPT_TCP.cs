@@ -13,10 +13,8 @@ namespace Deadlocked.Server.SCERT.Models.Packets
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_SERVER_CONNECT_ACCEPT_TCP;
 
         // 
-        public byte UNK_00 = 0x00;
-        public byte UNK_01 = 0x00;
-        public byte UNK_02 = 0xEC;
-        public byte UNK_03 = 0x10;
+        public ushort UNK_00 = 0x0000;
+        public ushort UNK_02 = 0x10EC;
         public byte UNK_04 = 0x00;
         public byte UNK_05 = 0x00;
 
@@ -26,10 +24,8 @@ namespace Deadlocked.Server.SCERT.Models.Packets
 
         public override void Deserialize(BinaryReader reader)
         {
-            UNK_00 = reader.ReadByte();
-            UNK_01 = reader.ReadByte();
-            UNK_02 = reader.ReadByte();
-            UNK_03 = reader.ReadByte();
+            UNK_00 = reader.ReadUInt16();
+            UNK_02 = reader.ReadUInt16();
             UNK_04 = reader.ReadByte();
             UNK_05 = reader.ReadByte();
             UNK_06 = reader.ReadUInt16();
@@ -40,9 +36,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
         protected override void Serialize(BinaryWriter writer)
         {
             writer.Write(UNK_00);
-            writer.Write(UNK_01);
             writer.Write(UNK_02);
-            writer.Write(UNK_03);
             writer.Write(UNK_04);
             writer.Write(UNK_05);
             writer.Write(UNK_06);

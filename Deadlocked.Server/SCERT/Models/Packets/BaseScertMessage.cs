@@ -72,7 +72,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
 
                             // Serialize message
                             new RT_MSG_SERVER_APP() { Message = frag }.Serialize(writer);
-                            length = (int)stream.Position;
+                            length = (int)stream.Position - HEADER_SIZE;
 
                             // Write length
                             writer.Seek(1, SeekOrigin.Begin);

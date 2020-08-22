@@ -38,6 +38,7 @@ namespace Deadlocked.Server.Medius
         protected IEventLoopGroup _workerGroup = null;
         protected IChannel _boundChannel = null;
         protected ScertServerHandler _scertHandler = null;
+        private ushort _clientCounter = 0;
 
         protected internal class ChannelData
         {
@@ -217,6 +218,10 @@ namespace Deadlocked.Server.Medius
             {
                 await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT());
             }
+            catch (Exception)
+            {
+                // Silence exception since the client probably just closed the socket before we could write to it
+            }
             finally
             {
                 await channel.DisconnectAsync();
@@ -255,6 +260,11 @@ namespace Deadlocked.Server.Medius
         }
 
         #endregion
+
+        protected ushort GenerateNewScertClientId()
+        {
+            return _clientCounter++;
+        }
 
     }
 }
