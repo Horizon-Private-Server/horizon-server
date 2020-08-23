@@ -1,0 +1,333 @@
+﻿using Deadlocked.Server.Medius.Models;
+using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Medius.Models.Packets.Lobby;
+using Deadlocked.Server.Medius.Models.Packets.MGCL;
+using Deadlocked.Server.SCERT.Models.Packets;
+using DotNetty.Common.Internal.Logging;
+using Org.BouncyCastle.Math.EC.Rfc7748;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Deadlocked.Server.Medius
+{
+    public class MediusManager
+    {
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<MediusManager>();
+
+        private Dictionary<int, ClientObject> _accountIdToClient = new Dictionary<int, ClientObject>();
+        private Dictionary<string, ClientObject> _accountNameToClient = new Dictionary<string, ClientObject>();
+        private Dictionary<string, ClientObject> _accessTokenToClient = new Dictionary<string, ClientObject>();
+        private Dictionary<string, ClientObject> _sessionKeyToClient = new Dictionary<string, ClientObject>();
+
+        private Dictionary<int, Channel> _channelIdToChannel = new Dictionary<int, Channel>();
+        private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
+
+        #region Clients
+
+        public ClientObject GetClientByAccountId(int accountId)
+        {
+            if (_accountIdToClient.TryGetValue(accountId, out var result))
+                return result;
+
+            return null;
+        }
+
+        public ClientObject GetClientByAccountName(string accountName)
+        {
+            accountName = accountName.ToLower();
+            if (_accountNameToClient.TryGetValue(accountName, out var result))
+                return result;
+
+            return null;
+        }
+
+        public ClientObject GetClientByAccessToken(string accessToken)
+        {
+            if (_accessTokenToClient.TryGetValue(accessToken, out var result))
+                return result;
+
+            return null;
+        }
+
+        public void AddClient(ClientObject client)
+        {
+            if (!client.IsLoggedIn)
+                throw new InvalidOperationException($"Attempting to add {client} to MediusManager but client has not yet logged in.");
+
+            try
+            {
+                _accountIdToClient.Add(client.AccountId, client);
+                _accountNameToClient.Add(client.AccountName.ToLower(), client);
+                _accessTokenToClient.Add(client.Token, client);
+                _sessionKeyToClient.Add(client.SessionKey, client);
+            }
+            catch (Exception e)
+            {
+                // clean up
+                if (client != null)
+                {
+                    _accountIdToClient.Remove(client.AccountId);
+
+                    if (client.AccountName != null)
+                        _accountNameToClient.Remove(client.AccountName.ToLower());
+
+                    if (client.Token != null)
+                        _accessTokenToClient.Remove(client.Token);
+
+                    if (client.SessionKey != null)
+                        _sessionKeyToClient.Remove(client.SessionKey);
+                }
+
+                throw e;
+            }
+        }
+
+        #endregion
+
+        #region Games
+
+        public Game GetGameByGameId(int gameId)
+        {
+            if (_gameIdToGame.TryGetValue(gameId, out var result))
+                return result;
+
+            return null;
+        }
+
+        public void AddGame(Game game)
+        {
+            _gameIdToGame.Add(game.Id, game);
+        }
+
+        public IEnumerable<Game> GetGameList(int appId, int pageIndex, int pageSize, IEnumerable<GameListFilter> filters)
+        {
+            return _gameIdToGame
+                            .Select(x => x.Value)
+                            .Where(x => x.ApplicationId == appId &&
+                                        (x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging) &&
+                                        !filters.Any(y => !y.IsMatch(x)))
+                            .Skip((pageIndex - 1) * pageSize)
+                            .Take(pageSize);
+        }
+
+        public void CreateGame(ClientObject client, MediusCreateGameRequest request)
+        {
+            // Ensure the name is unique
+            // If the host leaves then we unreserve the name
+            if (_gameIdToGame.Select(x => x.Value).Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == request.GameName && x.Host != null && x.Host.IsConnected))
+            {
+                client.Queue(new RT_MSG_SERVER_APP()
+                {
+                    Message = new MediusCreateGameResponse()
+                    {
+                        MessageID = request.MessageID,
+                        MediusWorldID = -1,
+                        StatusCode = MediusCallbackStatus.MediusGameNameExists
+                    }
+                });
+                return;
+            }
+
+            // Try to get next free dme server
+            // If none exist, return error to clist
+            var dme = Program.ProxyServer.GetFreeDme();
+            if (dme == null)
+            {
+                client.Queue(new MediusCreateGameResponse()
+                {
+                    MessageID = request.MessageID,
+                    MediusWorldID = -1,
+                    StatusCode = MediusCallbackStatus.MediusExceedsMaxWorlds
+                });
+                return;
+            }
+
+            // Create and add
+            try
+            {
+                var game = new Game(client, request, client.CurrentChannel, dme);
+                AddGame(game);
+
+                // Send create game request to dme server
+                dme.Queue(new MediusServerCreateGameWithAttributesRequest()
+                {
+                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
+                    MediusWorldUID = (uint)game.Id,
+                    Attributes = game.Attributes,
+                    ApplicationID = Program.Settings.ApplicationId,
+                    MaxClients = game.MaxPlayers
+                });
+            }
+            catch (Exception e)
+            {
+                // 
+                Logger.Error(e);
+
+                // Failure adding game for some reason
+                client.Queue(new MediusCreateGameResponse()
+                {
+                    MessageID = request.MessageID,
+                    MediusWorldID = -1,
+                    StatusCode = MediusCallbackStatus.MediusFail
+                });
+            }
+        }
+
+        public void JoinGame(ClientObject client, MediusJoinGameRequest request)
+        {
+            var game = GetGameByGameId(request.MediusWorldID);
+            if (game == null)
+            {
+                client.Queue(new MediusJoinGameResponse()
+                {
+                    MessageID = request.MessageID,
+                    StatusCode = MediusCallbackStatus.MediusGameNotFound
+                });
+            }
+            else if (game.GamePassword != null && game.GamePassword != string.Empty && game.GamePassword != request.GamePassword)
+            {
+                client.Queue(new MediusJoinGameResponse()
+                {
+                    MessageID = request.MessageID,
+                    StatusCode = MediusCallbackStatus.MediusInvalidPassword
+                });
+            }
+            else
+            {
+                var dme = game.DMEServer;
+                dme.Queue(new MediusServerJoinGameRequest()
+                {
+                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
+                    ConnectInfo = new NetConnectionInfo()
+                    {
+                        Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
+                        WorldID = game.DMEWorldId,
+                        SessionKey = client.SessionKey,
+                        ServerKey = Program.GlobalAuthPublic
+                    }
+                });
+            }
+        }
+
+        #endregion
+
+        #region Channels
+
+        public Channel GetChannelByChannelId(int channelId)
+        {
+            if (_channelIdToChannel.TryGetValue(channelId, out var result))
+                return result;
+
+            return null;
+        }
+
+        public void AddChannel(Channel channel)
+        {
+            _channelIdToChannel.Add(channel.Id, channel);
+        }
+
+        public IEnumerable<Channel> GetChannelList(int appId, int pageIndex, int pageSize, ChannelType type)
+        {
+            return _channelIdToChannel
+                .Select(x => x.Value)
+                .Where(x => x.ApplicationId == appId && x.Type == type)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize);
+        }
+
+        #endregion
+
+        #region Tick
+
+        public void Tick()
+        {
+            TickClients();
+
+            TickChannels();
+
+            TickGames();
+        }
+
+        private void TickChannels()
+        {
+            Queue<int> channelsToRemove = new Queue<int>();
+
+            // Tick channels
+            foreach (var channelKeyPair in _channelIdToChannel)
+            {
+                if (channelKeyPair.Value.ReadyToDestroy)
+                {
+                    Logger.Info($"Destroying Channel {channelKeyPair.Value}");
+                    channelsToRemove.Enqueue(channelKeyPair.Key);
+                }
+                else
+                {
+                    channelKeyPair.Value.Tick();
+                }
+            }
+
+            // Remove channels
+            while (channelsToRemove.TryDequeue(out var channelId))
+                _channelIdToChannel.Remove(channelId);
+        }
+
+        private void TickGames()
+        {
+            Queue<int> gamesToRemove = new Queue<int>();
+
+            // Tick games
+            foreach (var gameKeyPair in _gameIdToGame)
+            {
+                if (gameKeyPair.Value.ReadyToDestroy)
+                {
+                    Logger.Info($"Destroying Game {gameKeyPair.Value}");
+                    gameKeyPair.Value.EndGame();
+                    gamesToRemove.Enqueue(gameKeyPair.Key);
+                }
+                else
+                {
+                    gameKeyPair.Value.Tick();
+                }
+            }
+
+            // Remove games
+            while (gamesToRemove.TryDequeue(out var gameId))
+                _gameIdToGame.Remove(gameId);
+        }
+
+        private void TickClients()
+        {
+            Queue<string> clientsToRemove = new Queue<string>();
+
+            foreach (var clientKeyPair in _sessionKeyToClient)
+            {
+                if (!clientKeyPair.Value.IsConnected)
+                {
+                    Logger.Info($"Destroying Client {clientKeyPair.Value}");
+
+                    // Logout and end session
+                    clientKeyPair.Value?.Logout();
+                    clientKeyPair.Value?.EndSession();
+
+                    clientsToRemove.Enqueue(clientKeyPair.Key);
+                }
+            }
+
+            // Remove
+            while (clientsToRemove.TryDequeue(out var sessionKey))
+            {
+                if (_sessionKeyToClient.Remove(sessionKey, out var clientObject))
+                {
+                    _accountIdToClient.Remove(clientObject.AccountId);
+                    _accessTokenToClient.Remove(clientObject.Token);
+                    _accountNameToClient.Remove(clientObject.AccountName);
+                }
+            }    
+        }
+
+        #endregion
+
+    }
+}

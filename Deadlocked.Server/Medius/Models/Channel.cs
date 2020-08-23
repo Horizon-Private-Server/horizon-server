@@ -24,6 +24,7 @@ namespace Deadlocked.Server.Medius.Models
         }
 
 
+        public List<ChannelClient> Clients = new List<ChannelClient>();
 
         public int Id = 0;
         public int ApplicationId = 0;
@@ -38,13 +39,13 @@ namespace Deadlocked.Server.Medius.Models
         public uint GenericField4 = 0;
         public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
 
-        public bool ReadyToDestroy => Type == ChannelType.Game && removeChannel;
+        public bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || (DateTime.UtcNow - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds);
         public int PlayerCount => Clients.Count;
-        public int GameCount => games.Count;
+        public int GameCount => _games.Count;
 
-        private List<Game> games = new List<Game>();
-        public List<ChannelClient> Clients = new List<ChannelClient>();
-        private bool removeChannel = false;
+        private List<Game> _games = new List<Game>();
+        private bool _removeChannel = false;
+        private DateTime _timeCreated = DateTime.UtcNow;
 
         public Channel()
         {
@@ -95,18 +96,18 @@ namespace Deadlocked.Server.Medius.Models
 
         public void RegisterGame(Game game)
         {
-            games.Add(game);
+            _games.Add(game);
         }
 
         public void UnregisterGame(Game game)
         {
             // Remove game
-            games.Remove(game);
+            _games.Remove(game);
 
             // If empty, just end channel
-            if (games.Count == 0)
+            if (_games.Count == 0)
             {
-                removeChannel = true;
+                _removeChannel = true;
             }
         }
 

@@ -51,14 +51,12 @@ namespace Deadlocked.Server
         public readonly static RSA_KEY GlobalAuthPublic = new RSA_KEY(GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray());
         public readonly static RSA_KEY GlobalAuthPrivate = new RSA_KEY(GlobalAuthKey.D.ToByteArrayUnsigned().Reverse().ToArray());
 
-        public static List<ClientObject> Clients = new List<ClientObject>();
-        public static List<Channel> Channels = new List<Channel>();
-        public static List<Game> Games = new List<Game>();
-
         public static ServerSettings Settings = new ServerSettings();
         public static DbSettings DbSettings = new DbSettings();
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
+
+        public static MediusManager Manager = new MediusManager();
 
         public static MUIS UniverseInfoServer = new MUIS();
         public static MAS AuthenticationServer = new MAS();
@@ -130,17 +128,7 @@ namespace Deadlocked.Server
 #endif
 
 
-                    // Remove old clients
-                    for (int i = 0; i < Clients.Count; ++i)
-                    {
-                        if (Clients[i] == null || !Clients[i].IsConnected)
-                        {
-                            Logger.Info($"Destroying Client SK:{Clients[i]} Name:{Clients[i]?.AccountName}");
-                            Clients[i]?.Logout();
-                            Clients.RemoveAt(i);
-                            --i;
-                        }
-                    }
+
 
                     // Tick
                     await UniverseInfoServer.Tick();
@@ -149,36 +137,8 @@ namespace Deadlocked.Server
                     await ProxyServer.Tick();
                     // NATServer.Tick();
 
-                    // Tick channels
-                    for (int i = 0; i < Channels.Count; ++i)
-                    {
-                        if (Channels[i].ReadyToDestroy)
-                        {
-                            Logger.Info($"Destroying Channel Id:{Channels[i].Id} Name:{Channels[i].Name}");
-                            Channels.RemoveAt(i);
-                            --i;
-                        }
-                        else
-                        {
-                            Channels[i].Tick();
-                        }
-                    }
-
-                    // Tick games
-                    for (int i = 0; i < Games.Count; ++i)
-                    {
-                        if (Games[i].ReadyToDestroy)
-                        {
-                            Logger.Info($"Destroying Game Id:{Games[i].Id} Name:{Games[i].GameName}");
-                            Games[i].EndGame();
-                            Games.RemoveAt(i);
-                            --i;
-                        }
-                        else
-                        {
-                            Games[i].Tick();
-                        }
-                    }
+                    // Tick manager
+                    Manager.Tick();
 
                     // Check DME
                     if (Program.Settings.DmeRestartOnCrash && !string.IsNullOrEmpty(Program.Settings.DmeStartPath) && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
@@ -273,8 +233,8 @@ namespace Deadlocked.Server
                 SERVER_IP = IPAddress.Parse(GetIPAddress());
             }
 
-            // Initialize default channel
-            Channels.Add(new Channel()
+            // 
+            Manager.AddChannel(new Channel()
             {
                 Id = Settings.DefaultChannelId,
                 ApplicationId = Program.Settings.ApplicationId,
@@ -370,28 +330,6 @@ namespace Deadlocked.Server
                 }
             }
         }
-
-        public static Channel GetChannelById(int channelId)
-        {
-            return Channels.FirstOrDefault(x => x != null && x.Id == channelId);
-        }
-
-        public static Game GetGameById(int id)
-        {
-            return Games.FirstOrDefault(x => x != null && x.Id == id);
-        }
-
-        public static ClientObject GetClientByAccountId(int accountId)
-        {
-            return Clients.FirstOrDefault(x => x != null && x.IsConnected && x.AccountId == accountId);
-        }
-
-        public static ClientObject GetClientByAccountName(string accountName)
-        {
-            accountName = accountName.ToLower();
-            return Clients.FirstOrDefault(x => x != null && x.IsLoggedIn && x.AccountName.ToLower() == accountName);
-        }
-
         public static string GenerateSessionKey()
         {
             lock (_sessionKeyCounterLock)

@@ -69,5 +69,10 @@ namespace Deadlocked.Server.Medius.Models
                     }
             }
         }
+
+        protected override void PostStatus()
+        {
+            // Don't post stats of DME servers to db
+        }
     }
 }

@@ -56,7 +56,7 @@ namespace Deadlocked.Server.Medius
                         data.ApplicationId = clientConnectTcp.AppId;
 
                         // Find reserved dme object by token
-                        data.ClientObject = Program.Clients.FirstOrDefault(x => x.Token == clientConnectTcp.AccessToken);
+                        data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
                         if (data.ClientObject == null)
                         {
                             await DisconnectClient(clientChannel);
@@ -147,8 +147,8 @@ namespace Deadlocked.Server.Medius
                         int gameId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[0]);
                         int accountId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[1]);
                         string msgId = createGameWithAttrResponse.MessageID.Split('-')[2];
-                        var game = Program.GetGameById(gameId);
-                        var rClient = Program.GetClientByAccountId(accountId);
+                        var game = Program.Manager.GetGameByGameId(gameId);
+                        var rClient = Program.Manager.GetClientByAccountId(accountId);
                         game.DMEWorldId = createGameWithAttrResponse.WorldID;
 
                         rClient.Queue(new MediusCreateGameResponse()
@@ -166,10 +166,10 @@ namespace Deadlocked.Server.Medius
                         int gameId = int.Parse(joinGameResponse.MessageID.Split('-')[0]);
                         int accountId = int.Parse(joinGameResponse.MessageID.Split('-')[1]);
                         string msgId = joinGameResponse.MessageID.Split('-')[2];
-                        var game = Program.GetGameById(gameId);
-                        var rClient = Program.GetClientByAccountId(accountId);
+                        var game = Program.Manager.GetGameByGameId(gameId);
+                        var rClient = Program.Manager.GetClientByAccountId(accountId);
 
-                        game.OnPlayerJoined(rClient);
+                        game.AddPlayer(rClient);
 
                         rClient.Queue(new MediusJoinGameResponse()
                         {
@@ -204,7 +204,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case MediusServerConnectNotification connectNotification:
                     {
-                        Program.GetGameById((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
+                        Program.Manager.GetGameByGameId((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
 
 
                         break;
@@ -224,7 +224,7 @@ namespace Deadlocked.Server.Medius
             }
         }
 
-        protected DMEObject GetFreeDme()
+        public DMEObject GetFreeDme()
         {
             try
             {
@@ -244,97 +244,11 @@ namespace Deadlocked.Server.Medius
         public DMEObject ReserveDMEObject(MediusServerSessionBeginRequest request)
         {
             var dme = new DMEObject(request);
-            Program.Clients.Add(dme);
+            dme.BeginSession();
+            Program.Manager.AddClient(dme);
             return dme;
         }
 
-        public void CreateGame(ClientObject client, MediusCreateGameRequest request)
-        {
-            // Ensure the name is unique
-            // If the host leaves then we unreserve the name
-            if (Program.Games.Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == request.GameName && x.Host != null && x.Host.IsConnected))
-            {
-                client.Queue(new RT_MSG_SERVER_APP()
-                {
-                    Message = new MediusCreateGameResponse()
-                    {
-                        MessageID = request.MessageID,
-                        MediusWorldID = -1,
-                        StatusCode = MediusCallbackStatus.MediusGameNameExists
-                    }
-                });
-                return;
-            }
-
-            // 
-            var dme = GetFreeDme();
-            if (dme == null)
-            {
-                client.Queue(new RT_MSG_SERVER_APP()
-                {
-                    Message = new MediusCreateGameResponse()
-                    {
-                        MessageID = request.MessageID,
-                        MediusWorldID = -1,
-                        StatusCode = MediusCallbackStatus.MediusExceedsMaxWorlds
-                    }
-                });
-                return;
-            }
-
-            var game = new Game(client, request, dme);
-            Program.Games.Add(game);
-
-            dme.Queue(new RT_MSG_SERVER_APP()
-            {
-                Message = new MediusServerCreateGameWithAttributesRequest()
-                {
-                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
-                    MediusWorldUID = (uint)game.Id,
-                    Attributes = game.Attributes,
-                    ApplicationID = Program.Settings.ApplicationId,
-                    MaxClients = game.MaxPlayers
-                }
-            });
-        }
-
-        public void JoinGame(ClientObject client, MediusJoinGameRequest request)
-        {
-            var game = Program.GetGameById(request.MediusWorldID);
-            if (game == null)
-            {
-                client.Queue(new RT_MSG_SERVER_APP()
-                {
-                    Message = new MediusJoinGameResponse()
-                    {
-                        MessageID = request.MessageID,
-                        StatusCode = MediusCallbackStatus.MediusGameNotFound
-                    }
-                });
-            }
-            else if (game.GamePassword != null && game.GamePassword != string.Empty && game.GamePassword != request.GamePassword)
-            {
-                client.Queue(new MediusJoinGameResponse()
-                {
-                    MessageID = request.MessageID,
-                    StatusCode = MediusCallbackStatus.MediusInvalidPassword
-                });
-            }
-            else
-            {
-                var dme = game.DMEServer;
-                dme.Queue(new MediusServerJoinGameRequest()
-                {
-                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
-                    ConnectInfo = new NetConnectionInfo()
-                    {
-                        Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
-                        WorldID = game.DMEWorldId,
-                        SessionKey = client.SessionKey,
-                        ServerKey = Program.GlobalAuthPublic
-                    }
-                });
-            }
-        }
+        
     }
 }

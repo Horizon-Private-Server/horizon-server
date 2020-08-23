@@ -1,4 +1,5 @@
-﻿using Deadlocked.Server.Database.Models;
+﻿using Deadlocked.Server.Database;
+using Deadlocked.Server.Database.Models;
 using Deadlocked.Server.Medius;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.Lobby;
@@ -17,69 +18,90 @@ namespace Deadlocked.Server.Medius.Models
 {
     public class ClientObject
     {
-        public static Random RNG = new Random();
+        protected static Random RNG = new Random();
 
         static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<ClientObject>();
         protected virtual IInternalLogger Logger => _logger;
 
-
-        public DateTime UtcLastEcho { get; protected set; } = DateTime.UtcNow;
-
-        public MediusUserAction Action { get; set; } = MediusUserAction.KeepAlive;
-        public MediusPlayerStatus Status { get; set; } = MediusPlayerStatus.MediusPlayerDisconnected;
-
         /// <summary>
-        /// Current access token required to access the account.
+        /// 
         /// </summary>
-        public string Token { get; set; } = null;
+        public MediusPlayerStatus Status => GetStatus();
 
         /// <summary>
         /// 
         /// </summary>
-        public string SessionKey { get; set; } = null;
-
-        public int ApplicationId { get; set; } = 0;
-
-        private uint gameListFilterIdCounter = 0;
-        public List<GameListFilter> GameListFilters = new List<GameListFilter>();
-
-        public Channel CurrentChannel { get; protected set; } = null;
-
-        private int _currentChannelId = 0;
-        public int CurrentChannelId
-        {
-            get => _currentChannelId;
-            set
-            {
-                _currentChannelId = value;
-                CurrentChannel = Program.GetChannelById(value);
-            }
-        }
-
-        public Game CurrentGame { get; protected set; } = null;
-
-        private int _currentGameId = -1;
-        public int CurrentGameId
-        {
-            get => _currentGameId;
-            set
-            {
-                _currentGameId = value;
-                CurrentGame = Program.GetGameById(value);
-            }
-        }
-
         public int AccountId { get; protected set; } = -1;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string AccountName { get; protected set; } = null;
 
-        public bool IsLoggedIn => AccountId >= 0 && IsConnected;
+        /// <summary>
+        /// Current access token required to access the account.
+        /// </summary>
+        public string Token { get; protected set; } = null;
 
-        public DateTime? LogoutTime { get; protected set; } = null;
-        public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
-        public virtual bool IsConnected => !LogoutTime.HasValue && !Timedout;
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SessionKey { get; protected set; } = null;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public int ApplicationId { get; set; } = 0;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<GameListFilter> GameListFilters = new List<GameListFilter>();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Channel CurrentChannel { get; protected set; } = null;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Game CurrentGame { get; protected set; } = null;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public ConcurrentQueue<BaseScertMessage> SendMessageQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime UtcLastEcho { get; protected set; } = DateTime.UtcNow;
+
+
+        public bool IsLoggedIn => !_logoutTime.HasValue && IsConnected;
+        public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
+
+        public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool IsConnected => _hasActiveSession && !Timedout;
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private DateTime? _logoutTime = null;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private bool _hasActiveSession = true;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private uint _gameListFilterIdCounter = 0;
+
+
 
         public ClientObject()
         {
@@ -102,6 +124,40 @@ namespace Deadlocked.Server.Medius.Models
                 UtcLastEcho = utcTime;
         }
 
+        #region Status
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private MediusPlayerStatus GetStatus()
+        {
+            if (!IsConnected || !IsLoggedIn)
+                return MediusPlayerStatus.MediusPlayerDisconnected;
+
+            if (IsInGame)
+                return MediusPlayerStatus.MediusPlayerInGameWorld;
+
+            return MediusPlayerStatus.MediusPlayerInChatWorld;
+        }
+
+        /// <summary>
+        /// Posts current account status to database.
+        /// </summary>
+        protected virtual void PostStatus()
+        {
+            _ = DbController.PostAccountStatus(new AccountStatusDTO()
+            {
+                AccountId = AccountId,
+                LoggedIn = IsLoggedIn,
+                ChannelId = CurrentChannel?.Id ?? -1,
+                GameId = CurrentGame?.Id ?? -1,
+                WorldId = Program.Settings.DefaultChannelId
+            });
+        }
+
+        #endregion
+
         #region Login / Logout
 
         /// <summary>
@@ -109,22 +165,125 @@ namespace Deadlocked.Server.Medius.Models
         /// </summary>
         public void Logout()
         {
-            // Move to invalid channel
-            CurrentChannelId = -1;
+            // Leave game
+            LeaveCurrentGame();
 
-            // Remove reference to account
-            AccountId = -1;
-            AccountName = null;
+            // Leave channel
+            LeaveCurrentChannel();
 
-            //
-            LogoutTime = DateTime.UtcNow;
+            // Logout
+            _logoutTime = DateTime.UtcNow;
+
+            // Tell database
+            PostStatus();
         }
 
         public void Login(AccountDTO account)
         {
+            if (IsLoggedIn)
+                throw new InvalidOperationException($"{this} attempting to log into {account} but is already logged in!");
+
+            if (account == null)
+                throw new InvalidOperationException($"{this} attempting to log into null account.");
+
             // 
-            AccountId = account?.AccountId ?? -1;
-            AccountName = account?.AccountName;
+            AccountId = account.AccountId;
+            AccountName = account.AccountName;
+
+            // Tell database
+            PostStatus();
+        }
+
+        #endregion
+
+        #region Game
+
+        public void JoinGame(Game game)
+        {
+            // Leave current game
+            LeaveCurrentGame();
+
+            CurrentGame = game;
+            CurrentGame.AddPlayer(this);
+
+            // Tell database
+            PostStatus();
+        }
+
+        public void LeaveGame(Game game)
+        {
+            if (CurrentGame != null && CurrentGame == game)
+            {
+                LeaveCurrentGame();
+
+                // Tell database
+                PostStatus();
+            }
+        }
+
+        private void LeaveCurrentGame()
+        {
+            if (CurrentGame != null)
+            {
+                CurrentGame.RemovePlayer(this);
+                CurrentGame = null;
+            }
+        }
+
+        #endregion
+
+        #region Channel
+
+        public void JoinChannel(Channel channel)
+        {
+            // Leave current channel
+            LeaveCurrentChannel();
+
+            CurrentChannel = channel;
+            CurrentChannel.OnPlayerJoined(this);
+
+            // Tell database
+            PostStatus();
+        }
+
+        public void LeaveChannel(Channel channel)
+        {
+            if (CurrentChannel != null && CurrentChannel == channel)
+            {
+                LeaveCurrentChannel();
+
+                // Tell database
+                PostStatus();
+            }
+        }
+
+        private void LeaveCurrentChannel()
+        {
+            if (CurrentChannel != null)
+            {
+                CurrentChannel.OnPlayerLeft(this);
+                CurrentChannel = null;
+            }
+        }
+
+        #endregion
+
+        #region Session
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void BeginSession()
+        {
+            _hasActiveSession = true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void EndSession()
+        {
+            _hasActiveSession = false;
         }
 
         #endregion
@@ -137,7 +296,7 @@ namespace Deadlocked.Server.Medius.Models
 
             GameListFilters.Add(result = new GameListFilter()
             {
-                FieldID = gameListFilterIdCounter++,
+                FieldID = _gameListFilterIdCounter++,
                 Mask = request.Mask,
                 BaselineValue = request.BaselineValue,
                 ComparisonOperator = request.ComparisonOperator,

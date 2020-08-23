@@ -234,7 +234,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} is trying to end session without an Client Object");
 
                         // Remove
-                        Program.Clients.Remove(data.ClientObject);
+                        data.ClientObject.EndSession();
 
                         // 
                         data.ClientObject = null;
@@ -406,7 +406,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLoginRequest} without a session.");
 
                         // Check the client isn't already logged in
-                        if (Program.GetClientByAccountName(accountLoginRequest.Username)?.IsLoggedIn ?? false)
+                        if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username)?.IsLoggedIn ?? false)
                         {
                             data.ClientObject.Queue(new MediusAccountLoginResponse()
                             {
@@ -434,7 +434,6 @@ namespace Deadlocked.Server.Medius
                                     {
                                         //
                                         data.ClientObject.Login(r.Result);
-                                        data.ClientObject.Status = MediusPlayerStatus.MediusPlayerInAuthWorld;
 
                                         // Send patches
                                         if (Program.Settings.Patches != null)
@@ -470,9 +469,6 @@ namespace Deadlocked.Server.Medius
                                             MediusWorldID = Program.Settings.DefaultChannelId,
                                             StatusCode = MediusCallbackStatus.MediusSuccess
                                         });
-
-                                        // Tell database client logged in
-
                                     }
                                     else
                                     {

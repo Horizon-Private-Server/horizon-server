@@ -3,19 +3,14 @@ using Deadlocked.Server.Database.Models;
 using Deadlocked.Server.Medius.Models;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.Lobby;
-using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using Medius.Crypto;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Deadlocked.Server.Medius
@@ -38,7 +33,8 @@ namespace Deadlocked.Server.Medius
         public ClientObject ReserveClient(MediusSessionBeginRequest request)
         {
             var client = new ClientObject();
-            Program.Clients.Add(client);
+            client.BeginSession();
+            Program.Manager.AddClient(client);
             return client;
         }
 
@@ -62,7 +58,7 @@ namespace Deadlocked.Server.Medius
                     {
                         // 
                         data.ApplicationId = clientConnectTcp.AppId;
-                        data.ClientObject = Program.Clients.FirstOrDefault(x => x.Token == clientConnectTcp.AccessToken);
+                        data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
                         if (data.ClientObject == null)
                         {
                             await DisconnectClient(clientChannel);
@@ -143,8 +139,8 @@ namespace Deadlocked.Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} is trying to end session without an Client Object");
 
-                        // Remove
-                        Program.Clients.Remove(data.ClientObject);
+                        // End session
+                        data.ClientObject.EndSession();
 
                         // 
                         data.ClientObject = null;
@@ -414,7 +410,7 @@ namespace Deadlocked.Server.Medius
                                 // Iterate through friends and build a response for each
                                 foreach (var friend in r.Result.Friends)
                                 {
-                                    var friendClient = Program.GetClientByAccountId(friend.AccountId);
+                                    var friendClient = Program.Manager.GetClientByAccountId(friend.AccountId);
                                     friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
                                     {
                                         MessageID = getBuddyList_ExtraInfoRequest.MessageID,
@@ -493,7 +489,7 @@ namespace Deadlocked.Server.Medius
                                 // Iterate and send to client
                                 foreach (var player in r.Result.Ignored)
                                 {
-                                    var playerClient = Program.GetClientByAccountId(player.AccountId);
+                                    var playerClient = Program.Manager.GetClientByAccountId(player.AccountId);
                                     ignoredListResponses.Add(new MediusGetIgnoreListResponse()
                                     {
                                         MessageID = getIgnoreListRequest.MessageID,
@@ -928,11 +924,11 @@ namespace Deadlocked.Server.Medius
 
                         if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountID)
                         {
-                            foundPlayer = Program.Clients.FirstOrDefault(x => x.AccountId == findPlayerRequest.ID);
+                            foundPlayer = Program.Manager.GetClientByAccountId(findPlayerRequest.ID);
                         }
                         else if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountName)
                         {
-                            foundPlayer = Program.Clients.FirstOrDefault(x => x.AccountName.ToLower() == findPlayerRequest.Name.ToLower());
+                            foundPlayer = Program.Manager.GetClientByAccountName(findPlayerRequest.Name);
                         }
 
                         if (foundPlayer == null || !foundPlayer.IsLoggedIn)
@@ -957,7 +953,7 @@ namespace Deadlocked.Server.Medius
                                 AccountName = foundPlayer.AccountName,
                                 ApplicationType = (foundPlayer.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? MediusApplicationType.MediusAppTypeGame : MediusApplicationType.LobbyChatChannel,
                                 ApplicationName = "?????",
-                                MediusWorldID = (foundPlayer.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? foundPlayer.CurrentGameId : foundPlayer.CurrentChannelId,
+                                MediusWorldID = (foundPlayer.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? foundPlayer.CurrentGame?.Id ?? -1 : foundPlayer.CurrentChannel?.Id ?? -1,
                                 EndOfList = true
                             });
                         }
@@ -978,7 +974,7 @@ namespace Deadlocked.Server.Medius
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                var playerClientObject = Program.Clients.FirstOrDefault(x => x.AccountId == r.Result.AccountId);
+                                var playerClientObject = Program.Manager.GetClientByAccountId(r.Result.AccountId);
                                 data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
                                 {
                                     MessageID = playerInfoRequest.MessageID,
@@ -1013,17 +1009,6 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateUserState} without a being logged in.");
 
-                        data.ClientObject.Action = updateUserState.UserAction;
-
-                        switch (updateUserState.UserAction)
-                        {
-                            case MediusUserAction.JoinedChatWorld:
-                            case MediusUserAction.LeftGameWorld:
-                                {
-                                    data.ClientObject.Status = MediusPlayerStatus.MediusPlayerInChatWorld;
-                                    break;
-                                }
-                        }
                         break;
                     }
 
@@ -1252,12 +1237,11 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameList_ExtraInfoRequest} without a being logged in.");
 
-                        var gameList = Program.Games
-                            .Where(x => x.ApplicationId == data.ClientObject.ApplicationId)
-                            .Where(x => x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging)
-                            .Where(x => data.ClientObject.IsGameMatch(x))
-                            .Skip((gameList_ExtraInfoRequest.PageID - 1) * gameList_ExtraInfoRequest.PageSize)
-                            .Take(gameList_ExtraInfoRequest.PageSize)
+                        var gameList = Program.Manager.GetGameList(
+                            data.ClientObject.ApplicationId,
+                            gameList_ExtraInfoRequest.PageID,
+                            gameList_ExtraInfoRequest.PageSize,
+                            data.ClientObject.GameListFilters)
                             .Select(x => new MediusGameList_ExtraInfoResponse()
                             {
                                 MessageID = gameList_ExtraInfoRequest.MessageID,
@@ -1318,7 +1302,7 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameInfoRequest} without a being logged in.");
 
-                        var game = Program.GetGameById(gameInfoRequest.MediusWorldID);
+                        var game = Program.Manager.GetGameByGameId(gameInfoRequest.MediusWorldID);
                         if (game == null)
                         {
                             data.ClientObject.Queue(new MediusGameInfoResponse()
@@ -1369,7 +1353,7 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameWorldPlayerListRequest} without a being logged in.");
 
-                        var game = Program.GetGameById(gameWorldPlayerListRequest.MediusWorldID);
+                        var game = Program.Manager.GetGameByGameId(gameWorldPlayerListRequest.MediusWorldID);
                         if (game == null)
                         {
                             data.ClientObject.Queue(new MediusGameWorldPlayerListResponse()
@@ -1458,7 +1442,7 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest} without a being logged in.");
 
-                        Program.ProxyServer.CreateGame(data.ClientObject, createGameRequest);
+                        Program.Manager.CreateGame(data.ClientObject, createGameRequest);
                         break;
                     }
 
@@ -1472,7 +1456,7 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
 
-                        Program.ProxyServer.JoinGame(data.ClientObject, joinGameRequest);
+                        Program.Manager.JoinGame(data.ClientObject, joinGameRequest);
                         break;
                     }
 
@@ -1502,7 +1486,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerReport} without a being logged in.");
 
                         // 
-                        if (data.ClientObject.CurrentGameId == playerReport.MediusWorldID &&
+                        if (data.ClientObject.CurrentGame?.Id == playerReport.MediusWorldID &&
                             data.ClientObject.SessionKey == playerReport.SessionKey)
                         {
                             data.ClientObject.CurrentGame?.OnPlayerReport(playerReport);
@@ -1568,7 +1552,7 @@ namespace Deadlocked.Server.Medius
                         Channel channel = new Channel(createChannelRequest);
 
                         // Add
-                        Program.Channels.Add(channel);
+                        Program.Manager.AddChannel(channel);
 
                         // Send to client
                         data.ClientObject.Queue(new MediusCreateChannelResponse()
@@ -1590,7 +1574,7 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinChannelRequest} without a being logged in.");
 
-                        var channel = Program.GetChannelById(joinChannelRequest.MediusWorldID);
+                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID);
                         if (channel == null)
                         {
                             data.ClientObject.Queue(new MediusJoinChannelResponse()
@@ -1609,15 +1593,11 @@ namespace Deadlocked.Server.Medius
                         }
                         else
                         {
-                            // Tell previous channel player left
-                            var prevChannel = Program.Channels.FirstOrDefault(x => x.Id == data.ClientObject.CurrentChannelId);
-                            prevChannel?.OnPlayerLeft(data.ClientObject);
+                            // Leave current channel
+                            data.ClientObject.LeaveChannel(data.ClientObject.CurrentChannel);
 
-                            // 
-                            data.ClientObject.CurrentChannelId = channel.Id;
-
-                            // Tell channel
-                            channel.OnPlayerJoined(data.ClientObject);
+                            // Join new channel
+                            data.ClientObject.JoinChannel(channel);
 
                             data.ClientObject.Queue(new MediusJoinChannelResponse()
                             {
@@ -1655,7 +1635,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelInfoRequest} without a being logged in.");
 
                         // Find channel
-                        var channel = Program.GetChannelById(channelInfoRequest.MediusWorldID);
+                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID);
 
                         if (channel == null)
                         {
@@ -1691,11 +1671,11 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelListRequest} without a being logged in.");
 
                         List<MediusChannelListResponse> channelResponses = new List<MediusChannelListResponse>();
-                        var gameChannels = Program.Channels
-                            .Where(x => x.ApplicationId == data.ClientObject.ApplicationId)
-                            .Where(x => x.Type == ChannelType.Game)
-                            .Skip((channelListRequest.PageID - 1) * channelListRequest.PageSize)
-                            .Take(channelListRequest.PageSize);
+                        var gameChannels = Program.Manager.GetChannelList(
+                            data.ClientObject.ApplicationId,
+                            channelListRequest.PageID,
+                            channelListRequest.PageSize,
+                            ChannelType.Game);
 
                         foreach (var channel in gameChannels)
                         {
@@ -1747,11 +1727,11 @@ namespace Deadlocked.Server.Medius
 
                         // Deadlocked only uses this to connect to a non-game channel (lobby)
                         // So we'll filter by lobby here
-                        var channels = Program.Channels
-                            .Where(x => x.ApplicationId == data.ClientObject.ApplicationId)
-                            .Where(x => x.Type == ChannelType.Lobby)
-                            .Skip((channelList_ExtraInfoRequest.PageID - 1) * channelList_ExtraInfoRequest.PageSize)
-                            .Take(channelList_ExtraInfoRequest.PageSize);
+                        var channels = Program.Manager.GetChannelList(
+                            data.ClientObject.ApplicationId,
+                            channelList_ExtraInfoRequest.PageID,
+                            channelList_ExtraInfoRequest.PageSize,
+                            ChannelType.Lobby);
 
                         foreach (var channel in channels)
                         {
@@ -1913,7 +1893,7 @@ namespace Deadlocked.Server.Medius
                         {
                             case MediusBinaryMessageType.TargetBinaryMsg:
                                 {
-                                    var target = Program.GetClientByAccountId(binaryMessage.TargetAccountID);
+                                    var target = Program.Manager.GetClientByAccountId(binaryMessage.TargetAccountID);
 
                                     target?.Queue(new MediusBinaryFwdMessage()
                                     {

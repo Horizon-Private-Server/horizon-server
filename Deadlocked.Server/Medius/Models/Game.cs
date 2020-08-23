@@ -27,7 +27,6 @@ namespace Deadlocked.Server.Medius.Models
 
         public int Id = 0;
         public int DMEWorldId = 0;
-        public int ChannelId = 0;
         public int ApplicationId = 0;
         public List<GameClient> Clients = new List<GameClient>();
         public string GameName;
@@ -65,7 +64,7 @@ namespace Deadlocked.Server.Medius.Models
 
         public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 1f;
 
-        public Game(ClientObject client, MediusCreateGameRequest createGame, DMEObject dmeServer)
+        public Game(ClientObject client, MediusCreateGameRequest createGame, Channel chatChannel, DMEObject dmeServer)
         {
             Id = IdCounter++;
             ApplicationId = createGame.ApplicationID;
@@ -91,8 +90,7 @@ namespace Deadlocked.Server.Medius.Models
             utcTimeCreated = DateTime.UtcNow;
             utcTimeEmpty = null;
             DMEServer = dmeServer;
-            ChannelId = client.CurrentChannelId;
-            ChatChannel = Program.GetChannelById(ChannelId);
+            ChatChannel = chatChannel;
             ChatChannel?.RegisterGame(this);
             Host = client;
 
@@ -106,7 +104,7 @@ namespace Deadlocked.Server.Medius.Models
             {
                 var client = Clients[i];
 
-                if (client == null || client.Client == null || !client.Client.IsConnected || client.Client.CurrentGameId != Id)
+                if (client == null || client.Client == null || !client.Client.IsConnected || client.Client.CurrentGame?.Id != Id)
                 {
                     Clients.RemoveAt(i);
                     --i;
@@ -131,56 +129,68 @@ namespace Deadlocked.Server.Medius.Models
             {
                 case MGCL_EVENT_TYPE.MGCL_EVENT_CLIENT_CONNECT:
                     {
-                        player.InGame = true;
+                        OnPlayerJoined(player);
                         break;
                     }
                 case MGCL_EVENT_TYPE.MGCL_EVENT_CLIENT_DISCONNECT:
                     {
-                        player.InGame = false;
                         OnPlayerLeft(player);
                         break;
                     }
             }
         }
 
-        public void OnPlayerJoined(ClientObject client)
+        private void OnPlayerJoined(GameClient player)
+        {
+            player.InGame = true;
+        }
+
+        public void AddPlayer(ClientObject client)
         {
             // Don't add again
             if (Clients.Any(x => x.Client == client))
                 return;
 
             // 
-            Logger.Info($"Game {Id}:{GameName}: {client} joined.");
+            Logger.Info($"Game {Id}:{GameName}: {client} added.");
 
             Clients.Add(new GameClient()
             {
                 Client = client
             });
 
-            client.Status = MediusPlayerStatus.MediusPlayerInGameWorld;
-            client.CurrentGameId = Id;
-
+            // Inform the client of any custom game mode
             if (CustomGamemode != null)
                 client.CurrentChannel?.SendSystemMessage(client, $"Gamemode is {CustomGamemode.FullName}.");
         }
 
-        private void OnPlayerLeft(GameClient client)
+        private void OnPlayerLeft(GameClient player)
         {
             // 
-            Logger.Info($"Game {Id}:{GameName}: {client} left.");
+            Logger.Info($"Game {Id}:{GameName}: {player.Client} left.");
+
+            // 
+            player.InGame = false;
+
+            // Update player object
+            player.Client.LeaveGame(this);
+            player.Client.LeaveChannel(ChatChannel);
+
+            // Remove from collection
+            RemovePlayer(player.Client);
+        }
+
+        public void RemovePlayer(ClientObject client)
+        {
+            // 
+            Logger.Info($"Game {Id}:{GameName}: {client} removed.");
 
             // Remove host
-            if (Host == client.Client)
+            if (Host == client)
                 Host = null;
 
-            if (Clients.Contains(client))
-            {
-                // Remove reference
-                if (client.Client != null)
-                    client.Client.CurrentGameId = -1;
-
-                Clients.Remove(client);
-            }
+            // Remove from clients list
+            Clients.RemoveAll(x => x.Client == client);
         }
 
         public void OnEndGameReport(MediusEndGameReport report)
@@ -194,8 +204,6 @@ namespace Deadlocked.Server.Medius.Models
             // Ensure report is for correct game world
             if (report.MediusWorldID != Id)
                 return;
-
-            
         }
         public void OnWorldReport(MediusWorldReport report)
         {
@@ -243,15 +251,15 @@ namespace Deadlocked.Server.Medius.Models
             // 
             Logger.Info($"Game {Id}:{GameName}: EndGame() called.");
 
-            // Unregister from channel
-            ChatChannel?.UnregisterGame(this);
-
             // Remove players from game world
             foreach (var client in Clients)
             {
-                if (client.Client != null)
-                    client.Client.CurrentGameId = -1;
+                client.Client?.LeaveGame(this);
+                client.Client?.LeaveChannel(ChatChannel);
             }
+
+            // Unregister from channel
+            ChatChannel?.UnregisterGame(this);
 
             // Send end game
             DMEServer?.Queue(new MediusServerEndGameRequest()
