@@ -7,6 +7,7 @@ using DotNetty.Common.Internal.Logging;
 using Medius.Crypto;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto.Tls;
 using Org.BouncyCastle.Math;
@@ -172,7 +173,7 @@ namespace Deadlocked.Server
         static void Main(string[] args)
         {
             // 
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, false));
+            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, true));
 
             // 
             Initialize();

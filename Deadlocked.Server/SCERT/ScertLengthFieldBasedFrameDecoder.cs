@@ -1,6 +1,8 @@
 ﻿using DotNetty.Buffers;
 using DotNetty.Codecs;
+using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,6 +11,8 @@ namespace Deadlocked.Server.SCERT
 {
     public class ScertLengthFieldBasedFrameDecoder : ByteToMessageDecoder
     {
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ScertLengthFieldBasedFrameDecoder>();
+
         readonly ByteOrder byteOrder;
         readonly int maxFrameLength;
         readonly int lengthFieldOffset;
@@ -184,19 +188,26 @@ namespace Deadlocked.Server.SCERT
             {
                 long discard = frameLength - input.ReadableBytes;
                 this.tooLongFrameLength = frameLength;
+                IByteBuffer errorSlice = null;
 
                 if (discard < 0)
                 {
+                    errorSlice = input.ReadSlice((int)frameLength);
+
                     // buffer contains more bytes then the frameLength so we can discard all now
                     input.SkipBytes((int)frameLength);
                 }
                 else
                 {
+                    errorSlice = input.ReadSlice(input.ReadableBytes);
+
                     // Enter the discard mode and discard everything received so far.
                     this.discardingTooLongFrame = true;
                     this.bytesToDiscard = discard;
                     input.SkipBytes(input.ReadableBytes);
                 }
+
+                Logger.Error($"Frame Length exceeds max frame length on buffer: {BitConverter.ToString(errorSlice.Array, errorSlice.ArrayOffset, errorSlice.ReadableBytes)}");
                 this.FailIfNecessary(true);
                 return null;
             }
