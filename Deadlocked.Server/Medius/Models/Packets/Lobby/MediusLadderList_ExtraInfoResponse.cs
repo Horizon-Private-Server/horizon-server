@@ -50,7 +50,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(LadderStat);
             writer.Write(AccountID);
             writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(AccountStats);
+            writer.Write(AccountStats, MediusConstants.ACCOUNTSTATS_MAXLEN);
             writer.Write(OnlineState);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);

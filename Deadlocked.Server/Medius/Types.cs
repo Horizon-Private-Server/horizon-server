@@ -871,6 +871,8 @@ namespace Deadlocked.Server.Medius.Models.Packets
 
     public class NetAddress : IStreamSerializer
     {
+        public static readonly NetAddress Empty = new NetAddress() { AddressType = NetAddressType.NetAddressNone };
+        
         public NetAddressType AddressType;
 
         public string Address; // NET_MAX_NETADDRESS_LENGTH
@@ -913,7 +915,8 @@ $"Port:{Port}";
 
         public void Deserialize(BinaryReader reader)
         {
-            for (int i = 0; i < AddressList.Length; ++i)
+            AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT];
+            for (int i = 0; i < MediusConstants.NET_ADDRESS_LIST_COUNT; ++i)
             {
                 AddressList[i] = reader.Read<NetAddress>();
             }
@@ -921,15 +924,15 @@ $"Port:{Port}";
 
         public void Serialize(BinaryWriter writer)
         {
-            for (int i = 0; i < AddressList.Length; ++i)
+            for (int i = 0; i < MediusConstants.NET_ADDRESS_LIST_COUNT; ++i)
             {
-                writer.Write(AddressList[i]);
+                writer.Write((AddressList == null || i >= AddressList.Length) ? NetAddress.Empty : AddressList[i]);
             }
         }
 
         public override string ToString()
         {
-            return "NetAddresses:<" + String.Join(" ", AddressList.Select(x => x.ToString())) + "> ";
+            return "NetAddresses:<" + String.Join(" ", AddressList?.Select(x => x.ToString())) + "> ";
         }
     }
 
@@ -989,21 +992,26 @@ $"AccessKey:{AccessKey}";
         {
             for (int i = 0; i < key.Length; ++i)
             {
-                //key[i] = (uint)((keyBytes[i + 0] << 24) | (keyBytes[i + 1] << 16) | (keyBytes[i + 2] << 8) | (keyBytes[i + 3]));
                 key[i] = (uint)((keyBytes[i + 3] << 24) | (keyBytes[i + 2] << 16) | (keyBytes[i + 1] << 8) | (keyBytes[i + 0]));
             }
         }
 
         public void Deserialize(BinaryReader reader)
         {
-            for (int i = 0; i < key.Length; ++i)
+            key = new uint[MediusConstants.RSA_SIZE_DWORD];
+            for (int i = 0; i < MediusConstants.RSA_SIZE_DWORD; ++i)
                 key[i] = reader.ReadUInt32();
         }
 
         public void Serialize(BinaryWriter writer)
         {
             for (int i = 0; i < key.Length; ++i)
-                writer.Write(key[i]);
+                writer.Write(i >= key.Length ? 0 : key[i]);
+        }
+
+        public override string ToString()
+        {
+            return string.Join("", key?.Select(x => x.ToString("X8")));
         }
     }
 
@@ -1078,7 +1086,7 @@ $"GameName:{GameName}";
         {
             // 
             writer.Write(Filename, MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
-            writer.Write(ServerChecksum);
+            writer.Write(ServerChecksum, MediusConstants.MEDIUS_FILE_CHECKSUM_NUMBYTES);
             writer.Write(FileID);
             writer.Write(FileSize);
             writer.Write(CreationTimeStamp);
@@ -1132,7 +1140,7 @@ $"ServerOperationID:{ServerOperationID}";
         public virtual void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(Description);
+            writer.Write(Description, MediusConstants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
             writer.Write(LastChangedTimeStamp);
             writer.Write(LastChangedByUserID);
             writer.Write(NumberAccesses);
@@ -1168,14 +1176,14 @@ $"StreamingDataRate:{StreamingDataRate}";
         public void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(GenericChatFilterBitfield);
+            writer.Write(GenericChatFilterBitfield, MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
         }
 
 
         public override string ToString()
         {
             return base.ToString() + " " +
-             $"GenericChatFilterBitfield:{GenericChatFilterBitfield}";
+             $"GenericChatFilterBitfield:{BitConverter.ToString(GenericChatFilterBitfield)}";
         }
     }
 

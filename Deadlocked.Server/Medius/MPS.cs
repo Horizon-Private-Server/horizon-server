@@ -289,7 +289,7 @@ namespace Deadlocked.Server.Medius
             {
                 Message = new MediusServerCreateGameWithAttributesRequest()
                 {
-                    MessageID = $"{game.Id}-{client.ClientAccount.AccountId}-{request.MessageID}",
+                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
                     MediusWorldUID = (uint)game.Id,
                     Attributes = game.Attributes,
                     ApplicationID = Program.Settings.ApplicationId,
@@ -325,7 +325,7 @@ namespace Deadlocked.Server.Medius
                 var dme = game.DMEServer;
                 dme.Queue(new MediusServerJoinGameRequest()
                 {
-                    MessageID = $"{game.Id}-{client.ClientAccount.AccountId}-{request.MessageID}",
+                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
                     ConnectInfo = new NetConnectionInfo()
                     {
                         Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,

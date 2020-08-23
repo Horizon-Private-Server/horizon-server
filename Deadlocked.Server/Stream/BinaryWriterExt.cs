@@ -8,6 +8,30 @@ namespace Deadlocked.Server.Stream
 {
     public static class BinaryWriterExt
     {
+        public static void Write(this BinaryWriter writer, byte[] value, int fixedLength)
+        {
+            if (value == null)
+            {
+                // Empty, write full length
+                writer.Write(new byte[fixedLength]);
+            }
+            else if (value.Length > fixedLength)
+            {
+                // Too large, truncate
+                writer.Write(value, 0, fixedLength);
+            }
+            else if (value.Length < fixedLength)
+            {
+                // Too small, concat
+                writer.Write(value);
+                writer.Write(new byte[fixedLength - value.Length]);
+            }
+            else
+            {
+                // Just right
+                writer.Write(value);
+            }
+        }
 
         public static void Write<T>(this BinaryWriter writer, T value)
         {

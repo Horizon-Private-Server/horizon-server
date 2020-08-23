@@ -96,7 +96,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(WorldStatus);
             writer.Write(GameHostType);
             writer.Write(GameName, MediusConstants.GAMENAME_MAXLEN);
-            writer.Write(GameStats);
+            writer.Write(GameStats, MediusConstants.GAMESTATS_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }

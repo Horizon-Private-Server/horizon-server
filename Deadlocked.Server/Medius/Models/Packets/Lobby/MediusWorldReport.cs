@@ -67,7 +67,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(MediusWorldID);
             writer.Write(PlayerCount);
             writer.Write(GameName, MediusConstants.GAMENAME_MAXLEN);
-            writer.Write(GameStats);
+            writer.Write(GameStats, MediusConstants.GAMESTATS_MAXLEN);
             writer.Write(MinPlayers);
             writer.Write(MaxPlayers);
             writer.Write(GameLevel);

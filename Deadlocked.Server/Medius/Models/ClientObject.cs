@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Accounts;
+﻿using Deadlocked.Server.Database.Models;
 using Deadlocked.Server.Medius;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.Lobby;
@@ -69,8 +69,10 @@ namespace Deadlocked.Server.Medius.Models
             }
         }
 
-        public Account ClientAccount { get; protected set; } = null;
+        public int AccountId { get; protected set; } = -1;
+        public string AccountName { get; protected set; } = null;
 
+        public bool IsLoggedIn => AccountId >= 0 && IsConnected;
 
         public DateTime? LogoutTime { get; protected set; } = null;
         public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
@@ -107,36 +109,22 @@ namespace Deadlocked.Server.Medius.Models
         /// </summary>
         public void Logout()
         {
-            // Unset client in account
-            if (ClientAccount != null && ClientAccount.Client == this)
-                ClientAccount.Client = null;
-
             // Move to invalid channel
             CurrentChannelId = -1;
 
             // Remove reference to account
-            ClientAccount = null;
+            AccountId = -1;
+            AccountName = null;
 
             //
             LogoutTime = DateTime.UtcNow;
         }
 
-        public void Login(Account account)
+        public void Login(AccountDTO account)
         {
-            // Set account
-            if (account != null)
-            {
-                account.Client = this;
-            }
-
-            // Unset old account
-            if (ClientAccount != null)
-            {
-                ClientAccount.Client = null;
-            }
-
             // 
-            ClientAccount = account;
+            AccountId = account?.AccountId ?? -1;
+            AccountName = account?.AccountName;
         }
 
         #endregion

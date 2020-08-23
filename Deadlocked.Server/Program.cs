@@ -1,5 +1,4 @@
-﻿using Deadlocked.Server.Accounts;
-using Deadlocked.Server.Config;
+﻿using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
 using Deadlocked.Server.Medius.Models;
 using Deadlocked.Server.Medius.Models.Packets;
@@ -28,7 +27,7 @@ namespace Deadlocked.Server
     class Program
     {
         public const string CONFIG_FILE = "config.json";
-        public const string DB_FILE = "db.json";
+        public const string DB_CONFIG_FILE = "db.config.json";
         public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
 
         public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
@@ -57,7 +56,7 @@ namespace Deadlocked.Server
         public static List<Game> Games = new List<Game>();
 
         public static ServerSettings Settings = new ServerSettings();
-        public static ServerDB Database = new ServerDB();
+        public static DbSettings DbSettings = new DbSettings();
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
@@ -136,7 +135,7 @@ namespace Deadlocked.Server
                     {
                         if (Clients[i] == null || !Clients[i].IsConnected)
                         {
-                            Logger.Info($"Destroying Client SK:{Clients[i]} Name:{Clients[i].ClientAccount?.AccountName}");
+                            Logger.Info($"Destroying Client SK:{Clients[i]} Name:{Clients[i]?.AccountName}");
                             Clients[i]?.Logout();
                             Clients.RemoveAt(i);
                             --i;
@@ -251,16 +250,18 @@ namespace Deadlocked.Server
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
 
-            // Load account db
-            if (File.Exists(DB_FILE))
+            // Load db settings
+            if (File.Exists(DB_CONFIG_FILE))
             {
                 // Populate existing object
-                try { JsonConvert.PopulateObject(File.ReadAllText(DB_FILE), Database, serializerSettings); }
+                try { JsonConvert.PopulateObject(File.ReadAllText(DB_CONFIG_FILE), DbSettings, serializerSettings); }
                 catch (Exception e) { Logger.Error(e); }
             }
-
-            // Save db
-            Database.Save();
+            else
+            {
+                // Save default db config
+                File.WriteAllText(DB_CONFIG_FILE, JsonConvert.SerializeObject(DbSettings, Formatting.Indented));
+            }
 
             // Determine server ip
             if (!String.IsNullOrEmpty(Settings.ServerIpOverride))
@@ -372,17 +373,23 @@ namespace Deadlocked.Server
 
         public static Channel GetChannelById(int channelId)
         {
-            return Channels.FirstOrDefault(x => x.Id == channelId);
+            return Channels.FirstOrDefault(x => x != null && x.Id == channelId);
         }
 
         public static Game GetGameById(int id)
         {
-            return Games.FirstOrDefault(x => x.Id == id);
+            return Games.FirstOrDefault(x => x != null && x.Id == id);
         }
 
         public static ClientObject GetClientByAccountId(int accountId)
         {
-            return Clients.FirstOrDefault(x => x.IsConnected && x.ClientAccount?.AccountId == accountId);
+            return Clients.FirstOrDefault(x => x != null && x.IsConnected && x.AccountId == accountId);
+        }
+
+        public static ClientObject GetClientByAccountName(string accountName)
+        {
+            accountName = accountName.ToLower();
+            return Clients.FirstOrDefault(x => x != null && x.IsLoggedIn && x.AccountName.ToLower() == accountName);
         }
 
         public static string GenerateSessionKey()

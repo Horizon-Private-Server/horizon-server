@@ -32,7 +32,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 
             // 
             writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
-            writer.Write(Stats);
+            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
         }
 
 

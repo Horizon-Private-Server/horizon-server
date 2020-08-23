@@ -37,7 +37,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(MediusWorldID);
-            writer.Write(Stats);
+            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
         }
 
 

@@ -1,4 +1,5 @@
-﻿using Deadlocked.Server.Accounts;
+﻿using Deadlocked.Server.Database;
+using Deadlocked.Server.Database.Models;
 using Deadlocked.Server.Medius.Models;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.Lobby;
@@ -172,14 +173,14 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLogoutRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLogoutRequest} without a being logged in.");
 
                         // Check token
                         if (accountLogoutRequest.SessionKey == data.ClientObject.SessionKey)
                         {
                             // 
-                            Logger.Info($"{data.ClientObject.ClientAccount.AccountName} has logged out.");
+                            Logger.Info($"{data.ClientObject.AccountName} has logged out.");
 
                             // 
                             status = MediusCallbackStatus.MediusSuccess;
@@ -243,24 +244,29 @@ namespace Deadlocked.Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountGetIdRequest} without a session.");
 
-                        if (Program.Database.TryGetAccountByName(accountGetIdRequest.AccountName, out var account))
+                        _ = DbController.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
                         {
-                            data.ClientObject.Queue(new MediusAccountGetIDResponse()
-                            {
-                                MessageID = accountGetIdRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusSuccess,
-                                AccountID = account.AccountId
-                            });
-                        }
-                        else
-                        {
-                            data.ClientObject.Queue(new MediusAccountGetIDResponse()
-                            {
-                                MessageID = accountGetIdRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusAccountNotFound
-                            });
-                        }
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
 
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                data.ClientObject.Queue(new MediusAccountGetIDResponse()
+                                {
+                                    MessageID = accountGetIdRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    AccountID = r.Result.AccountId
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusAccountGetIDResponse()
+                                {
+                                    MessageID = accountGetIdRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusAccountNotFound
+                                });
+                            }
+                        });
                         break;
                     }
 
@@ -271,20 +277,31 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountUpdateStatsRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountUpdateStatsRequest} without a being logged in.");
 
-                        // Update stats
-                        if (data.ClientObject.ClientAccount != null)
+                        // Post
+                        _ = DbController.PostMediusStats(data.ClientObject.AccountId, Convert.ToBase64String(accountUpdateStatsRequest.Stats)).ContinueWith((r) =>
                         {
-                            data.ClientObject.ClientAccount.Stats = accountUpdateStatsRequest.Stats;
-                            Program.Database.Save();
-                        }
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
 
-                        data.ClientObject.Queue(new MediusAccountUpdateStatsResponse()
-                        {
-                            MessageID = accountUpdateStatsRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess
+                            if (r.IsCompletedSuccessfully && r.Result)
+                            {
+                                data.ClientObject.Queue(new MediusAccountUpdateStatsResponse()
+                                {
+                                    MessageID = accountUpdateStatsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusAccountUpdateStatsResponse()
+                                {
+                                    MessageID = accountUpdateStatsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                });
+                            }
                         });
                         break;
                     }
@@ -295,76 +312,80 @@ namespace Deadlocked.Server.Medius
 
                 case MediusAddToBuddyListRequest addToBuddyListRequest:
                     {
-                        var statusCode = MediusCallbackStatus.MediusFail;
-
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {addToBuddyListRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {addToBuddyListRequest} without a being logged in.");
 
-                        // find target player
-                        if (Program.Database.TryGetAccountById(addToBuddyListRequest.AccountID, out var targetAccount))
+                        // Add
+                        _ = DbController.AddBuddy(new BuddyDTO()
                         {
-                            if (data.ClientObject.ClientAccount.Friends.Contains(addToBuddyListRequest.AccountID))
-                            {
+                            AccountId = data.ClientObject.AccountId,
+                            BuddyAccountId = addToBuddyListRequest.AccountID
+                        }).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
 
-                                statusCode = MediusCallbackStatus.MediusAccountAlreadyExists;
+                            if (r.IsCompletedSuccessfully && r.Result)
+                            {
+                                data.ClientObject.Queue(new MediusAddToBuddyListResponse()
+                                {
+                                    MessageID = addToBuddyListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
                             }
                             else
                             {
-                                // targetAccount
-
-                                // Temporarily auto add player as friend
-                                // This should be replaced with a confirm/request system later
-                                data.ClientObject.ClientAccount.Friends.Add(addToBuddyListRequest.AccountID);
-                                Program.Database.Save();
-
-                                statusCode = MediusCallbackStatus.MediusSuccess;
+                                data.ClientObject.Queue(new MediusAddToBuddyListResponse()
+                                {
+                                    MessageID = addToBuddyListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                });
                             }
-                        }
-
-                        data.ClientObject.Queue(new MediusAddToBuddyListResponse()
-                        {
-                            MessageID = addToBuddyListRequest.MessageID,
-                            StatusCode = statusCode
                         });
                         break;
                     }
 
                 case MediusRemoveFromBuddyListRequest removeFromBuddyListRequest:
                     {
-                        // 
-                        var statusCode = MediusCallbackStatus.MediusFail;
-
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {removeFromBuddyListRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {removeFromBuddyListRequest} without a being logged in.");
 
-                        // 
-                        if (data.ClientObject != null && data.ClientObject.ClientAccount != null)
+                        // Remove
+                        _ = DbController.RemoveBuddy(new BuddyDTO()
                         {
-                            // find target friend
-                            if (data.ClientObject.ClientAccount.Friends.Contains(removeFromBuddyListRequest.AccountID))
+                            AccountId = data.ClientObject.AccountId,
+                            BuddyAccountId = removeFromBuddyListRequest.AccountID
+                        }).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result)
                             {
-                                // remove
-                                data.ClientObject.ClientAccount.Friends.Remove(removeFromBuddyListRequest.AccountID);
-                                Program.Database.Save();
-
-                                statusCode = MediusCallbackStatus.MediusSuccess;
+                                data.ClientObject.Queue(new MediusRemoveFromBuddyListResponse()
+                                {
+                                    MessageID = removeFromBuddyListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
                             }
-                        }
-
-                        data.ClientObject.Queue(new MediusRemoveFromBuddyListResponse()
-                        {
-                            MessageID = removeFromBuddyListRequest.MessageID,
-                            StatusCode = statusCode
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusRemoveFromBuddyListResponse()
+                                {
+                                    MessageID = removeFromBuddyListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                });
+                            }
                         });
                         break;
                     }
@@ -376,55 +397,71 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getBuddyList_ExtraInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getBuddyList_ExtraInfoRequest} without a being logged in.");
 
-                        // Get friends
-                        var friends = data.ClientObject.ClientAccount.Friends?.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
-
-                        // Responses
-                        List<MediusGetBuddyList_ExtraInfoResponse> friendListResponses = new List<MediusGetBuddyList_ExtraInfoResponse>();
-
                         // 
-                        if (friends != null)
+                        _ = DbController.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
                         {
-                            // Iterate and send to client
-                            foreach (var friend in friends)
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
+                                // Responses
+                                List<MediusGetBuddyList_ExtraInfoResponse> friendListResponses = new List<MediusGetBuddyList_ExtraInfoResponse>();
+
+                                // Iterate through friends and build a response for each
+                                foreach (var friend in r.Result.Friends)
+                                {
+                                    var friendClient = Program.GetClientByAccountId(friend.AccountId);
+                                    friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
+                                    {
+                                        MessageID = getBuddyList_ExtraInfoRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        AccountID = friend.AccountId,
+                                        AccountName = friend.AccountName,
+                                        OnlineState = new MediusPlayerOnlineState()
+                                        {
+                                            ConnectStatus = (friendClient != null && friendClient.IsLoggedIn) ? friendClient.Status : MediusPlayerStatus.MediusPlayerDisconnected,
+                                            MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Settings.DefaultChannelId,
+                                            MediusGameWorldID = friendClient?.CurrentGame?.Id ?? -1,
+                                        },
+                                        EndOfList = false
+                                    });
+                                }
+
+                                // If we have any responses then send them
+                                if (friendListResponses.Count > 0)
+                                {
+                                    // Ensure the last response is tagged as EndOfList
+                                    friendListResponses[friendListResponses.Count - 1].EndOfList = true;
+
+                                    // Send friends
+                                    data.ClientObject.Queue(friendListResponses);
+                                }
+                                else
+                                {
+                                    // No friends
+                                    data.ClientObject.Queue(new MediusGetBuddyList_ExtraInfoResponse()
+                                    {
+                                        MessageID = getBuddyList_ExtraInfoRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusNoResult,
+                                        EndOfList = true
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                // DB error
+                                data.ClientObject.Queue(new MediusGetBuddyList_ExtraInfoResponse()
                                 {
                                     MessageID = getBuddyList_ExtraInfoRequest.MessageID,
-                                    StatusCode = MediusCallbackStatus.MediusSuccess,
-                                    AccountID = friend.AccountId,
-                                    AccountName = friend.AccountName,
-                                    OnlineState = new MediusPlayerOnlineState()
-                                    {
-                                        ConnectStatus = friend.IsLoggedIn ? (friend.Client?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected) : MediusPlayerStatus.MediusPlayerDisconnected,
-                                        MediusLobbyWorldID = friend.Client?.CurrentChannel?.Id ?? Program.Settings.DefaultChannelId,
-                                        MediusGameWorldID = friend.Client?.CurrentGame?.Id ?? -1,
-                                    },
-                                    EndOfList = false
+                                    StatusCode = MediusCallbackStatus.MediusDBError,
+                                    EndOfList = true
                                 });
                             }
-                        }
-
-                        if (friendListResponses.Count > 0)
-                        {
-                            friendListResponses[friendListResponses.Count - 1].EndOfList = true;
-
-                            // Send friends
-                            data.ClientObject.Queue(friendListResponses);
-                        }
-                        else
-                        {
-                            // No friends
-                            data.ClientObject.Queue(new MediusGetBuddyList_ExtraInfoResponse()
-                            {
-                                MessageID = getBuddyList_ExtraInfoRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusNoResult,
-                                EndOfList = true
-                            });
-                        }
+                        });
                         break;
                     }
 
@@ -439,119 +476,145 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getIgnoreListRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getIgnoreListRequest} without a being logged in.");
 
-                        // Get ignored players
-                        var ignored = data.ClientObject.ClientAccount.Ignored.Select(x => Program.Database.GetAccountById(x)).Where(x => x != null);
-
-                        // Responses
-                        List<MediusGetIgnoreListResponse> ignoredListResponses = new List<MediusGetIgnoreListResponse>();
-
-                        // Iterate and send to client
-                        foreach (var player in ignored)
+                        // 
+                        _ = DbController.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
                         {
-                            ignoredListResponses.Add(new MediusGetIgnoreListResponse()
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                MessageID = getIgnoreListRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusSuccess,
-                                IgnoreAccountID = player.AccountId,
-                                IgnoreAccountName = player.AccountName,
-                                PlayerStatus = player.Client?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected,
-                                EndOfList = false
-                            });
-                        }
+                                // Responses
+                                List<MediusGetIgnoreListResponse> ignoredListResponses = new List<MediusGetIgnoreListResponse>();
 
-                        if (ignoredListResponses.Count > 0)
-                        {
-                            // End list
-                            ignoredListResponses[ignoredListResponses.Count - 1].EndOfList = true;
+                                // Iterate and send to client
+                                foreach (var player in r.Result.Ignored)
+                                {
+                                    var playerClient = Program.GetClientByAccountId(player.AccountId);
+                                    ignoredListResponses.Add(new MediusGetIgnoreListResponse()
+                                    {
+                                        MessageID = getIgnoreListRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        IgnoreAccountID = player.AccountId,
+                                        IgnoreAccountName = player.AccountName,
+                                        PlayerStatus = playerClient?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected,
+                                        EndOfList = false
+                                    });
+                                }
 
-                            // Send ignored list
-                            data.ClientObject.Queue(ignoredListResponses);
-                        }
-                        else
-                        {
-                            // No ignored
-                            data.ClientObject.Queue(new MediusGetIgnoreListResponse()
+                                // If we have any responses then send them
+                                if (ignoredListResponses.Count > 0)
+                                {
+                                    // Ensure the last response is tagged as EndOfList
+                                    ignoredListResponses[ignoredListResponses.Count - 1].EndOfList = true;
+
+                                    // Send friends
+                                    data.ClientObject.Queue(ignoredListResponses);
+                                }
+                                else
+                                {
+                                    // No ignored
+                                    data.ClientObject.Queue(new MediusGetIgnoreListResponse()
+                                    {
+                                        MessageID = getIgnoreListRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusNoResult,
+                                        EndOfList = true
+                                    });
+                                }
+                            }
+                            else
                             {
-                                MessageID = getIgnoreListRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusNoResult,
-                                EndOfList = true
-                            });
-                        }
+                                // DB error
+                                data.ClientObject.Queue(new MediusGetIgnoreListResponse()
+                                {
+                                    MessageID = getIgnoreListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError,
+                                    EndOfList = true
+                                });
+                            }
+                        });
                         break;
                     }
 
                 case MediusAddToIgnoreListRequest addToIgnoreList:
                     {
-                        var statusCode = MediusCallbackStatus.MediusFail;
-
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {addToIgnoreList} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {addToIgnoreList} without a being logged in.");
 
-                        // find target player
-                        if (Program.Database.TryGetAccountById(addToIgnoreList.IgnoreAccountID, out var targetAccount))
+                        // Add
+                        _ = DbController.AddIgnored(new IgnoredDTO()
                         {
-                            // Ensure they're not already ignored
-                            if (data.ClientObject.ClientAccount.Ignored.Contains(addToIgnoreList.IgnoreAccountID))
+                            AccountId = data.ClientObject.AccountId,
+                            IgnoredAccountId = addToIgnoreList.IgnoreAccountID
+                        }).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result)
                             {
-                                statusCode = MediusCallbackStatus.MediusAccountAlreadyExists;
+                                data.ClientObject.Queue(new MediusAddToIgnoreListResponse()
+                                {
+                                    MessageID = addToIgnoreList.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
                             }
                             else
                             {
-                                // Remove from friends if a friend
-                                data.ClientObject.ClientAccount.Friends.Remove(addToIgnoreList.IgnoreAccountID);
-                                data.ClientObject.ClientAccount.Ignored.Add(addToIgnoreList.IgnoreAccountID);
-                                Program.Database.Save();
-
-                                statusCode = MediusCallbackStatus.MediusSuccess;
+                                data.ClientObject.Queue(new MediusAddToIgnoreListResponse()
+                                {
+                                    MessageID = addToIgnoreList.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                });
                             }
-                        }
-
-                        data.ClientObject.Queue(new MediusAddToIgnoreListResponse()
-                        {
-                            MessageID = addToIgnoreList.MessageID,
-                            StatusCode = statusCode
                         });
                         break;
                     }
 
                 case MediusRemoveFromIgnoreListRequest removeFromIgnoreListRequest:
                     {
-                        var statusCode = MediusCallbackStatus.MediusFail;
-
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {removeFromIgnoreListRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {removeFromIgnoreListRequest} without a being logged in.");
 
-                        // 
-                        if (data.ClientObject != null && data.ClientObject.ClientAccount != null)
+                        // Remove
+                        _ = DbController.RemoveIgnored(new IgnoredDTO()
                         {
-                            // find target ignored
-                            if (data.ClientObject.ClientAccount.Ignored.Contains(removeFromIgnoreListRequest.IgnoreAccountID))
+                            AccountId = data.ClientObject.AccountId,
+                            IgnoredAccountId = removeFromIgnoreListRequest.IgnoreAccountID
+                        }).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result)
                             {
-                                // remove
-                                data.ClientObject.ClientAccount.Ignored.Remove(removeFromIgnoreListRequest.IgnoreAccountID);
-                                Program.Database.Save();
-
-                                statusCode = MediusCallbackStatus.MediusSuccess;
+                                data.ClientObject.Queue(new MediusRemoveFromIgnoreListResponse()
+                                {
+                                    MessageID = removeFromIgnoreListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
                             }
-                        }
-
-                        data.ClientObject.Queue(new MediusRemoveFromIgnoreListResponse()
-                        {
-                            MessageID = removeFromIgnoreListRequest.MessageID,
-                            StatusCode = statusCode
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusRemoveFromIgnoreListResponse()
+                                {
+                                    MessageID = removeFromIgnoreListRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                });
+                            }
                         });
                         break;
                     }
@@ -567,21 +630,42 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateLadderStatsWideRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateLadderStatsWideRequest} without a being logged in.");
 
                         switch (updateLadderStatsWideRequest.LadderType)
                         {
                             case MediusLadderType.MediusLadderTypePlayer:
                                 {
-                                    data.ClientObject.ClientAccount.AccountWideStats = updateLadderStatsWideRequest.Stats;
-                                    Program.Database.Save();
 
-                                    data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                                    _ = DbController.PostLadderStats(new StatPostDTO()
                                     {
-                                        MessageID = updateLadderStatsWideRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusSuccess
+                                        AccountId = data.ClientObject.AccountId,
+                                        Stats = updateLadderStatsWideRequest.Stats
+                                    }).ContinueWith((r) =>
+                                    {
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result)
+                                        {
+                                            data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                                            {
+                                                MessageID = updateLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                            });
+                                        }
+                                        else
+                                        {
+                                            data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                                            {
+                                                MessageID = updateLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusDBError
+                                            });
+                                        }
                                     });
+
+                                    
                                     break;
                                 }
                             case MediusLadderType.MediusLadderTypeClan:
@@ -605,27 +689,51 @@ namespace Deadlocked.Server.Medius
 
                 case MediusGetLadderStatsWideRequest getLadderStatsWideRequest:
                     {
-                        int[] stats = null;
-
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLadderStatsWideRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLadderStatsWideRequest} without a being logged in.");
 
                         switch (getLadderStatsWideRequest.LadderType)
                         {
                             case MediusLadderType.MediusLadderTypePlayer:
                                 {
-                                    if (Program.Database.TryGetAccountById(getLadderStatsWideRequest.AccountID_or_ClanID, out var account))
-                                        stats = account.AccountWideStats;
+                                    _ = DbController.GetAccountById(getLadderStatsWideRequest.AccountID_or_ClanID).ContinueWith((r) =>
+                                    {
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result != null)
+                                        {
+                                            data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
+                                            {
+                                                MessageID = getLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                AccountID_or_ClanID = r.Result.AccountId,
+                                                Stats = r.Result.AccountWideStats
+                                            });
+                                        }
+                                        else
+                                        {
+                                            data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
+                                            {
+                                                MessageID = getLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusDBError
+                                            });
+                                        }
+                                    });
                                     break;
                                 }
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-
+                                    data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
+                                    {
+                                        MessageID = getLadderStatsWideRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusFail
+                                    });
                                     break;
                                 }
                             default:
@@ -634,47 +742,74 @@ namespace Deadlocked.Server.Medius
                                     break;
                                 }
                         }
-
-                        var response = new MediusGetLadderStatsWideResponse()
-                        {
-                            MessageID = getLadderStatsWideRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            AccountID_or_ClanID = getLadderStatsWideRequest.AccountID_or_ClanID
-                        };
-
-                        if (stats != null)
-                            response.Stats = stats;
-
-                        data.ClientObject.Queue(response);
                         break;
                     }
 
                 case MediusLadderList_ExtraInfoRequest ladderList_ExtraInfoRequest:
                     {
-                        var account = data.ClientObject.ClientAccount;
-
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderList_ExtraInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderList_ExtraInfoRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusLadderList_ExtraInfoResponse()
+                        //
+                        _ = DbController.GetLeaderboard(ladderList_ExtraInfoRequest.LadderStatIndex + 1, (int)ladderList_ExtraInfoRequest.StartPosition - 1, (int)ladderList_ExtraInfoRequest.PageSize).ContinueWith((r) =>
                         {
-                            MessageID = ladderList_ExtraInfoRequest.MessageID,
-                            AccountID = account.AccountId,
-                            AccountName = account.AccountName,
-                            AccountStats = account.Stats,
-                            LadderPosition = 0,
-                            LadderStat = account.AccountWideStats[ladderList_ExtraInfoRequest.LadderStatIndex],
-                            OnlineState = new MediusPlayerOnlineState()
-                            {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
 
-                            },
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            EndOfList = true
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                var responses = new List<MediusLadderList_ExtraInfoResponse>(r.Result.Length);
+                                foreach (var ladderEntry in r.Result)
+                                {
+                                    responses.Add(new MediusLadderList_ExtraInfoResponse()
+                                    {
+                                        MessageID = ladderList_ExtraInfoRequest.MessageID,
+                                        AccountID = ladderEntry.AccountId,
+                                        AccountName = ladderEntry.AccountName,
+                                        AccountStats = Convert.FromBase64String(ladderEntry.MediusStats ?? ""),
+                                        LadderPosition = (uint)(ladderEntry.Index + 1),
+                                        LadderStat = ladderEntry.StatValue,
+                                        OnlineState = new MediusPlayerOnlineState()
+                                        {
+
+                                        },
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        EndOfList = false
+                                    });
+                                }
+
+                                if (responses.Count > 0)
+                                {
+                                    // Flag last item as EndOfList
+                                    responses[responses.Count - 1].EndOfList = true;
+
+                                    //
+                                    data.ClientObject.Queue(responses);
+                                }
+                                else
+                                {
+                                    data.ClientObject.Queue(new MediusLadderList_ExtraInfoResponse()
+                                    {
+                                        MessageID = ladderList_ExtraInfoRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusNoResult,
+                                        EndOfList = true
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusLadderList_ExtraInfoResponse()
+                                {
+                                    MessageID = ladderList_ExtraInfoRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError,
+                                    EndOfList = true
+                                });
+                            }
                         });
                         break;
                     }
@@ -686,33 +821,54 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getTotalRankingsRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getTotalRankingsRequest} without a being logged in.");
 
-
-                        /*
-                        switch (msg.LadderType)
+                        // Process
+                        switch (getTotalRankingsRequest.LadderType)
                         {
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-
+                                    // Not implemented
+                                    data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
+                                    {
+                                        MessageID = getTotalRankingsRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusFail
+                                    });
                                     break;
                                 }
                             case MediusLadderType.MediusLadderTypePlayer:
                                 {
 
+                                    // 
+                                    _ = DbController.GetActiveAccountCountByAppId(data.ClientObject.ApplicationId).ContinueWith((r) =>
+                                    {
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result.HasValue)
+                                        {
+                                            //
+                                            data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
+                                            {
+                                                MessageID = getTotalRankingsRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                TotalRankings = (uint)r.Result.Value
+                                            });
+                                        }
+                                        else
+                                        {
+                                            //
+                                            data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
+                                            {
+                                                MessageID = getTotalRankingsRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusDBError
+                                            });
+                                        }
+                                    });
                                     break;
                                 }
                         }
-                        */
-
-                        //
-                        data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
-                        {
-                            MessageID = getTotalRankingsRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            TotalRankings = 0
-                        });
                         break;
                     }
 
@@ -723,13 +879,33 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderPosition_ExtraInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderPosition_ExtraInfoRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusLadderPosition_ExtraInfoResponse()
+
+                        _ = DbController.GetPlayerLeaderboardIndex(ladderPosition_ExtraInfoRequest.AccountID, ladderPosition_ExtraInfoRequest.LadderStatIndex + 1).ContinueWith((r) =>
                         {
-                            MessageID = ladderPosition_ExtraInfoRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                data.ClientObject.Queue(new MediusLadderPosition_ExtraInfoResponse()
+                                {
+                                    MessageID = ladderPosition_ExtraInfoRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    LadderPosition = (uint)r.Result.Index + 1,
+                                    TotalRankings = (uint)r.Result.TotalRankedAccounts,
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusLadderPosition_ExtraInfoResponse()
+                                {
+                                    MessageID = ladderPosition_ExtraInfoRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusNoResult
+                                });
+                            }
                         });
                         break;
                     }
@@ -740,22 +916,26 @@ namespace Deadlocked.Server.Medius
 
                 case MediusFindPlayerRequest findPlayerRequest:
                     {
-                        Account account = null;
+                        ClientObject foundPlayer = null;
 
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {findPlayerRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {findPlayerRequest} without a being logged in.");
 
-                        if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountID && !Program.Database.TryGetAccountById(findPlayerRequest.ID, out account))
-                            account = null;
-                        else if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountName && !Program.Database.TryGetAccountByName(findPlayerRequest.Name, out account))
-                            account = null;
+                        if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountID)
+                        {
+                            foundPlayer = Program.Clients.FirstOrDefault(x => x.AccountId == findPlayerRequest.ID);
+                        }
+                        else if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountName)
+                        {
+                            foundPlayer = Program.Clients.FirstOrDefault(x => x.AccountName.ToLower() == findPlayerRequest.Name.ToLower());
+                        }
 
-                        if (account == null)
+                        if (foundPlayer == null || !foundPlayer.IsLoggedIn)
                         {
                             data.ClientObject.Queue(new MediusFindPlayerResponse()
                             {
@@ -768,30 +948,18 @@ namespace Deadlocked.Server.Medius
                         }
                         else
                         {
-                            if (account.IsLoggedIn)
+                            data.ClientObject.Queue(new MediusFindPlayerResponse()
                             {
-                                data.ClientObject.Queue(new MediusFindPlayerResponse()
-                                {
-                                    MessageID = findPlayerRequest.MessageID,
-                                    StatusCode = MediusCallbackStatus.MediusSuccess,
-                                    ApplicationID = Program.Settings.ApplicationId,
-                                    AccountID = account.AccountId,
-                                    AccountName = account.AccountName,
-                                    ApplicationType = (account.Client.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? MediusApplicationType.MediusAppTypeGame : MediusApplicationType.LobbyChatChannel,
-                                    ApplicationName = "?????",
-                                    MediusWorldID = (account.Client.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? account.Client.CurrentGameId : account.Client.CurrentChannelId,
-                                    EndOfList = true
-                                });
-                            }
-                            else
-                            {
-                                data.ClientObject.Queue(new MediusFindPlayerResponse()
-                                {
-                                    MessageID = findPlayerRequest.MessageID,
-                                    StatusCode = MediusCallbackStatus.MediusNoResult,
-                                    EndOfList = true
-                                });
-                            }
+                                MessageID = findPlayerRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                ApplicationID = Program.Settings.ApplicationId,
+                                AccountID = foundPlayer.AccountId,
+                                AccountName = foundPlayer.AccountName,
+                                ApplicationType = (foundPlayer.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? MediusApplicationType.MediusAppTypeGame : MediusApplicationType.LobbyChatChannel,
+                                ApplicationName = "?????",
+                                MediusWorldID = (foundPlayer.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? foundPlayer.CurrentGameId : foundPlayer.CurrentChannelId,
+                                EndOfList = true
+                            });
                         }
                         break;
                     }
@@ -803,30 +971,34 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerInfoRequest} without a being logged in.");
 
-                        if (Program.Database.TryGetAccountById(playerInfoRequest.AccountID, out var account))
+                        _ = DbController.GetAccountById(playerInfoRequest.AccountID).ContinueWith((r) =>
                         {
-                            data.ClientObject.Queue(new MediusPlayerInfoResponse()
+                            if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                MessageID = playerInfoRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusSuccess,
-                                AccountName = account.AccountName,
-                                ApplicationID = Program.Settings.ApplicationId,
-                                PlayerStatus = account.IsLoggedIn ? account.Client.Status : MediusPlayerStatus.MediusPlayerDisconnected,
-                                ConnectionClass = MediusConnectionType.Ethernet,
-                                Stats = account.Stats
-                            });
-                        }
-                        else
-                        {
-                            data.ClientObject.Queue(new MediusPlayerInfoResponse()
+                                var playerClientObject = Program.Clients.FirstOrDefault(x => x.AccountId == r.Result.AccountId);
+                                data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
+                                {
+                                    MessageID = playerInfoRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    AccountName = r.Result.AccountName,
+                                    ApplicationID = Program.Settings.ApplicationId,
+                                    PlayerStatus = (playerClientObject != null && playerClientObject.IsLoggedIn) ? playerClientObject.Status : MediusPlayerStatus.MediusPlayerDisconnected,
+                                    ConnectionClass = MediusConnectionType.Ethernet,
+                                    Stats = Convert.FromBase64String(r.Result.MediusStats ?? "")
+                                });
+                            }
+                            else
                             {
-                                MessageID = playerInfoRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusAccountNotFound
-                            });
-                        }
+                                data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
+                                {
+                                    MessageID = playerInfoRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusAccountNotFound
+                                });
+                            }
+                        });
                         break;
                     }
 
@@ -838,7 +1010,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateUserState} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateUserState} without a being logged in.");
 
                         data.ClientObject.Action = updateUserState.UserAction;
@@ -866,7 +1038,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createClanRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createClanRequest} without a being logged in.");
 
                         // Disable for now
@@ -886,7 +1058,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {checkMyClanInvitationsRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {checkMyClanInvitationsRequest} without a being logged in.");
 
                         // Disabled for now
@@ -906,7 +1078,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyClansRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyClansRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGetMyClansResponse()
@@ -916,8 +1088,8 @@ namespace Deadlocked.Server.Medius
                             ClanID = -1,
                             ApplicationID = Program.Settings.ApplicationId,
                             ClanName = null,
-                            LeaderAccountID = data.ClientObject.ClientAccount.AccountId,
-                            LeaderAccountName = data.ClientObject.ClientAccount.AccountName,
+                            LeaderAccountID = data.ClientObject.AccountId,
+                            LeaderAccountName = data.ClientObject.AccountName,
                             Stats = "000000000000000000000000",
                             Status = MediusClanStatus.ClanDisbanded,
                             EndOfList = true
@@ -932,7 +1104,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanMemberList_ExtraInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanMemberList_ExtraInfoRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGetClanMemberList_ExtraInfoResponse()
@@ -985,7 +1157,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanInvitiationsSentRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanInvitiationsSentRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGetClanInvitationsSentResponse()
@@ -1004,7 +1176,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanByIdRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanByIdRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGetClanByIDResponse()
@@ -1033,7 +1205,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getGameListFilterRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getGameListFilterRequest} without a being logged in.");
 
                         var filters = data.ClientObject.GameListFilters;
@@ -1077,7 +1249,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameList_ExtraInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameList_ExtraInfoRequest} without a being logged in.");
 
                         var gameList = Program.Games
@@ -1143,7 +1315,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameInfoRequest} without a being logged in.");
 
                         var game = Program.GetGameById(gameInfoRequest.MediusWorldID);
@@ -1194,7 +1366,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameWorldPlayerListRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameWorldPlayerListRequest} without a being logged in.");
 
                         var game = Program.GetGameById(gameWorldPlayerListRequest.MediusWorldID);
@@ -1212,8 +1384,8 @@ namespace Deadlocked.Server.Medius
                             {
                                 MessageID = gameWorldPlayerListRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusSuccess,
-                                AccountID = x.Client.ClientAccount.AccountId,
-                                AccountName = x.Client.ClientAccount.AccountName,
+                                AccountID = x.Client.AccountId,
+                                AccountName = x.Client.AccountName,
                                 ConnectionClass = MediusConnectionType.Ethernet,
                                 EndOfList = false
                             }).ToArray();
@@ -1235,7 +1407,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setGameListFilterRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setGameListFilterRequest} without a being logged in.");
 
                         // Set filter
@@ -1259,7 +1431,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {clearGameListFilterRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {clearGameListFilterRequest} without a being logged in.");
 
                         // Remove
@@ -1283,7 +1455,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest} without a being logged in.");
 
                         Program.ProxyServer.CreateGame(data.ClientObject, createGameRequest);
@@ -1297,7 +1469,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
 
                         Program.ProxyServer.JoinGame(data.ClientObject, joinGameRequest);
@@ -1311,7 +1483,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {worldReport} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {worldReport} without a being logged in.");
 
                         data.ClientObject.CurrentGame?.OnWorldReport(worldReport);
@@ -1326,7 +1498,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerReport} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerReport} without a being logged in.");
 
                         // 
@@ -1345,7 +1517,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {endGameReport} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {endGameReport} without a being logged in.");
 
                         data.ClientObject.CurrentGame?.OnEndGameReport(endGameReport);
@@ -1363,7 +1535,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLobbyWorldFilterRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLobbyWorldFilterRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusSetLobbyWorldFilterResponse()
@@ -1389,7 +1561,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createChannelRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createChannelRequest} without a being logged in.");
 
                         // Create channel
@@ -1415,7 +1587,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinChannelRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinChannelRequest} without a being logged in.");
 
                         var channel = Program.GetChannelById(joinChannelRequest.MediusWorldID);
@@ -1479,7 +1651,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelInfoRequest} without a being logged in.");
 
                         // Find channel
@@ -1515,7 +1687,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelListRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelListRequest} without a being logged in.");
 
                         List<MediusChannelListResponse> channelResponses = new List<MediusChannelListResponse>();
@@ -1568,7 +1740,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelList_ExtraInfoRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelList_ExtraInfoRequest} without a being logged in.");
 
                         List<MediusChannelList_ExtraInfoResponse> channelResponses = new List<MediusChannelList_ExtraInfoResponse>();
@@ -1636,7 +1808,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileCreateRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileCreateRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusFileCreateResponse()
@@ -1658,7 +1830,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileDownloadRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileDownloadRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusFileDownloadResponse()
@@ -1680,7 +1852,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatSetFilterRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatSetFilterRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGenericChatSetFilterResponse()
@@ -1702,7 +1874,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setAutoChatHistoryRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setAutoChatHistoryRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusSetAutoChatHistoryResponse()
@@ -1720,7 +1892,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a being logged in.");
 
                         await ProcessGenericChatMessage(clientChannel, data.ClientObject, genericChatMessage);
@@ -1734,7 +1906,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {binaryMessage} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {binaryMessage} without a being logged in.");
 
                         switch (binaryMessage.MessageType)
@@ -1746,7 +1918,7 @@ namespace Deadlocked.Server.Medius
                                     target?.Queue(new MediusBinaryFwdMessage()
                                     {
                                         MessageType = binaryMessage.MessageType,
-                                        OriginatorAccountID = data.ClientObject.ClientAccount.AccountId,
+                                        OriginatorAccountID = data.ClientObject.AccountId,
                                         Message = binaryMessage.Message
                                     });
                                     break;
@@ -1776,7 +1948,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusTextFilterResponse()
@@ -1796,7 +1968,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyIpRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyIpRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGetMyIPResponse()
@@ -1815,7 +1987,7 @@ namespace Deadlocked.Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getServerTimeRequest} without a session.");
 
                         // ERROR -- Need to be logged in
-                        if (data.ClientObject.ClientAccount == null)
+                        if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getServerTimeRequest} without a being logged in.");
 
                         data.ClientObject.Queue(new MediusGetServerTimeResponse()
@@ -1847,7 +2019,7 @@ namespace Deadlocked.Server.Medius
             List<BaseScertMessage> chatResponses = new List<BaseScertMessage>();
 
             // ERROR -- Need to be logged in
-            if (clientObject.ClientAccount == null)
+            if (!clientObject.IsLoggedIn)
             {
                 await DisconnectClient(clientChannel);
                 return;
@@ -1868,7 +2040,7 @@ namespace Deadlocked.Server.Medius
                 case MediusChatMessageType.Broadcast:
                     {
                         // Relay
-                        channel.BroadcastChatMessage(allButSender, clientObject.ClientAccount.AccountId, message);
+                        channel.BroadcastChatMessage(allButSender, clientObject, message);
 
                         // Handle commands
                         switch (words[0].ToLower())
@@ -1877,7 +2049,7 @@ namespace Deadlocked.Server.Medius
                                 {
                                     channel.BroadcastSystemMessage(
                                         allPlayers,
-                                        $"{clientObject?.ClientAccount?.AccountName ?? "ERROR"} rolled {RNG.Next(0, 100)}"
+                                        $"{clientObject?.AccountName ?? "ERROR"} rolled {RNG.Next(0, 100)}"
                                     );
                                     break;
                                 }

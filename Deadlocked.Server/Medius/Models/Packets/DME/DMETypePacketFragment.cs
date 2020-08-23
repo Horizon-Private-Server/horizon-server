@@ -55,7 +55,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
             writer.Write(new byte[3]);
             writer.Write(PacketBufferSize);
             writer.Write(PacketBufferOffset);
-            writer.Write(Payload);
+            writer.Write(Payload, SubPacketSize);
         }
 
 

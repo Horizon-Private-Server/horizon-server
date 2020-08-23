@@ -45,7 +45,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(ApplicationID);
             writer.Write(PlayerStatus);
             writer.Write(ConnectionClass);
-            writer.Write(Stats);
+            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
         }
 
 

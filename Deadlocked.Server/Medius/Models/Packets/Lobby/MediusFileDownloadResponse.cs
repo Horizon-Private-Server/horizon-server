@@ -37,7 +37,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public override void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(Data);
+            writer.Write(Data, MediusConstants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE);
             writer.Write(iStartByteIndex);
             writer.Write(iDataSize);
             writer.Write(iPacketNumber);

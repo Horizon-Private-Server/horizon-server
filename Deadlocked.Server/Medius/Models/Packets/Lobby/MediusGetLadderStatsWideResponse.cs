@@ -2,6 +2,7 @@ using Deadlocked.Server.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets.Lobby
@@ -36,7 +37,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(AccountID_or_ClanID);
-            for (int i = 0; i < MediusConstants.LADDERSTATSWIDE_MAXLEN; ++i) { writer.Write(Stats[i]); }
+            for (int i = 0; i < MediusConstants.LADDERSTATSWIDE_MAXLEN; ++i) { writer.Write(i >= Stats.Length ? 0 : Stats[i]); }
         }
 
 

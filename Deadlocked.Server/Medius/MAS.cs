@@ -1,4 +1,4 @@
-﻿using Deadlocked.Server.Accounts;
+﻿using Deadlocked.Server.Database;
 using Deadlocked.Server.Medius.Models;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.Lobby;
@@ -271,90 +271,101 @@ namespace Deadlocked.Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountRegRequest} without a session.");
 
-                        // Ensure account doesn't already exist
-                        if (Program.Database.TryGetAccountByName(accountRegRequest.AccountName, out var account))
+                        DbController.CreateAccount(new Database.Models.CreateAccountDTO()
                         {
-                            data.ClientObject.Queue(new MediusAccountRegistrationResponse()
-                            {
-                                MessageID = accountRegRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusAccountAlreadyExists
-                            });
-                        }
-                        else
+                            AccountName = accountRegRequest.AccountName,
+                            AccountPassword = Utils.ComputeSHA256(accountRegRequest.Password),
+                            MachineId = null,
+                            MediusStats = Convert.ToBase64String(new byte[MediusConstants.ACCOUNTSTATS_MAXLEN]),
+                            AppId = data.ClientObject.ApplicationId
+                        }).ContinueWith((r) =>
                         {
-                            // Create new account
-                            account = new Account()
+                            if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                AccountName = accountRegRequest.AccountName,
-                                AccountPassword = accountRegRequest.Password
-                            };
-
-                            // Add to collection
-                            Program.Database.AddAccount(account);
-
-                            // Reply with account id
-                            data.ClientObject.Queue(new MediusAccountRegistrationResponse()
+                                // Reply with account id
+                                data.ClientObject.Queue(new MediusAccountRegistrationResponse()
+                                {
+                                    MessageID = accountRegRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    AccountID = r.Result.AccountId
+                                });
+                            }
+                            else
                             {
-                                MessageID = accountRegRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusSuccess,
-                                AccountID = account.AccountId
-                            });
-                        }
+                                // Reply error
+                                data.ClientObject.Queue(new MediusAccountRegistrationResponse()
+                                {
+                                    MessageID = accountRegRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusAccountAlreadyExists
+                                });
+                            }
+                        });
                         break;
                     }
                 case MediusAccountGetIDRequest accountGetIdRequest:
                     {
-                        int? accountId = null;
-
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountGetIdRequest} without a session.");
 
-                        // Try to grab account id
-                        if (Program.Database.TryGetAccountByName(accountGetIdRequest.AccountName, out var account))
-                            accountId = account.AccountId;
-
-                        // Return id
-                        data.ClientObject.Queue(new MediusAccountGetIDResponse()
+                        DbController.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
                         {
-                            MessageID = accountGetIdRequest.MessageID,
-                            AccountID = accountId ?? 0,
-                            StatusCode = accountId.HasValue ? MediusCallbackStatus.MediusSuccess : MediusCallbackStatus.MediusAccountNotFound
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                // Success
+                                data?.ClientObject?.Queue(new MediusAccountGetIDResponse()
+                                {
+                                    MessageID = accountGetIdRequest.MessageID,
+                                    AccountID = r.Result.AccountId,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
+                            }
+                            else
+                            {
+                                // Fail
+                                data?.ClientObject?.Queue(new MediusAccountGetIDResponse()
+                                {
+                                    MessageID = accountGetIdRequest.MessageID,
+                                    AccountID = -1,
+                                    StatusCode =  MediusCallbackStatus.MediusAccountNotFound
+                                });
+                            }
                         });
-
+                        
                         break;
                     }
                 case MediusAccountDeleteRequest accountDeleteRequest:
                     {
+                        // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without a session.");
 
-                        // 
-                        var status = MediusCallbackStatus.MediusFail;
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without a being logged in.");
 
-                        // 
-                        var account = data.ClientObject.ClientAccount;
-
-                        // Ensure logged in
-                        if (account != null)
+                        DbController.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
                         {
-                            // Double check password
-                            if (account.AccountPassword == accountDeleteRequest.MasterPassword)
+                            if (r.IsCompletedSuccessfully && r.Result)
                             {
-                                // Delete
-                                Program.Database.DeleteAccount(account);
-                                data.ClientObject.Logout();
-                                status = MediusCallbackStatus.MediusSuccess;
+                                Logger.Info($"Delete account {data?.ClientObject?.AccountName}");
+
+                                data?.ClientObject?.Logout();
+
+                                data?.ClientObject?.Queue(new MediusAccountDeleteResponse()
+                                {
+                                    MessageID = accountDeleteRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
                             }
-                        }
-
-                        data.ClientObject.Queue(new MediusAccountDeleteResponse()
-                        {
-                            MessageID = accountDeleteRequest.MessageID,
-                            StatusCode = status
+                            else
+                            {
+                                data?.ClientObject?.Queue(new MediusAccountDeleteResponse()
+                                {
+                                    MessageID = accountDeleteRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                });
+                            }
                         });
-
-                        Logger.Info($"Delete account {account?.AccountName} {status}");
-
                         break;
                     }
                 case MediusAnonymousLoginRequest anonymousLoginRequest:
@@ -390,21 +401,12 @@ namespace Deadlocked.Server.Medius
                     }
                 case MediusAccountLoginRequest accountLoginRequest:
                     {
+                        // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLoginRequest} without a session.");
 
-                        // Find account
-                        if (!Program.Database.TryGetAccountByName(accountLoginRequest.Username, out var account))
-                        {
-                            data.ClientObject.Queue(new MediusAccountLoginResponse()
-                            {
-                                MessageID = accountLoginRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusAccountNotFound,
-                            });
-                        }
-
-                        // Check client isn't already logged in
-                        else if (account.IsLoggedIn)
+                        // Check the client isn't already logged in
+                        if (Program.GetClientByAccountName(accountLoginRequest.Username)?.IsLoggedIn ?? false)
                         {
                             data.ClientObject.Queue(new MediusAccountLoginResponse()
                             {
@@ -412,66 +414,99 @@ namespace Deadlocked.Server.Medius
                                 StatusCode = MediusCallbackStatus.MediusAccountLoggedIn
                             });
                         }
-                        else if (account.AccountPassword != accountLoginRequest.Password)
-                        {
-                            data.ClientObject.Queue(new MediusAccountLoginResponse()
-                            {
-                                MessageID = accountLoginRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusInvalidPassword
-                            });
-                        }
                         else
                         {
-                            //
-                            data.ClientObject.Login(account);
-                            data.ClientObject.Status = MediusPlayerStatus.MediusPlayerInAuthWorld;
-
-                            // Send patches
-                            if (Program.Settings.Patches != null)
-                                foreach (var patch in Program.Settings.Patches)
-                                    if (patch.Enabled && patch.ApplicationId == data.ClientObject.ApplicationId)
-                                        data.ClientObject.Queue(patch.Serialize());
-
-                            // 
-                            Logger.Info($"LOGGING IN AS {account.AccountName} with access token {data.ClientObject.Token}");
-
-                            // Tell client
-                            data.ClientObject.Queue(new MediusAccountLoginResponse()
+                            DbController.GetAccountByName(accountLoginRequest.Username).ContinueWith((r) =>
                             {
-                                MessageID = accountLoginRequest.MessageID,
-                                AccountID = account.AccountId,
-                                AccountType = MediusAccountType.MediusMasterAccount,
-                                ConnectInfo = new NetConnectionInfo()
+                                if (r.IsCompletedSuccessfully && r.Result != null && data != null && data.ClientObject != null && data.ClientObject.IsConnected)
                                 {
-                                    AccessKey = data.ClientObject.Token,
-                                    SessionKey = data.ClientObject.SessionKey,
-                                    WorldID = Program.Settings.DefaultChannelId,
-                                    ServerKey = Program.GlobalAuthPublic,
-                                    AddressList = new NetAddressList()
+                                    if (r.Result.IsBanned)
                                     {
-                                        AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                        // Account is banned
+                                        // Temporary solution is to tell the client the login failed
+                                        data?.ClientObject?.Queue(new MediusAccountLoginResponse()
                                         {
-                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
-                                        }
-                                    },
-                                    Type = NetConnectionType.NetConnectionTypeClientServerTCP
-                                },
-                                MediusWorldID = Program.Settings.DefaultChannelId,
-                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                            MessageID = accountLoginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusAccountBanned
+                                        });
+                                    }
+                                    else if (Utils.ComputeSHA256(accountLoginRequest.Password) == r.Result.AccountPassword)
+                                    {
+                                        //
+                                        data.ClientObject.Login(r.Result);
+                                        data.ClientObject.Status = MediusPlayerStatus.MediusPlayerInAuthWorld;
+
+                                        // Send patches
+                                        if (Program.Settings.Patches != null)
+                                            foreach (var patch in Program.Settings.Patches)
+                                                if (patch.Enabled && patch.ApplicationId == data.ClientObject.ApplicationId)
+                                                    data.ClientObject.Queue(patch.Serialize());
+
+                                        // 
+                                        Logger.Info($"LOGGING IN AS {data.ClientObject.AccountName} with access token {data.ClientObject.Token}");
+
+                                        // Tell client
+                                        data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                        {
+                                            MessageID = accountLoginRequest.MessageID,
+                                            AccountID = data.ClientObject.AccountId,
+                                            AccountType = MediusAccountType.MediusMasterAccount,
+                                            ConnectInfo = new NetConnectionInfo()
+                                            {
+                                                AccessKey = data.ClientObject.Token,
+                                                SessionKey = data.ClientObject.SessionKey,
+                                                WorldID = Program.Settings.DefaultChannelId,
+                                                ServerKey = Program.GlobalAuthPublic,
+                                                AddressList = new NetAddressList()
+                                                {
+                                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                                    {
+                                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
+                                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                                    }
+                                                },
+                                                Type = NetConnectionType.NetConnectionTypeClientServerTCP
+                                            },
+                                            MediusWorldID = Program.Settings.DefaultChannelId,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess
+                                        });
+
+                                        // Tell database client logged in
+
+                                    }
+                                    else
+                                    {
+                                        // Incorrect password
+                                        data?.ClientObject?.Queue(new MediusAccountLoginResponse()
+                                        {
+                                            MessageID = accountLoginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusInvalidPassword
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    // Account not found
+                                    data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                    {
+                                        MessageID = accountLoginRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusAccountNotFound,
+                                    });
+                                }
                             });
                         }
                         break;
                     }
                 case MediusAccountLogoutRequest accountLogoutRequest:
                     {
+                        // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLogoutRequest} without a session.");
 
                         MediusCallbackStatus result = MediusCallbackStatus.MediusFail;
 
                         // Check token
-                        if (data.ClientObject.ClientAccount != null && accountLogoutRequest.SessionKey == data.ClientObject.SessionKey)
+                        if (data.ClientObject.IsLoggedIn && accountLogoutRequest.SessionKey == data.ClientObject.SessionKey)
                         {
                             // 
                             result = MediusCallbackStatus.MediusSuccess;

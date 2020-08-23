@@ -41,7 +41,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(new byte[2]);
             writer.Write(DnasSignatureType);
             writer.Write(DnasSignatureLength);
-            writer.Write(DnasSignature);
+            writer.Write(DnasSignature, MediusConstants.DNASSIGNATURE_MAXLEN);
             writer.Write(new byte[3]);
         }
 

@@ -117,24 +117,20 @@ namespace Deadlocked.Server.Medius.Models
                 client?.Queue(new MediusBinaryFwdMessage()
                 {
                     MessageType = msg.MessageType,
-                    OriginatorAccountID = source.ClientAccount.AccountId,
+                    OriginatorAccountID = source.AccountId,
                     Message = msg.Message
                 });
             }
         }
 
-        public void BroadcastChatMessage(IEnumerable<ClientObject> targets, int sourceAccountId, string message)
+        public void BroadcastChatMessage(IEnumerable<ClientObject> targets, ClientObject source, string message)
         {
-            string accountName = "ERROR";
-            if (Program.Database.TryGetAccountById(sourceAccountId, out var account))
-                accountName = account.AccountName;
-
             foreach (var target in targets)
             {
                 target?.Queue(new MediusGenericChatFwdMessage()
                 {
-                    OriginatorAccountID = sourceAccountId,
-                    OriginatorAccountName = accountName,
+                    OriginatorAccountID = source.AccountId,
+                    OriginatorAccountName = source.AccountName,
                     Message = "A" + message,
                     MessageType = MediusChatMessageType.Broadcast,
                     TimeStamp = Utils.GetUnixTime()

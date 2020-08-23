@@ -72,7 +72,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 
             // 
             writer.Write(GameName, MediusConstants.MGCL_GAMENAME_MAXLEN);
-            writer.Write(GameStats);
+            writer.Write(GameStats, MediusConstants.MGCL_GAMESTATS_MAXLEN);
             writer.Write(GamePassword, MediusConstants.MGCL_GAMEPASSWORD_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(ApplicationID);
