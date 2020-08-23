@@ -59,5 +59,10 @@ namespace Deadlocked.Server.Stream
         {
             return reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
         }
+
+        public static string ReadRestAsString(this BinaryReader reader)
+        {
+            return reader.ReadString((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+        }
     }
 }

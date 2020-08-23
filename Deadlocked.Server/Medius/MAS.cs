@@ -527,14 +527,47 @@ namespace Deadlocked.Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest} without a session.");
 
-                        // Accept everything
-                        // No filter
-                        data.ClientObject.Queue(new MediusTextFilterResponse()
+                        // Deny special characters
+                        // Also trim any whitespace
+                        switch (textFilterRequest.TextFilterType)
                         {
-                            MessageID = textFilterRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            Text = textFilterRequest.Text
-                        });
+                            case MediusTextFilterType.MediusTextFilterPassFail:
+                                {
+                                    if (textFilterRequest.Text.Any(x=> !char.IsLetterOrDigit(x)))
+                                    {
+                                        // Failed due to special characters
+                                        data.ClientObject.Queue(new MediusTextFilterResponse()
+                                        {
+                                            MessageID = textFilterRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusFail
+                                        });
+                                    }
+                                    else
+                                    {
+                                        //
+                                        data.ClientObject.Queue(new MediusTextFilterResponse()
+                                        {
+                                            MessageID = textFilterRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            Text = textFilterRequest.Text.Trim()
+                                        });
+                                    }
+                                    break;
+                                }
+                            case MediusTextFilterType.MediusTextFilterReplace:
+                                {
+                                    data.ClientObject.Queue(new MediusTextFilterResponse()
+                                    {
+                                        MessageID = textFilterRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        Text = String.Concat(textFilterRequest.Text.Trim().Where(x => x >= 0x20 && x < 0x7F))
+                                    });
+                                    break;
+                                }
+                        }
+
+
+
 
                         break;
                     }
