@@ -83,7 +83,8 @@ namespace Deadlocked.Server.Medius
             _scertHandler.OnChannelInactive += (channel) =>
             {
                 string key = channel.Id.AsLongText();
-                _channelDatas.TryRemove(key, out _);
+                if (_channelDatas.TryRemove(key, out var data))
+                    data.ClientObject?.OnDisconnected();
             };
 
             // Queue all incoming messages
@@ -113,7 +114,6 @@ namespace Deadlocked.Server.Medius
                     .ChildOption(ChannelOption.AutoRead, true)
                     .ChildOption(ChannelOption.SoKeepalive, true)
                     .ChildOption(ChannelOption.SoReuseaddr, true)
-                    //.ChildOption(ChannelOption.RcvbufAllocator, new FixedRecvByteBufAllocator(1024 * 4))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;

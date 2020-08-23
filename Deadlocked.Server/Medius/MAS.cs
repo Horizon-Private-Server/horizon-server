@@ -121,6 +121,9 @@ namespace Deadlocked.Server.Medius
                         // Create DME object
                         data.ClientObject = Program.ProxyServer.ReserveDMEObject(mgclSessionBeginRequest);
 
+                        // 
+                        data.ClientObject.OnConnected();
+
                         // Reply
                         data.ClientObject.Queue(new MediusServerSessionBeginResponse()
                         {
@@ -154,6 +157,9 @@ namespace Deadlocked.Server.Medius
 
                         // 
                         dmeObject.SetIp(mgclAuthRequest.AddressList.AddressList[0].Address);
+
+                        // Keep the client alive until the dme objects connects to MPS or times out
+                        dmeObject.KeepAliveUntilNextConnection();
 
                         // Override the dme server ip
                         if (!string.IsNullOrEmpty(Program.Settings.DmeIpOverride))
@@ -270,6 +276,19 @@ namespace Deadlocked.Server.Medius
                     {
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountRegRequest} without a session.");
+
+                        // Check that account creation is enabled
+                        if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && !Program.Settings.Beta.AllowAccountCreation)
+                        {
+                            // Reply error
+                            data.ClientObject.Queue(new MediusAccountRegistrationResponse()
+                            {
+                                MessageID = accountRegRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusFail
+                            });
+
+                            return;
+                        }
 
                         DbController.CreateAccount(new Database.Models.CreateAccountDTO()
                         {
@@ -430,10 +449,22 @@ namespace Deadlocked.Server.Medius
                                             StatusCode = MediusCallbackStatus.MediusAccountBanned
                                         });
                                     }
+                                    else if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && Program.Settings.Beta.RestrictSignin && !Program.Settings.Beta.PermittedAccounts.Contains(r.Result.AccountName))
+                                    {
+                                        // Account not allowed to sign in
+                                        data?.ClientObject?.Queue(new MediusAccountLoginResponse()
+                                        {
+                                            MessageID = accountLoginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusFail
+                                        });
+                                    }
                                     else if (Utils.ComputeSHA256(accountLoginRequest.Password) == r.Result.AccountPassword)
                                     {
                                         //
                                         data.ClientObject.Login(r.Result);
+
+                                        // Add to logged in clients
+                                        Program.Manager.AddClient(data.ClientObject);
 
                                         // Send patches
                                         if (Program.Settings.Patches != null)

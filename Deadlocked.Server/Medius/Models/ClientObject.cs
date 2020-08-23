@@ -83,8 +83,9 @@ namespace Deadlocked.Server.Medius.Models
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
         public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
-        public virtual bool IsConnected => _hasActiveSession && !Timedout;
+        public virtual bool IsConnected => (KeepAlive || _hasActiveSession) && !Timedout;
 
+        public bool KeepAlive => _keepAlive;
 
         /// <summary>
         /// 
@@ -100,6 +101,11 @@ namespace Deadlocked.Server.Medius.Models
         /// 
         /// </summary>
         private uint _gameListFilterIdCounter = 0;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private bool _keepAlive = false;
 
 
 
@@ -123,6 +129,25 @@ namespace Deadlocked.Server.Medius.Models
             if (utcTime > UtcLastEcho)
                 UtcLastEcho = utcTime;
         }
+
+        #region Connection / Disconnection
+
+        public void KeepAliveUntilNextConnection()
+        {
+            _keepAlive = true;
+        }
+
+        public void OnConnected()
+        {
+            _keepAlive = false;
+        }
+
+        public void OnDisconnected()
+        {
+
+        }
+
+        #endregion
 
         #region Status
 
@@ -180,7 +205,7 @@ namespace Deadlocked.Server.Medius.Models
 
         public void Login(AccountDTO account)
         {
-            if (IsLoggedIn)
+            if (AccountId >= 0)
                 throw new InvalidOperationException($"{this} attempting to log into {account} but is already logged in!");
 
             if (account == null)

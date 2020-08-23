@@ -12,6 +12,11 @@ namespace Deadlocked.Server.Config
     public class ServerSettings
     {
         /// <summary>
+        /// Beta specific config.
+        /// </summary>
+        public BetaConfig Beta { get; set; } = new BetaConfig();
+
+        /// <summary>
         /// How many milliseconds before refreshing the config.
         /// </summary>
         public int RefreshConfigInterval = 5000;
@@ -163,5 +168,28 @@ namespace Deadlocked.Server.Config
                     _rtLogFilters.Add((RT_MSG_TYPE)Enum.Parse(typeof(RT_MSG_TYPE), filter), true);
             }
         }
+    }
+
+    public class BetaConfig
+    {
+        /// <summary>
+        /// Whether the beta settings are enabled.
+        /// </summary>
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// Allow the creation of new accounts.
+        /// </summary>
+        public bool AllowAccountCreation { get; set; } = false;
+
+        /// <summary>
+        /// When true, only accounts in the whitelist will be allowed to login.
+        /// </summary>
+        public bool RestrictSignin { get; set; } = false;
+
+        /// <summary>
+        /// Accounts that can be logged into with RestrictSignIn set.
+        /// </summary>
+        public string[] PermittedAccounts { get; set; } = null;
     }
 }

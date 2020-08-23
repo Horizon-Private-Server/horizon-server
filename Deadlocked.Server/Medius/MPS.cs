@@ -56,13 +56,16 @@ namespace Deadlocked.Server.Medius
                         data.ApplicationId = clientConnectTcp.AppId;
 
                         // Find reserved dme object by token
-                        data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
+                        data.ClientObject = Program.Manager.GetDmeByAccessToken(clientConnectTcp.AccessToken);
                         if (data.ClientObject == null)
                         {
                             await DisconnectClient(clientChannel);
                         }
                         else
                         {
+                            // 
+                            data.ClientObject.OnConnected();
+
                             // Update app id
                             data.ClientObject.ApplicationId = clientConnectTcp.AppId;
 
@@ -169,8 +172,13 @@ namespace Deadlocked.Server.Medius
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
 
-                        game.AddPlayer(rClient);
+                        // Indicate the client is connecting to a different part of Medius
+                        rClient.KeepAliveUntilNextConnection();
 
+                        // Join game
+                        rClient.JoinGame(game);
+
+                        // 
                         rClient.Queue(new MediusJoinGameResponse()
                         {
                             MessageID = msgId,
@@ -245,7 +253,7 @@ namespace Deadlocked.Server.Medius
         {
             var dme = new DMEObject(request);
             dme.BeginSession();
-            Program.Manager.AddClient(dme);
+            Program.Manager.AddDmeClient(dme);
             return dme;
         }
 

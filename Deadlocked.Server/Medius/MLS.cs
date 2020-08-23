@@ -29,12 +29,10 @@ namespace Deadlocked.Server.Medius
             _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
         }
 
-
         public ClientObject ReserveClient(MediusSessionBeginRequest request)
         {
             var client = new ClientObject();
             client.BeginSession();
-            Program.Manager.AddClient(client);
             return client;
         }
 
@@ -65,6 +63,9 @@ namespace Deadlocked.Server.Medius
                         }
                         else
                         {
+                            // 
+                            data.ClientObject.OnConnected();
+
                             // Update our client object to use existing one
                             data.ClientObject.ApplicationId = clientConnectTcp.AppId;
 
@@ -1009,6 +1010,20 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateUserState} without a being logged in.");
 
+                        switch (updateUserState.UserAction)
+                        {
+                            case MediusUserAction.LeftGameWorld:
+                                {
+                                    //data.ClientObject.LeaveGame(data.ClientObject.CurrentGame);
+                                    break;
+                                }
+                            case MediusUserAction.KeepAlive:
+                                {
+                                    data.ClientObject.KeepAliveUntilNextConnection();
+                                    break;
+                                }
+                        }
+
                         break;
                     }
 
@@ -1599,6 +1614,10 @@ namespace Deadlocked.Server.Medius
                             // Join new channel
                             data.ClientObject.JoinChannel(channel);
 
+                            // Indicate the client is connecting to a different part of Medius
+                            data.ClientObject.KeepAliveUntilNextConnection();
+
+                            //
                             data.ClientObject.Queue(new MediusJoinChannelResponse()
                             {
                                 MessageID = joinChannelRequest.MessageID,

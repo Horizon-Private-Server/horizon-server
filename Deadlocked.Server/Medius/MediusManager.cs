@@ -21,6 +21,9 @@ namespace Deadlocked.Server.Medius
         private Dictionary<string, ClientObject> _accessTokenToClient = new Dictionary<string, ClientObject>();
         private Dictionary<string, ClientObject> _sessionKeyToClient = new Dictionary<string, ClientObject>();
 
+        private Dictionary<string, DMEObject> _accessTokenToDmeClient = new Dictionary<string, DMEObject>();
+        private Dictionary<string, DMEObject> _sessionKeyToDmeClient = new Dictionary<string, DMEObject>();
+
         private Dictionary<int, Channel> _channelIdToChannel = new Dictionary<int, Channel>();
         private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
 
@@ -49,6 +52,48 @@ namespace Deadlocked.Server.Medius
                 return result;
 
             return null;
+        }
+
+        public DMEObject GetDmeByAccessToken(string accessToken)
+        {
+            if (_accessTokenToDmeClient.TryGetValue(accessToken, out var result))
+                return result;
+
+            return null;
+        }
+
+        public DMEObject GetDmeBySessionKey(string sessionKey)
+        {
+            if (_sessionKeyToDmeClient.TryGetValue(sessionKey, out var result))
+                return result;
+
+            return null;
+        }
+
+        public void AddDmeClient(DMEObject dmeClient)
+        {
+            if (!dmeClient.IsLoggedIn)
+                throw new InvalidOperationException($"Attempting to add DME client {dmeClient} to MediusManager but client has not yet logged in.");
+
+            try
+            {
+                _accessTokenToDmeClient.Add(dmeClient.Token, dmeClient);
+                _sessionKeyToDmeClient.Add(dmeClient.SessionKey, dmeClient);
+            }
+            catch (Exception e)
+            {
+                // clean up
+                if (dmeClient != null)
+                {
+                    if (dmeClient.Token != null)
+                        _accessTokenToDmeClient.Remove(dmeClient.Token);
+
+                    if (dmeClient.SessionKey != null)
+                        _sessionKeyToDmeClient.Remove(dmeClient.SessionKey);
+                }
+
+                throw e;
+            }
         }
 
         public void AddClient(ClientObject client)
@@ -322,9 +367,37 @@ namespace Deadlocked.Server.Medius
                 {
                     _accountIdToClient.Remove(clientObject.AccountId);
                     _accessTokenToClient.Remove(clientObject.Token);
-                    _accountNameToClient.Remove(clientObject.AccountName);
+                    _accountNameToClient.Remove(clientObject.AccountName.ToLower());
                 }
-            }    
+            }
+        }
+
+        private void TickDme()
+        {
+            Queue<string> dmeToRemove = new Queue<string>();
+
+            foreach (var dmeKeyPair in _sessionKeyToDmeClient)
+            {
+                if (!dmeKeyPair.Value.IsConnected)
+                {
+                    Logger.Info($"Destroying DME Client {dmeKeyPair.Value}");
+
+                    // Logout and end session
+                    dmeKeyPair.Value?.Logout();
+                    dmeKeyPair.Value?.EndSession();
+
+                    dmeToRemove.Enqueue(dmeKeyPair.Key);
+                }
+            }
+
+            // Remove
+            while (dmeToRemove.TryDequeue(out var sessionKey))
+            {
+                if (_sessionKeyToDmeClient.Remove(sessionKey, out var clientObject))
+                {
+                    _accessTokenToDmeClient.Remove(clientObject.Token);
+                }
+            }
         }
 
         #endregion
