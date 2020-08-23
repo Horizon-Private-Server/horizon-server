@@ -593,6 +593,11 @@ namespace Deadlocked.Server.Medius
                                     });
                                     break;
                                 }
+                            default:
+                                {
+                                    Logger.Warn($"Unhandled MediusUpdateLadderStatsWideRequest {updateLadderStatsWideRequest}");
+                                    break;
+                                }
                         }
 
                         break;
@@ -621,6 +626,11 @@ namespace Deadlocked.Server.Medius
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
 
+                                    break;
+                                }
+                            default:
+                                {
+                                    Logger.Warn($"Unhandled MediusGetLadderStatsWideRequest {getLadderStatsWideRequest}");
                                     break;
                                 }
                         }

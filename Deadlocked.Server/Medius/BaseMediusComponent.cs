@@ -110,7 +110,10 @@ namespace Deadlocked.Server.Medius
                     .Option(ChannelOption.SoBacklog, 100)
                     .Handler(new LoggingHandler(LogLevel.INFO))
                     .ChildOption(ChannelOption.TcpNodelay, true)
-                    .ChildOption(ChannelOption.RcvbufAllocator, new FixedRecvByteBufAllocator(1024 * 4))
+                    .ChildOption(ChannelOption.AutoRead, true)
+                    .ChildOption(ChannelOption.SoKeepalive, true)
+                    .ChildOption(ChannelOption.SoReuseaddr, true)
+                    //.ChildOption(ChannelOption.RcvbufAllocator, new FixedRecvByteBufAllocator(1024 * 4))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
@@ -190,7 +193,6 @@ namespace Deadlocked.Server.Medius
                         }
 
                         //
-                        //await responses.Send(clientChannel);
                         if (responses.Count > 0)
                             await clientChannel.WriteAndFlushAsync(responses);
                     }

@@ -80,6 +80,11 @@ namespace Deadlocked.Server
             DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
 
+#if DEBUG
+            Stopwatch sw = new Stopwatch();
+            int ticks = 0;
+#endif
+
             Logger.Info("Starting medius components...");
 
             Logger.Info($"Starting MUIS on port {UniverseInfoServer.Port}.");
@@ -107,8 +112,25 @@ namespace Deadlocked.Server
 
             try
             {
+#if DEBUG
+                sw.Start();
+#endif
+
                 while (true)
                 {
+#if DEBUG
+                    ++ticks;
+                    if (sw.Elapsed.TotalSeconds > 5f)
+                    {
+                        // 
+                        sw.Stop();
+                        Logger.Warn($"Average TPS: {ticks / sw.Elapsed.TotalSeconds}");
+                        sw.Restart();
+                        ticks = 0;
+                    }
+#endif
+
+
                     // Remove old clients
                     for (int i = 0; i < Clients.Count; ++i)
                     {
@@ -126,7 +148,7 @@ namespace Deadlocked.Server
                     await AuthenticationServer.Tick();
                     await LobbyServer.Tick();
                     await ProxyServer.Tick();
-                    NATServer.Tick();
+                    // NATServer.Tick();
 
                     // Tick channels
                     for (int i = 0; i < Channels.Count; ++i)
@@ -172,6 +194,8 @@ namespace Deadlocked.Server
                         RefreshConfig();
                         lastConfigRefresh = DateTime.UtcNow;
                     }
+
+
 
                     Thread.Sleep(sleepMS);
                 }
