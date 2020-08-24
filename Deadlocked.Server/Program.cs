@@ -122,7 +122,12 @@ namespace Deadlocked.Server
                     {
                         // 
                         sw.Stop();
-                        Logger.Warn($"Average TPS: {ticks / sw.Elapsed.TotalSeconds}");
+                        float tps = ticks / (float)sw.Elapsed.TotalSeconds;
+                        float error = MathF.Abs(Settings.TickRate - tps) / Settings.TickRate;
+
+                        if (error > 0.1f)
+                            Logger.Error($"Average TPS: {tps} is {error}% off of target {Settings.TickRate}");
+
                         sw.Restart();
                         ticks = 0;
                     }

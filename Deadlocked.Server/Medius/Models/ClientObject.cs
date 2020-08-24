@@ -90,12 +90,12 @@ namespace Deadlocked.Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        private DateTime? _logoutTime = null;
+        protected DateTime? _logoutTime = null;
 
         /// <summary>
         /// 
         /// </summary>
-        private bool _hasActiveSession = true;
+        protected bool _hasActiveSession = true;
 
         /// <summary>
         /// 
@@ -105,7 +105,7 @@ namespace Deadlocked.Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        private bool _keepAlive = false;
+        protected bool _keepAlive = false;
 
 
 
