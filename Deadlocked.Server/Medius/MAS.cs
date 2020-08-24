@@ -517,7 +517,7 @@ namespace Deadlocked.Server.Medius
                                     data.ClientObject.Queue(new MediusAccountLoginResponse()
                                     {
                                         MessageID = accountLoginRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusAccountNotFound,
+                                        StatusCode = MediusCallbackStatus.MediusDBError,
                                     });
                                 }
                             });

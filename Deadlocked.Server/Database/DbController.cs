@@ -13,6 +13,51 @@ namespace Deadlocked.Server.Database
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<DbController>();
 
+        #region Cache
+
+        private class GetDbCache
+        {
+            static Dictionary<string, GetDbCache> _getCache = new Dictionary<string, GetDbCache>();
+
+            public DateTime LastUpdate;
+
+            public object Value;
+
+            public bool IsValid => Value != null && (DateTime.UtcNow - LastUpdate).TotalSeconds < Program.DbSettings.CacheDuration;
+
+
+            public static bool TryGetCache<T>(string route, out T value)
+            {
+                if (_getCache.TryGetValue(route, out var cache) && cache != null && cache.IsValid && cache.Value is T cacheAsT)
+                {
+                    value = cacheAsT;
+                    return true;
+                }
+
+                value = default(T);
+                return false;
+            }
+
+            public static void UpdateCache(string route, object value)
+            {
+                if (_getCache.TryGetValue(route, out var cache))
+                {
+                    cache.Value = value;
+                    cache.LastUpdate = DateTime.UtcNow;
+                }
+                else
+                {
+                    _getCache.Add(route, new GetDbCache()
+                    {
+                        LastUpdate = DateTime.UtcNow,
+                        Value = value
+                    });
+                }
+            }
+        }
+
+        #endregion
+
         #region Account
 
         /// <summary>
@@ -26,11 +71,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Account/searchAccountByName?AccountName={name}");
-
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<AccountDTO>(await response.Content.ReadAsStringAsync());
+                result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}");
             }
             catch (Exception e)
             {
@@ -51,11 +92,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Account/getAccount?AccountId={id}");
-
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<AccountDTO>(await response.Content.ReadAsStringAsync());
+                result = await GetDbAsync<AccountDTO>($"Account/getAccount?AccountId={id}");
             }
             catch (Exception e)
             {
@@ -101,8 +138,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Account/deleteAccount?AccountName={accountName}");
-                result = response.IsSuccessStatusCode;
+                result = (await GetDbAsync($"Account/deleteAccount?AccountName={accountName}")).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -124,8 +160,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Account/postAccountSignInDate?AccountId={accountId}", time.ToUniversalTime().ToString());
-                result = response.IsSuccessStatusCode;
+                result = (await PostDbAsync($"Account/postAccountSignInDate?AccountId={accountId}", time.ToUniversalTime().ToString())).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -146,11 +181,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Account/getAccountStatus?AccountId={accountId}");
-
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<AccountStatusDTO>(await response.Content.ReadAsStringAsync());
+                result = await GetDbAsync<AccountStatusDTO>($"Account/getAccountStatus?AccountId={accountId}");
             }
             catch (Exception e)
             {
@@ -172,8 +203,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Account/postAccountStatusUpdates", JsonConvert.SerializeObject(status));
-                result = response.IsSuccessStatusCode;
+                var response = (await PostDbAsync($"Account/postAccountStatusUpdates", JsonConvert.SerializeObject(status))).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -224,8 +254,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Buddy/addBuddy", JsonConvert.SerializeObject(addBuddy));
-                result = response.IsSuccessStatusCode;
+                result = (await PostDbAsync($"Buddy/addBuddy", JsonConvert.SerializeObject(addBuddy))).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -246,8 +275,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Buddy/removeBuddy", JsonConvert.SerializeObject(removeBuddy));
-                result = response.IsSuccessStatusCode;
+                result = (await PostDbAsync($"Buddy/removeBuddy", JsonConvert.SerializeObject(removeBuddy))).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -268,8 +296,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Buddy/addIgnored", JsonConvert.SerializeObject(addIgnored));
-                result = response.IsSuccessStatusCode;
+                result = (await PostDbAsync($"Buddy/addIgnored", JsonConvert.SerializeObject(addIgnored))).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -290,8 +317,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Buddy/removeIgnored", JsonConvert.SerializeObject(removeIgnored));
-                result = response.IsSuccessStatusCode;
+                var response = (await PostDbAsync($"Buddy/removeIgnored", JsonConvert.SerializeObject(removeIgnored))).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -318,11 +344,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Stats/getPlayerLeaderboardIndex?AccountId={accountId}&StatId={statId}");
-
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<LeaderboardDTO>(await response.Content.ReadAsStringAsync());
+                result = await GetDbAsync<LeaderboardDTO>($"Stats/getPlayerLeaderboardIndex?AccountId={accountId}&StatId={statId}");
             }
             catch (Exception e)
             {
@@ -346,11 +368,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
-
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<LeaderboardDTO[]>(await response.Content.ReadAsStringAsync());
+                result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
             }
             catch (Exception e)
             {
@@ -371,8 +389,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost));
-                result = response.IsSuccessStatusCode;
+                var response = (await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -394,8 +411,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Account/postMediusStats?AccountId={accountId}", stats);
-                result = response.IsSuccessStatusCode;
+                var response = (await PostDbAsync($"Account/postMediusStats?AccountId={accountId}", stats)).IsSuccessStatusCode;
             }
             catch (Exception e)
             {
@@ -411,6 +427,11 @@ namespace Deadlocked.Server.Database
 
         private static async Task<HttpResponseMessage> GetDbAsync(string route)
         {
+            // Try to get a cached result first
+            if (GetDbCache.TryGetCache(route, out HttpResponseMessage value))
+                return value;
+
+            // 
             HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("Accept", "application/json");
             HttpResponseMessage result = null;
@@ -418,11 +439,49 @@ namespace Deadlocked.Server.Database
             try
             {
                 result = await client.GetAsync($"{Program.DbSettings.DatabaseUrl}/{route}");
+
+                // Update cached value
+                GetDbCache.UpdateCache(route, result);
             }
             catch (Exception e)
             {
                 Logger.Error(e);
                 result = null;
+            }
+            finally
+            {
+                client.Dispose();
+            }
+
+            return result;
+        }
+
+        private static async Task<T> GetDbAsync<T>(string route)
+        {
+            // Try to get a cached result first
+            if (GetDbCache.TryGetCache(route, out T value))
+                return value;
+
+            // 
+            HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            T result = default(T);
+
+            try
+            {
+                var response = await client.GetAsync($"{Program.DbSettings.DatabaseUrl}/{route}");
+
+                // Deserialize on success
+                if (response.IsSuccessStatusCode)
+                    result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+
+                // Update cached value
+                GetDbCache.UpdateCache(route, result);
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+                result = default(T);
             }
             finally
             {
