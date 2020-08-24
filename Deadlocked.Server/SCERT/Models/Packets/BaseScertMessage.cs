@@ -1,7 +1,9 @@
 ﻿using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Medius.Models.Packets.DME;
 using DotNetty.Buffers;
+using DotNetty.Common.Internal.Logging;
 using Medius.Crypto;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +15,8 @@ namespace Deadlocked.Server.SCERT.Models.Packets
     {
         public const int HEADER_SIZE = 3;
         public const int HASH_SIZE = 4;
+
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<BaseScertMessage>();
 
         /// <summary>
         /// Message id.
@@ -177,7 +181,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
                 }
                 else
                 {
-                    Console.WriteLine($"Unable to decrypt {id}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(messageBuffer)}");
+                    Logger.Error($"Unable to decrypt {id}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(messageBuffer)} CIPHER:{cipher}");
                 }
             }
             else

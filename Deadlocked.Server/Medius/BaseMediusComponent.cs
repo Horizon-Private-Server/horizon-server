@@ -110,10 +110,11 @@ namespace Deadlocked.Server.Medius
                     .Channel<TcpServerSocketChannel>()
                     .Option(ChannelOption.SoBacklog, 100)
                     .Handler(new LoggingHandler(LogLevel.INFO))
-                    .ChildOption(ChannelOption.TcpNodelay, true)
-                    .ChildOption(ChannelOption.AutoRead, true)
-                    .ChildOption(ChannelOption.SoKeepalive, true)
-                    .ChildOption(ChannelOption.SoReuseaddr, true)
+                    //.ChildOption(ChannelOption.TcpNodelay, true)
+                    //.ChildOption(ChannelOption.AutoRead, true)
+                    //.ChildOption(ChannelOption.SoKeepalive, true)
+                    //.ChildOption(ChannelOption.SoReuseaddr, true)
+                    //.ChildOption(ChannelOption.RcvbufAllocator, new FixedRecvByteBufAllocator(1024 * 4))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
@@ -121,8 +122,8 @@ namespace Deadlocked.Server.Medius
                         pipeline.AddLast(new ByteArrayEncoder());
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
-                        pipeline.AddLast(new ScertLengthFieldBasedFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, true));
-                        pipeline.AddLast(new ScertDecoder(getCipher));
+                        pipeline.AddLast(new ScertLengthFieldBasedFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, MediusConstants.MEDIUS_MESSAGE_MAXLEN, 1, 2, 0, 0, false));
+                        pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
                         pipeline.AddLast(_scertHandler);
                     }));
 
@@ -172,7 +173,16 @@ namespace Deadlocked.Server.Medius
                 {
                     // Process all messages in queue
                     while (data.RecvQueue.TryDequeue(out var message))
-                        await ProcessMessage(message, clientChannel, data);
+                    {
+                        try
+                        {
+                            await ProcessMessage(message, clientChannel, data);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Error(e);
+                        }
+                    }
 
                     // Send if writeable
                     if (clientChannel.IsWritable)
@@ -201,7 +211,7 @@ namespace Deadlocked.Server.Medius
             catch (Exception e)
             {
                 Logger.Error(e);
-                await DisconnectClient(clientChannel);
+                //await DisconnectClient(clientChannel);
             }
         }
 
@@ -218,7 +228,7 @@ namespace Deadlocked.Server.Medius
         {
             try
             {
-                await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT());
+                //await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT());
             }
             catch (Exception)
             {

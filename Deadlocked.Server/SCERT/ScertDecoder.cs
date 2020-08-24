@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Buffers;
@@ -17,14 +18,19 @@ namespace Deadlocked.Server.SCERT
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ScertDecoder>();
 
-        readonly Func<RT_MSG_TYPE, CipherContext, ICipher> getCipher;
+        readonly ICipher[] _ciphers = null;
+        readonly Func<RT_MSG_TYPE, CipherContext, ICipher> _getCipher = null;
 
         /// <summary>
         ///     Create a new instance.
         /// </summary>
-        public ScertDecoder( Func<RT_MSG_TYPE, CipherContext, ICipher> getCipher)
+        public ScertDecoder(params ICipher[] ciphers)
         {
-            this.getCipher = getCipher;
+            this._ciphers = ciphers;
+            this._getCipher = (id, ctx) =>
+            {
+                return _ciphers?.FirstOrDefault(x => x.Context == ctx);
+            };
         }
 
         protected override void Decode(IChannelHandlerContext context, IByteBuffer input, List<object> output)
@@ -53,18 +59,20 @@ namespace Deadlocked.Server.SCERT
         protected virtual object Decode(IChannelHandlerContext context, IByteBuffer input)
         {
             // 
-            input.MarkReaderIndex();
-            byte id = input.ReadByte();
+            //input.MarkReaderIndex();
+            byte id = input.GetByte(input.ReaderIndex);
             byte[] hash = null;
-            long frameLength = input.ReadShortLE();
+            long frameLength = input.GetShortLE(input.ReaderIndex + 1);
+            int totalLength = 3;
 
             if (frameLength <= 0)
-                return BaseScertMessage.Instantiate((RT_MSG_TYPE)(id & 0x7F), null, new byte[0], getCipher);
+                return BaseScertMessage.Instantiate((RT_MSG_TYPE)(id & 0x7F), null, new byte[0], _getCipher);
 
             if (id >= 0x80)
             {
                 hash = new byte[4];
-                input.ReadBytes(hash);
+                input.GetBytes(input.ReaderIndex + 3, hash);
+                totalLength += 4;
                 id &= 0x7F;
             }
 
@@ -83,10 +91,11 @@ namespace Deadlocked.Server.SCERT
 
             // extract frame
             byte[] messageContents = new byte[frameLengthInt];
-            input.GetBytes(input.ReaderIndex, messageContents);
+            input.GetBytes(input.ReaderIndex + totalLength, messageContents);
 
             // 
-            return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, getCipher);
+            input.SetReaderIndex(input.ReaderIndex + totalLength + frameLengthInt);
+            return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, _getCipher);
         }
 
     }

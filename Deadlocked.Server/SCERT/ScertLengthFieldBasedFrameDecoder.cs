@@ -188,26 +188,22 @@ namespace Deadlocked.Server.SCERT
             {
                 long discard = frameLength - input.ReadableBytes;
                 this.tooLongFrameLength = frameLength;
-                IByteBuffer errorSlice = null;
+                int startOff = (int)MathF.Min(20, input.ArrayOffset);
+                Logger.Error($"{context.Channel.RemoteAddress} Frame Length exceeds max frame length on buffer: start:{startOff} {BitConverter.ToString(input.Array, input.ArrayOffset - startOff, startOff + input.ReadableBytes)}");
 
                 if (discard < 0)
                 {
-                    errorSlice = input.ReadSlice((int)frameLength);
-
                     // buffer contains more bytes then the frameLength so we can discard all now
                     input.SkipBytes((int)frameLength);
                 }
                 else
                 {
-                    errorSlice = input.ReadSlice(input.ReadableBytes);
-
                     // Enter the discard mode and discard everything received so far.
-                    this.discardingTooLongFrame = true;
+                    //this.discardingTooLongFrame = true;
                     this.bytesToDiscard = discard;
                     input.SkipBytes(input.ReadableBytes);
                 }
 
-                Logger.Error($"Frame Length exceeds max frame length on buffer: {BitConverter.ToString(errorSlice.Array, errorSlice.ArrayOffset, errorSlice.ReadableBytes)}");
                 this.FailIfNecessary(true);
                 return null;
             }

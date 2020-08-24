@@ -39,7 +39,7 @@ namespace Deadlocked.Server.Medius.Models
         public uint GenericField4 = 0;
         public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
 
-        public bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || (DateTime.UtcNow - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds);
+        public bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((DateTime.UtcNow - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds) && GameCount == 0);
         public int PlayerCount => Clients.Count;
         public int GameCount => _games.Count;
 
@@ -93,6 +93,7 @@ namespace Deadlocked.Server.Medius.Models
         {
             Clients.RemoveAll(x => x.Client == client);
         }
+
 
         public void RegisterGame(Game game)
         {

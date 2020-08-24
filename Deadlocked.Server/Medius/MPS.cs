@@ -27,7 +27,7 @@ namespace Deadlocked.Server.Medius
         protected override IInternalLogger Logger => _logger;
         public override string Name => "MPS";
         public override int Port => Program.Settings.MPSPort;
-        public override PS2_RSA AuthKey => Program.DmeAuthKey;
+        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         DateTime lastSend = DateTime.UtcNow;
 

@@ -395,7 +395,7 @@ namespace Deadlocked.Server.Medius
 
                         // ERROR -- Need to be logged in
                         if (!data.ClientObject.IsLoggedIn)
-                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getBuddyList_ExtraInfoRequest} without a being logged in.");
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel},{data.ClientObject} sent {getBuddyList_ExtraInfoRequest} without a being logged in.");
 
                         // 
                         _ = DbController.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
@@ -1498,7 +1498,7 @@ namespace Deadlocked.Server.Medius
 
                         // ERROR -- Need to be logged in
                         if (!data.ClientObject.IsLoggedIn)
-                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerReport} without a being logged in.");
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel},{data.ClientObject} sent {playerReport} without a being logged in.");
 
                         // 
                         if (data.ClientObject.CurrentGame?.Id == playerReport.MediusWorldID &&

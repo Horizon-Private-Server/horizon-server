@@ -368,5 +368,10 @@ namespace Deadlocked.Server.Medius.Models
 
         #endregion
 
+        public override string ToString()
+        {
+            return $"({AccountId}:{AccountName})";
+        }
+
     }
 }

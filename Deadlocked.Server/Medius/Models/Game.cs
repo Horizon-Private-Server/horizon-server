@@ -252,11 +252,20 @@ namespace Deadlocked.Server.Medius.Models
             Logger.Info($"Game {Id}:{GameName}: EndGame() called.");
 
             // Remove players from game world
-            foreach (var client in Clients)
+            while (Clients.Count > 0)
             {
-                client.Client?.LeaveGame(this);
-                client.Client?.LeaveChannel(ChatChannel);
+                var client = Clients[0].Client;
+                if (client == null)
+                {
+                    Clients.RemoveAt(0);
+                }
+                else
+                {
+                    client.LeaveGame(this);
+                    client.LeaveChannel(ChatChannel);
+                }
             }
+
 
             // Unregister from channel
             ChatChannel?.UnregisterGame(this);
