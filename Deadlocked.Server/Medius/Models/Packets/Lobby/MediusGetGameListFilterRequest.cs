@@ -19,7 +19,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
         }
 
@@ -29,7 +29,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
         }
 

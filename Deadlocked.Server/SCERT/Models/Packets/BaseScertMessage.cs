@@ -2,7 +2,7 @@
 using Deadlocked.Server.Medius.Models.Packets.DME;
 using DotNetty.Buffers;
 using DotNetty.Common.Internal.Logging;
-using Medius.Crypto;
+using RT.Cryptography;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -57,7 +57,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
             }
 
             // Check for fragmentation
-            if (Id == RT_MSG_TYPE.RT_MSG_SERVER_APP && length > MediusConstants.MEDIUS_MESSAGE_MAXLEN)
+            if (Id == RT_MSG_TYPE.RT_MSG_SERVER_APP && length > Constants.MEDIUS_MESSAGE_MAXLEN)
             {
                 var msgClass = (NetMessageTypes)buffer[0];
                 var msgType = buffer[1];

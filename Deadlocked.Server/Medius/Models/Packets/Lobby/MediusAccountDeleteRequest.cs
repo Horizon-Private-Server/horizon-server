@@ -21,8 +21,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
-            MasterPassword = reader.ReadString(MediusConstants.PASSWORD_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
+            MasterPassword = reader.ReadString(Constants.PASSWORD_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -31,8 +31,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
-            writer.Write(MasterPassword, MediusConstants.PASSWORD_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
+            writer.Write(MasterPassword, Constants.PASSWORD_MAXLEN);
         }
 
 

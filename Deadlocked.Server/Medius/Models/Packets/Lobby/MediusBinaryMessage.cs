@@ -15,7 +15,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public string SessionKey; // SESSIONKEY_MAXLEN
         public MediusBinaryMessageType MessageType;
         public int TargetAccountID;
-        public byte[] Message = new byte[MediusConstants.BINARYMESSAGE_MAXLEN];
+        public byte[] Message = new byte[Constants.BINARYMESSAGE_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -23,11 +23,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             MessageType = reader.Read<MediusBinaryMessageType>();
             TargetAccountID = reader.ReadInt32();
-            Message = reader.ReadBytes(MediusConstants.BINARYMESSAGE_MAXLEN);
+            Message = reader.ReadBytes(Constants.BINARYMESSAGE_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -36,11 +36,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
             writer.Write(MessageType);
             writer.Write(TargetAccountID);
-            writer.Write(Message, MediusConstants.BINARYMESSAGE_MAXLEN);
+            writer.Write(Message, Constants.BINARYMESSAGE_MAXLEN);
         }
 
 

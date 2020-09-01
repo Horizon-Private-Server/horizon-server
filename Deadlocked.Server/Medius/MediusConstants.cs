@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Deadlocked.Server.Medius.Models.Packets
 {
-    public class MediusConstants
+    public class Constants
     {
         public const int MESSAGEID_MAXLEN = 21;
         public const int SESSIONKEY_MAXLEN = 17;

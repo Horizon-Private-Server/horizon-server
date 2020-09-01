@@ -45,7 +45,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             GenericField3 = reader.ReadUInt32();
             GenericField4 = reader.ReadUInt32();
             GenericFieldLevel = reader.Read<MediusWorldGenericFieldLevelType>();
-            LobbyName = reader.ReadString(MediusConstants.LOBBYNAME_MAXLEN);
+            LobbyName = reader.ReadString(Constants.LOBBYNAME_MAXLEN);
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -69,7 +69,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(GenericField3);
             writer.Write(GenericField4);
             writer.Write(GenericFieldLevel);
-            writer.Write(LobbyName, MediusConstants.LOBBYNAME_MAXLEN);
+            writer.Write(LobbyName, Constants.LOBBYNAME_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }

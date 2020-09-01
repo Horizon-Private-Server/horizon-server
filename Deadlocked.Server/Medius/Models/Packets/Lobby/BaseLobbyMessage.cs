@@ -1,4 +1,4 @@
-using Medius.Crypto;
+using RT.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,7 +33,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            MessageID = reader.ReadString(MediusConstants.MESSAGEID_MAXLEN);
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID, MediusConstants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
         }
 
         #endregion

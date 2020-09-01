@@ -30,11 +30,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             ApplicationID = reader.ReadInt32();
-            ApplicationName = reader.ReadString(MediusConstants.APPNAME_MAXLEN);
+            ApplicationName = reader.ReadString(Constants.APPNAME_MAXLEN);
             ApplicationType = reader.Read<MediusApplicationType>();
             MediusWorldID = reader.ReadInt32();
             AccountID = reader.ReadInt32();
-            AccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
+            AccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -48,11 +48,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(ApplicationID);
-            writer.Write(ApplicationName, MediusConstants.APPNAME_MAXLEN);
+            writer.Write(ApplicationName, Constants.APPNAME_MAXLEN);
             writer.Write(ApplicationType);
             writer.Write(MediusWorldID);
             writer.Write(AccountID);
-            writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
+            writer.Write(AccountName, Constants.ACCOUNTNAME_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }

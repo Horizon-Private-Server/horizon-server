@@ -882,14 +882,14 @@ namespace Deadlocked.Server.Medius.Models.Packets
         public void Deserialize(BinaryReader reader)
         {
             AddressType = reader.Read<NetAddressType>();
-            Address = reader.ReadString(MediusConstants.NET_MAX_NETADDRESS_LENGTH);
+            Address = reader.ReadString(Constants.NET_MAX_NETADDRESS_LENGTH);
             Port = reader.ReadUInt32();
         }
 
         public void Serialize(BinaryWriter writer)
         {
             writer.Write(AddressType);
-            writer.Write(Address, MediusConstants.NET_MAX_NETADDRESS_LENGTH);
+            writer.Write(Address, Constants.NET_MAX_NETADDRESS_LENGTH);
             writer.Write(Port);
         }
 
@@ -908,15 +908,15 @@ $"Port:{Port}";
 
         public NetAddressList()
         {
-            AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT];
-            for (int i = 0; i < MediusConstants.NET_ADDRESS_LIST_COUNT; ++i)
+            AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT];
+            for (int i = 0; i < Constants.NET_ADDRESS_LIST_COUNT; ++i)
                 AddressList[i] = new NetAddress();
         }
 
         public void Deserialize(BinaryReader reader)
         {
-            AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT];
-            for (int i = 0; i < MediusConstants.NET_ADDRESS_LIST_COUNT; ++i)
+            AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT];
+            for (int i = 0; i < Constants.NET_ADDRESS_LIST_COUNT; ++i)
             {
                 AddressList[i] = reader.Read<NetAddress>();
             }
@@ -924,7 +924,7 @@ $"Port:{Port}";
 
         public void Serialize(BinaryWriter writer)
         {
-            for (int i = 0; i < MediusConstants.NET_ADDRESS_LIST_COUNT; ++i)
+            for (int i = 0; i < Constants.NET_ADDRESS_LIST_COUNT; ++i)
             {
                 writer.Write((AddressList == null || i >= AddressList.Length) ? NetAddress.Empty : AddressList[i]);
             }
@@ -951,8 +951,8 @@ $"Port:{Port}";
             AddressList = reader.Read<NetAddressList>();
             WorldID = reader.ReadInt32();
             ServerKey = reader.Read<RSA_KEY>();
-            SessionKey = reader.ReadString(MediusConstants.NET_SESSION_KEY_LEN);
-            AccessKey = reader.ReadString(MediusConstants.NET_ACCESS_KEY_LEN);
+            SessionKey = reader.ReadString(Constants.NET_SESSION_KEY_LEN);
+            AccessKey = reader.ReadString(Constants.NET_ACCESS_KEY_LEN);
             reader.ReadBytes(2);
         }
 
@@ -962,8 +962,8 @@ $"Port:{Port}";
             writer.Write(AddressList);
             writer.Write(WorldID);
             writer.Write(ServerKey);
-            writer.Write(SessionKey, MediusConstants.NET_SESSION_KEY_LEN);
-            writer.Write(AccessKey, MediusConstants.NET_ACCESS_KEY_LEN);
+            writer.Write(SessionKey, Constants.NET_SESSION_KEY_LEN);
+            writer.Write(AccessKey, Constants.NET_ACCESS_KEY_LEN);
             writer.Write(new byte[2]);
         }
 
@@ -981,7 +981,7 @@ $"AccessKey:{AccessKey}";
     public class RSA_KEY : IStreamSerializer
     {
         // 
-        public uint[] key = new uint[MediusConstants.RSA_SIZE_DWORD];
+        public uint[] key = new uint[Constants.RSA_SIZE_DWORD];
 
         public RSA_KEY()
         {
@@ -998,8 +998,8 @@ $"AccessKey:{AccessKey}";
 
         public void Deserialize(BinaryReader reader)
         {
-            key = new uint[MediusConstants.RSA_SIZE_DWORD];
-            for (int i = 0; i < MediusConstants.RSA_SIZE_DWORD; ++i)
+            key = new uint[Constants.RSA_SIZE_DWORD];
+            for (int i = 0; i < Constants.RSA_SIZE_DWORD; ++i)
                 key[i] = reader.ReadUInt32();
         }
 
@@ -1028,8 +1028,8 @@ $"AccessKey:{AccessKey}";
             ConnectStatus = reader.Read<MediusPlayerStatus>();
             MediusLobbyWorldID = reader.ReadInt32();
             MediusGameWorldID = reader.ReadInt32();
-            LobbyName = reader.ReadString(MediusConstants.WORLDNAME_MAXLEN);
-            GameName = reader.ReadString(MediusConstants.WORLDNAME_MAXLEN);
+            LobbyName = reader.ReadString(Constants.WORLDNAME_MAXLEN);
+            GameName = reader.ReadString(Constants.WORLDNAME_MAXLEN);
         }
 
         public void Serialize(BinaryWriter writer)
@@ -1037,8 +1037,8 @@ $"AccessKey:{AccessKey}";
             writer.Write(ConnectStatus);
             writer.Write(MediusLobbyWorldID);
             writer.Write(MediusGameWorldID);
-            writer.Write(LobbyName, MediusConstants.WORLDNAME_MAXLEN);
-            writer.Write(GameName, MediusConstants.WORLDNAME_MAXLEN);
+            writer.Write(LobbyName, Constants.WORLDNAME_MAXLEN);
+            writer.Write(GameName, Constants.WORLDNAME_MAXLEN);
         }
 
         public override string ToString()
@@ -1054,8 +1054,8 @@ $"GameName:{GameName}";
 
     public class MediusFile : IStreamSerializer
     {
-        public string Filename; // MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH
-        public byte[] ServerChecksum = new byte[MediusConstants.MEDIUS_FILE_CHECKSUM_NUMBYTES];
+        public string Filename; // Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH
+        public byte[] ServerChecksum = new byte[Constants.MEDIUS_FILE_CHECKSUM_NUMBYTES];
         public uint FileID;
         public uint FileSize;
         public uint CreationTimeStamp;
@@ -1069,8 +1069,8 @@ $"GameName:{GameName}";
         public void Deserialize(BinaryReader reader)
         {
             // 
-            Filename = reader.ReadString(MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
-            ServerChecksum = reader.ReadBytes(MediusConstants.MEDIUS_FILE_CHECKSUM_NUMBYTES);
+            Filename = reader.ReadString(Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
+            ServerChecksum = reader.ReadBytes(Constants.MEDIUS_FILE_CHECKSUM_NUMBYTES);
             FileID = reader.ReadUInt32();
             FileSize = reader.ReadUInt32();
             CreationTimeStamp = reader.ReadUInt32();
@@ -1085,8 +1085,8 @@ $"GameName:{GameName}";
         public void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(Filename, MediusConstants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
-            writer.Write(ServerChecksum, MediusConstants.MEDIUS_FILE_CHECKSUM_NUMBYTES);
+            writer.Write(Filename, Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
+            writer.Write(ServerChecksum, Constants.MEDIUS_FILE_CHECKSUM_NUMBYTES);
             writer.Write(FileID);
             writer.Write(FileSize);
             writer.Write(CreationTimeStamp);
@@ -1119,7 +1119,7 @@ $"ServerOperationID:{ServerOperationID}";
     {
 
 
-        public byte[] Description = new byte[MediusConstants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH];
+        public byte[] Description = new byte[Constants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH];
         public uint LastChangedTimeStamp;
         public uint LastChangedByUserID;
         public uint NumberAccesses;
@@ -1129,7 +1129,7 @@ $"ServerOperationID:{ServerOperationID}";
         public virtual void Deserialize(BinaryReader reader)
         {
             // 
-            Description = reader.ReadBytes(MediusConstants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
+            Description = reader.ReadBytes(Constants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
             LastChangedTimeStamp = reader.ReadUInt32();
             LastChangedByUserID = reader.ReadUInt32();
             NumberAccesses = reader.ReadUInt32();
@@ -1140,7 +1140,7 @@ $"ServerOperationID:{ServerOperationID}";
         public virtual void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(Description, MediusConstants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
+            writer.Write(Description, Constants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
             writer.Write(LastChangedTimeStamp);
             writer.Write(LastChangedByUserID);
             writer.Write(NumberAccesses);
@@ -1165,18 +1165,18 @@ $"StreamingDataRate:{StreamingDataRate}";
     {
 
 
-        public byte[] GenericChatFilterBitfield = new byte[MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN];
+        public byte[] GenericChatFilterBitfield = new byte[Constants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN];
 
         public void Deserialize(BinaryReader reader)
         {
             // 
-            GenericChatFilterBitfield = reader.ReadBytes(MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
+            GenericChatFilterBitfield = reader.ReadBytes(Constants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
         }
 
         public void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(GenericChatFilterBitfield, MediusConstants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
+            writer.Write(GenericChatFilterBitfield, Constants.MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN);
         }
 
 

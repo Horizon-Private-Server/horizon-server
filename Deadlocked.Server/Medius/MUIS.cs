@@ -5,7 +5,7 @@ using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using Medius.Crypto;
+using RT.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -23,11 +23,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             SearchType = reader.Read<MediusPlayerSearchType>();
             ID = reader.ReadInt32();
-            Name = reader.ReadString(MediusConstants.PLAYERNAME_MAXLEN);
+            Name = reader.ReadString(Constants.PLAYERNAME_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -36,11 +36,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
             writer.Write(SearchType);
             writer.Write(ID);
-            writer.Write(Name, MediusConstants.PLAYERNAME_MAXLEN);
+            writer.Write(Name, Constants.PLAYERNAME_MAXLEN);
         }
 
 

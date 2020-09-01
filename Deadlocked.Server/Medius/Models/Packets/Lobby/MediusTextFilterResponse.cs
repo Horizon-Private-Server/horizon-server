@@ -20,7 +20,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            Text = reader.ReadString(MediusConstants.CHATMESSAGE_MAXLEN);
+            Text = reader.ReadString(Constants.CHATMESSAGE_MAXLEN);
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
         }
@@ -31,7 +31,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(Text, MediusConstants.CHATMESSAGE_MAXLEN);
+            writer.Write(Text, Constants.CHATMESSAGE_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
         }

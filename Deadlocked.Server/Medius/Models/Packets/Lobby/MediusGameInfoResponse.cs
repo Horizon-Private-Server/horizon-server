@@ -18,7 +18,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public int GameLevel;
         public int PlayerSkillLevel;
         public int PlayerCount;
-        public byte[] GameStats = new byte[MediusConstants.GAMESTATS_MAXLEN];
+        public byte[] GameStats = new byte[Constants.GAMESTATS_MAXLEN];
         public string GameName; // GAMENAME_MAXLEN
         public int RulesSet;
         public int GenericField1;
@@ -46,8 +46,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             GameLevel = reader.ReadInt32();
             PlayerSkillLevel = reader.ReadInt32();
             PlayerCount = reader.ReadInt32();
-            GameStats = reader.ReadBytes(MediusConstants.GAMESTATS_MAXLEN);
-            GameName = reader.ReadString(MediusConstants.GAMENAME_MAXLEN);
+            GameStats = reader.ReadBytes(Constants.GAMESTATS_MAXLEN);
+            GameName = reader.ReadString(Constants.GAMENAME_MAXLEN);
             RulesSet = reader.ReadInt32();
             GenericField1 = reader.ReadInt32();
             GenericField2 = reader.ReadInt32();
@@ -75,8 +75,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(GameLevel);
             writer.Write(PlayerSkillLevel);
             writer.Write(PlayerCount);
-            writer.Write(GameStats, MediusConstants.GAMESTATS_MAXLEN);
-            writer.Write(GameName, MediusConstants.GAMENAME_MAXLEN);
+            writer.Write(GameStats, Constants.GAMESTATS_MAXLEN);
+            writer.Write(GameName, Constants.GAMENAME_MAXLEN);
             writer.Write(RulesSet);
             writer.Write(GenericField1);
             writer.Write(GenericField2);

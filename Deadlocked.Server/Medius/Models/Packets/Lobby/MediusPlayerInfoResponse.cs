@@ -16,7 +16,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public int ApplicationID;
         public MediusPlayerStatus PlayerStatus;
         public MediusConnectionType ConnectionClass;
-        public byte[] Stats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+        public byte[] Stats = new byte[Constants.ACCOUNTSTATS_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -26,11 +26,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             // 
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
-            AccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
+            AccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
             ApplicationID = reader.ReadInt32();
             PlayerStatus = reader.Read<MediusPlayerStatus>();
             ConnectionClass = reader.Read<MediusConnectionType>();
-            Stats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            Stats = reader.ReadBytes(Constants.ACCOUNTSTATS_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -41,11 +41,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
-            writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
+            writer.Write(AccountName, Constants.ACCOUNTNAME_MAXLEN);
             writer.Write(ApplicationID);
             writer.Write(PlayerStatus);
             writer.Write(ConnectionClass);
-            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
+            writer.Write(Stats, Constants.ACCOUNTSTATS_MAXLEN);
         }
 
 

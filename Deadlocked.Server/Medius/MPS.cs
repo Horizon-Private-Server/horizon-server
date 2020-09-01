@@ -7,7 +7,7 @@ using Deadlocked.Server.SCERT.Models.Packets;
 using Deadlocked.Server.Stream;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using Medius.Crypto;
+using RT.Cryptography;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -186,7 +186,7 @@ namespace Deadlocked.Server.Medius
                                 ServerKey = joinGameResponse.pubKey,
                                 AddressList = new NetAddressList()
                                 {
-                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                    AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
                                         new NetAddress() { Address = (data.ClientObject as DMEObject).IP.MapToIPv4().ToString(), Port = (uint)(data.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                         new NetAddress() { AddressType = NetAddressType.NetAddressNone},

@@ -1,0 +1,45 @@
+﻿using RT.Common;
+using Server.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+namespace RT.Models
+{
+    public class RSA_KEY : IStreamSerializer
+    {
+        // 
+        public uint[] key = new uint[Constants.RSA_SIZE_DWORD];
+
+        public RSA_KEY()
+        { }
+
+        public RSA_KEY(byte[] keyBytes)
+        {
+            for (int i = 0; i < key.Length; ++i)
+            {
+                key[i] = (uint)((keyBytes[i + 3] << 24) | (keyBytes[i + 2] << 16) | (keyBytes[i + 1] << 8) | (keyBytes[i + 0]));
+            }
+        }
+
+        public void Deserialize(BinaryReader reader)
+        {
+            key = new uint[Constants.RSA_SIZE_DWORD];
+            for (int i = 0; i < Constants.RSA_SIZE_DWORD; ++i)
+                key[i] = reader.ReadUInt32();
+        }
+
+        public void Serialize(BinaryWriter writer)
+        {
+            for (int i = 0; i < key.Length; ++i)
+                writer.Write(i >= key.Length ? 0 : key[i]);
+        }
+
+        public override string ToString()
+        {
+            return string.Join("", key?.Select(x => x.ToString("X8")));
+        }
+    }
+}

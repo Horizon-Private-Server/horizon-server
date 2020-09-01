@@ -86,8 +86,8 @@ $"PacketBufferOffset:{PacketBufferOffset}";
             while (i < length)
             {
                 ushort subPacketSize = (ushort)(length - i);
-                if (subPacketSize > MediusConstants.DME_FRAGMENT_MAX_PAYLOAD_SIZE)
-                    subPacketSize = MediusConstants.DME_FRAGMENT_MAX_PAYLOAD_SIZE;
+                if (subPacketSize > Constants.DME_FRAGMENT_MAX_PAYLOAD_SIZE)
+                    subPacketSize = Constants.DME_FRAGMENT_MAX_PAYLOAD_SIZE;
 
                 var frag = new DMETypePacketFragment()
                 {

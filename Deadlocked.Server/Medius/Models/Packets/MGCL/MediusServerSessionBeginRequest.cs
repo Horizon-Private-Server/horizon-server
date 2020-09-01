@@ -28,7 +28,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             LocationID = reader.ReadInt32();
             ApplicationID = reader.ReadInt32();
             ServerType = reader.Read<MGCL_GAME_HOST_TYPE>();
-            ServerVersion = reader.ReadString(MediusConstants.MGCL_SERVERVERSION_MAXLEN);
+            ServerVersion = reader.ReadString(Constants.MGCL_SERVERVERSION_MAXLEN);
             Port = reader.ReadInt32();
         }
 
@@ -42,7 +42,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             writer.Write(LocationID);
             writer.Write(ApplicationID);
             writer.Write(ServerType);
-            writer.Write(ServerVersion, MediusConstants.MGCL_SERVERVERSION_MAXLEN);
+            writer.Write(ServerVersion, Constants.MGCL_SERVERVERSION_MAXLEN);
             writer.Write(Port);
         }
 

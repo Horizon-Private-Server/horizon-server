@@ -24,7 +24,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 
             // 
             Confirmation = reader.Read<MGCL_ERROR_CODE>();
-            AccessKey = reader.ReadString(MediusConstants.MGCL_ACCESSKEY_MAXLEN);
+            AccessKey = reader.ReadString(Constants.MGCL_ACCESSKEY_MAXLEN);
             reader.ReadBytes(1);
             pubKey = reader.Read<RSA_KEY>();
             DmeClientIndex = reader.ReadInt32();
@@ -37,7 +37,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 
             // 
             writer.Write(Confirmation);
-            writer.Write(AccessKey, MediusConstants.MGCL_ACCESSKEY_MAXLEN);
+            writer.Write(AccessKey, Constants.MGCL_ACCESSKEY_MAXLEN);
             writer.Write(new byte[1]);
             writer.Write(pubKey);
             writer.Write(DmeClientIndex);

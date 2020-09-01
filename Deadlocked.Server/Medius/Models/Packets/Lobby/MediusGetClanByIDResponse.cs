@@ -28,10 +28,10 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             ApplicationID = reader.ReadInt32();
-            ClanName = reader.ReadString(MediusConstants.CLANNAME_MAXLEN);
+            ClanName = reader.ReadString(Constants.CLANNAME_MAXLEN);
             LeaderAccountID = reader.ReadInt32();
-            LeaderAccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
-            Stats = reader.ReadString(MediusConstants.CLANSTATS_MAXLEN);
+            LeaderAccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
+            Stats = reader.ReadString(Constants.CLANSTATS_MAXLEN);
             Status = reader.Read<MediusClanStatus>();
         }
 
@@ -44,10 +44,10 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(ApplicationID);
-            writer.Write(ClanName, MediusConstants.CLANNAME_MAXLEN);
+            writer.Write(ClanName, Constants.CLANNAME_MAXLEN);
             writer.Write(LeaderAccountID);
-            writer.Write(LeaderAccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(Stats, MediusConstants.CLANSTATS_MAXLEN);
+            writer.Write(LeaderAccountName, Constants.ACCOUNTNAME_MAXLEN);
+            writer.Write(Stats, Constants.CLANSTATS_MAXLEN);
             writer.Write(Status);
         }
 

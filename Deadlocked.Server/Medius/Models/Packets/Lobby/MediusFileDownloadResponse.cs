@@ -12,7 +12,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.FileDownloadResponse;
 
-        public byte[] Data = new byte[MediusConstants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE];
+        public byte[] Data = new byte[Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE];
         public int iStartByteIndex;
         public int iDataSize;
         public int iPacketNumber;
@@ -22,7 +22,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public override void Deserialize(BinaryReader reader)
         {
             // 
-            Data = reader.ReadBytes(MediusConstants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE);
+            Data = reader.ReadBytes(Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE);
             iStartByteIndex = reader.ReadInt32();
             iDataSize = reader.ReadInt32();
             iPacketNumber = reader.ReadInt32();
@@ -37,7 +37,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public override void Serialize(BinaryWriter writer)
         {
             // 
-            writer.Write(Data, MediusConstants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE);
+            writer.Write(Data, Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE);
             writer.Write(iStartByteIndex);
             writer.Write(iDataSize);
             writer.Write(iPacketNumber);

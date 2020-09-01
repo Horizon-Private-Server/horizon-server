@@ -39,15 +39,15 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             ApplicationID = reader.ReadInt32();
             MinPlayers = reader.ReadInt32();
             MaxPlayers = reader.ReadInt32();
             GameLevel = reader.ReadInt32();
-            GameName = reader.ReadString(MediusConstants.GAMENAME_MAXLEN);
-            GamePassword = reader.ReadString(MediusConstants.GAMEPASSWORD_MAXLEN);
-            SpectatorPassword = reader.ReadString(MediusConstants.GAMEPASSWORD_MAXLEN);
+            GameName = reader.ReadString(Constants.GAMENAME_MAXLEN);
+            GamePassword = reader.ReadString(Constants.GAMEPASSWORD_MAXLEN);
+            SpectatorPassword = reader.ReadString(Constants.GAMEPASSWORD_MAXLEN);
             PlayerSkillLevel = reader.ReadInt32();
             RulesSet = reader.ReadInt32();
             GenericField1 = reader.ReadInt32();
@@ -68,15 +68,15 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
             writer.Write(ApplicationID);
             writer.Write(MinPlayers);
             writer.Write(MaxPlayers);
             writer.Write(GameLevel);
-            writer.Write(GameName, MediusConstants.GAMENAME_MAXLEN);
-            writer.Write(GamePassword, MediusConstants.GAMEPASSWORD_MAXLEN);
-            writer.Write(SpectatorPassword, MediusConstants.GAMEPASSWORD_MAXLEN);
+            writer.Write(GameName, Constants.GAMENAME_MAXLEN);
+            writer.Write(GamePassword, Constants.GAMEPASSWORD_MAXLEN);
+            writer.Write(SpectatorPassword, Constants.GAMEPASSWORD_MAXLEN);
             writer.Write(PlayerSkillLevel);
             writer.Write(RulesSet);
             writer.Write(GenericField1);

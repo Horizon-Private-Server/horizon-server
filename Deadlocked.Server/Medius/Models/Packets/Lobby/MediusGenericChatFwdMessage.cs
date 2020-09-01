@@ -28,8 +28,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             TimeStamp = reader.ReadUInt32();
             OriginatorAccountID = reader.ReadInt32();
             MessageType = reader.Read<MediusChatMessageType>();
-            OriginatorAccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
-            Message = reader.ReadString(MediusConstants.CHATMESSAGE_MAXLEN);
+            OriginatorAccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
+            Message = reader.ReadString(Constants.CHATMESSAGE_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -41,8 +41,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(TimeStamp);
             writer.Write(OriginatorAccountID);
             writer.Write(MessageType);
-            writer.Write(OriginatorAccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(Message, MediusConstants.CHATMESSAGE_MAXLEN);
+            writer.Write(OriginatorAccountName, Constants.ACCOUNTNAME_MAXLEN);
+            writer.Write(Message, Constants.CHATMESSAGE_MAXLEN);
         }
 
 

@@ -29,12 +29,12 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             ApplicationID = reader.ReadInt32();
             MaxPlayers = reader.ReadInt32();
-            LobbyName = reader.ReadString(MediusConstants.LOBBYNAME_MAXLEN);
-            LobbyPassword = reader.ReadString(MediusConstants.LOBBYPASSWORD_MAXLEN);
+            LobbyName = reader.ReadString(Constants.LOBBYNAME_MAXLEN);
+            LobbyPassword = reader.ReadString(Constants.LOBBYPASSWORD_MAXLEN);
             GenericField1 = reader.ReadUInt32();
             GenericField2 = reader.ReadUInt32();
             GenericField3 = reader.ReadUInt32();
@@ -48,12 +48,12 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
             writer.Write(ApplicationID);
             writer.Write(MaxPlayers);
-            writer.Write(LobbyName, MediusConstants.LOBBYNAME_MAXLEN);
-            writer.Write(LobbyPassword, MediusConstants.LOBBYPASSWORD_MAXLEN);
+            writer.Write(LobbyName, Constants.LOBBYNAME_MAXLEN);
+            writer.Write(LobbyPassword, Constants.LOBBYPASSWORD_MAXLEN);
             writer.Write(GenericField1);
             writer.Write(GenericField2);
             writer.Write(GenericField3);

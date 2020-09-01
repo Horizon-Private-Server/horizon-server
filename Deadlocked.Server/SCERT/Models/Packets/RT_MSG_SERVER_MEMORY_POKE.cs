@@ -46,8 +46,8 @@ namespace Deadlocked.Server.SCERT.Models.Packets
             while (i < payload.Length)
             {
                 int len = (payload.Length - i);
-                if (len > MediusConstants.MEDIUS_MESSAGE_MAXLEN)
-                    len = MediusConstants.MEDIUS_MESSAGE_MAXLEN;
+                if (len > Constants.MEDIUS_MESSAGE_MAXLEN)
+                    len = Constants.MEDIUS_MESSAGE_MAXLEN;
 
                 // 
                 var msg = new RT_MSG_SERVER_MEMORY_POKE()

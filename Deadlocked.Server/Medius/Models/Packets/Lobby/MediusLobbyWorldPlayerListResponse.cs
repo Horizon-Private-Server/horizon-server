@@ -29,8 +29,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             StatusCode = reader.Read<MediusCallbackStatus>();
             PlayerStatus = reader.Read<MediusPlayerStatus>();
             AccountID = reader.ReadInt32();
-            AccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
-            Stats = reader.ReadString(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            AccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
+            Stats = reader.ReadString(Constants.ACCOUNTSTATS_MAXLEN);
             ConnectionClass = reader.Read<MediusConnectionType>();
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
@@ -46,8 +46,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(StatusCode);
             writer.Write(PlayerStatus);
             writer.Write(AccountID);
-            writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(Stats, MediusConstants.ACCOUNTSTATS_MAXLEN);
+            writer.Write(AccountName, Constants.ACCOUNTNAME_MAXLEN);
+            writer.Write(Stats, Constants.ACCOUNTSTATS_MAXLEN);
             writer.Write(ConnectionClass);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);

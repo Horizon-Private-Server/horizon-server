@@ -13,7 +13,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerCreateGameOnMeRequest;
 
         public string GameName; // MGCL_GAMENAME_MAXLEN
-        public byte[] GameStats = new byte[MediusConstants.MGCL_GAMESTATS_MAXLEN];
+        public byte[] GameStats = new byte[Constants.MGCL_GAMESTATS_MAXLEN];
         public string GamePassword; // MGCL_GAMEPASSWORD_MAXLEN
         public int ApplicationID;
         public int MaxClients;
@@ -40,9 +40,9 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             base.Deserialize(reader);
 
             // 
-            GameName = reader.ReadString(MediusConstants.MGCL_GAMENAME_MAXLEN);
-            GameStats = reader.ReadBytes(MediusConstants.MGCL_GAMESTATS_MAXLEN);
-            GamePassword = reader.ReadString(MediusConstants.MGCL_GAMEPASSWORD_MAXLEN);
+            GameName = reader.ReadString(Constants.MGCL_GAMENAME_MAXLEN);
+            GameStats = reader.ReadBytes(Constants.MGCL_GAMESTATS_MAXLEN);
+            GamePassword = reader.ReadString(Constants.MGCL_GAMEPASSWORD_MAXLEN);
             reader.ReadBytes(3);
             ApplicationID = reader.ReadInt32();
             MaxClients = reader.ReadInt32();
@@ -71,9 +71,9 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             base.Serialize(writer);
 
             // 
-            writer.Write(GameName, MediusConstants.MGCL_GAMENAME_MAXLEN);
-            writer.Write(GameStats, MediusConstants.MGCL_GAMESTATS_MAXLEN);
-            writer.Write(GamePassword, MediusConstants.MGCL_GAMEPASSWORD_MAXLEN);
+            writer.Write(GameName, Constants.MGCL_GAMENAME_MAXLEN);
+            writer.Write(GameStats, Constants.MGCL_GAMESTATS_MAXLEN);
+            writer.Write(GamePassword, Constants.MGCL_GAMEPASSWORD_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(ApplicationID);
             writer.Write(MaxClients);

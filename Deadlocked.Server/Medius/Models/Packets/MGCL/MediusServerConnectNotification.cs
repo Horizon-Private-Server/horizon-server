@@ -24,7 +24,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             // 
             ConnectEventType = reader.Read<MGCL_EVENT_TYPE>();
             MediusWorldUID = reader.ReadUInt32();
-            PlayerSessionKey = reader.ReadString(MediusConstants.MGCL_SESSIONKEY_MAXLEN);
+            PlayerSessionKey = reader.ReadString(Constants.MGCL_SESSIONKEY_MAXLEN);
             reader.ReadBytes(3);
         }
 
@@ -36,7 +36,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             // 
             writer.Write(ConnectEventType);
             writer.Write(MediusWorldUID);
-            writer.Write(PlayerSessionKey, MediusConstants.MGCL_SESSIONKEY_MAXLEN);
+            writer.Write(PlayerSessionKey, Constants.MGCL_SESSIONKEY_MAXLEN);
             writer.Write(new byte[3]);
         }
 

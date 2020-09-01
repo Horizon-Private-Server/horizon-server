@@ -32,7 +32,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public MediusWorldStatus WorldStatus;
         public MediusGameHostType GameHostType;
         public string GameName; // GAMENAME_MAXLEN
-        public byte[] GameStats = new byte[MediusConstants.GAMESTATS_MAXLEN];
+        public byte[] GameStats = new byte[Constants.GAMESTATS_MAXLEN];
         public bool EndOfList;
 
         public override void Deserialize(BinaryReader reader)
@@ -62,8 +62,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             SecurityLevel = reader.Read<MediusWorldSecurityLevelType>();
             WorldStatus = reader.Read<MediusWorldStatus>();
             GameHostType = reader.Read<MediusGameHostType>();
-            GameName = reader.ReadString(MediusConstants.GAMENAME_MAXLEN);
-            GameStats = reader.ReadBytes(MediusConstants.GAMESTATS_MAXLEN);
+            GameName = reader.ReadString(Constants.GAMENAME_MAXLEN);
+            GameStats = reader.ReadBytes(Constants.GAMESTATS_MAXLEN);
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -95,8 +95,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(SecurityLevel);
             writer.Write(WorldStatus);
             writer.Write(GameHostType);
-            writer.Write(GameName, MediusConstants.GAMENAME_MAXLEN);
-            writer.Write(GameStats, MediusConstants.GAMESTATS_MAXLEN);
+            writer.Write(GameName, Constants.GAMENAME_MAXLEN);
+            writer.Write(GameStats, Constants.GAMESTATS_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }

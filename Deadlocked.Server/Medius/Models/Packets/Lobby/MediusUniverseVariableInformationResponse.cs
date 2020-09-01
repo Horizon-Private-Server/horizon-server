@@ -40,18 +40,18 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
                 UniverseID = reader.ReadUInt32();
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_NAME))
-                UniverseName = reader.ReadString(MediusConstants.UNIVERSENAME_MAXLEN);
+                UniverseName = reader.ReadString(Constants.UNIVERSENAME_MAXLEN);
 
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DNS))
             {
-                DNS = reader.ReadString(MediusConstants.UNIVERSEDNS_MAXLEN);
+                DNS = reader.ReadString(Constants.UNIVERSEDNS_MAXLEN);
                 Port = reader.ReadInt32();
             }
 
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DESCRIPTION))
-                UniverseDescription = reader.ReadString(MediusConstants.UNIVERSEDESCRIPTION_MAXLEN);
+                UniverseDescription = reader.ReadString(Constants.UNIVERSEDESCRIPTION_MAXLEN);
 
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_STATUS))
@@ -63,15 +63,15 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_BILLING))
             {
-                UniverseBilling = reader.ReadString(MediusConstants.UNIVERSE_BSP_MAXLEN);
-                BillingSystemName = reader.ReadString(MediusConstants.UNIVERSE_BSP_NAME_MAXLEN);
+                UniverseBilling = reader.ReadString(Constants.UNIVERSE_BSP_MAXLEN);
+                BillingSystemName = reader.ReadString(Constants.UNIVERSE_BSP_NAME_MAXLEN);
             }
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_EXTRAINFO))
-                ExtendedInfo = reader.ReadString(MediusConstants.UNIVERSE_EXTENDED_INFO_MAXLEN);
+                ExtendedInfo = reader.ReadString(Constants.UNIVERSE_EXTENDED_INFO_MAXLEN);
 
             //if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
-            //    SvoURL = reader.ReadString(MediusConstants.UNIVERSE_SVO_URL_MAXLEN);
+            //    SvoURL = reader.ReadString(Constants.UNIVERSE_SVO_URL_MAXLEN);
 
             EndOfList = reader.ReadBoolean();
         }
@@ -89,16 +89,16 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
                 writer.Write(UniverseID);
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_NAME))
-                writer.Write(UniverseName, MediusConstants.UNIVERSENAME_MAXLEN);
+                writer.Write(UniverseName, Constants.UNIVERSENAME_MAXLEN);
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DNS))
             {
-                writer.Write(DNS, MediusConstants.UNIVERSEDNS_MAXLEN);
+                writer.Write(DNS, Constants.UNIVERSEDNS_MAXLEN);
                 writer.Write(Port);
             }
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DESCRIPTION))
-                writer.Write(UniverseDescription, MediusConstants.UNIVERSEDESCRIPTION_MAXLEN);
+                writer.Write(UniverseDescription, Constants.UNIVERSEDESCRIPTION_MAXLEN);
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_STATUS))
             {
@@ -109,15 +109,15 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_BILLING))
             {
-                writer.Write(UniverseBilling, MediusConstants.UNIVERSE_BSP_MAXLEN);
-                writer.Write(BillingSystemName, MediusConstants.UNIVERSE_BSP_NAME_MAXLEN);
+                writer.Write(UniverseBilling, Constants.UNIVERSE_BSP_MAXLEN);
+                writer.Write(BillingSystemName, Constants.UNIVERSE_BSP_NAME_MAXLEN);
             }
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_EXTRAINFO))
-                writer.Write(ExtendedInfo, MediusConstants.UNIVERSE_EXTENDED_INFO_MAXLEN);
+                writer.Write(ExtendedInfo, Constants.UNIVERSE_EXTENDED_INFO_MAXLEN);
 
             //if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
-            //    writer.Write(SvoURL, MediusConstants.UNIVERSE_SVO_URL_MAXLEN);
+            //    writer.Write(SvoURL, Constants.UNIVERSE_SVO_URL_MAXLEN);
 
 
             writer.Write(EndOfList);

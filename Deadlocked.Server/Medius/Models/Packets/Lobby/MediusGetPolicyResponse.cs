@@ -23,7 +23,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             // 
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
-            Policy = reader.ReadString(MediusConstants.POLICY_MAXLEN);
+            Policy = reader.ReadString(Constants.POLICY_MAXLEN);
             EndOfText = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -36,7 +36,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
-            writer.Write(Policy, MediusConstants.POLICY_MAXLEN);
+            writer.Write(Policy, Constants.POLICY_MAXLEN);
             writer.Write(EndOfText);
             writer.Write(new byte[3]);
         }
@@ -59,8 +59,8 @@ $"EndOfText:{EndOfText}";
             {
                 // Determine length of string
                 int len = policy.Length - i;
-                if (len > MediusConstants.POLICY_MAXLEN)
-                    len = MediusConstants.POLICY_MAXLEN;
+                if (len > Constants.POLICY_MAXLEN)
+                    len = Constants.POLICY_MAXLEN;
 
                 // Add policy subtext
                 policies.Add(new MediusGetPolicyResponse()

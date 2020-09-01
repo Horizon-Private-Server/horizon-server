@@ -25,7 +25,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.MGCL_SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.MGCL_SESSIONKEY_MAXLEN);
             reader.ReadBytes(1);
             MaxWorlds = reader.ReadInt16();
             MaxPlayersPerWorld = reader.ReadInt16();
@@ -41,7 +41,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.MGCL_SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.MGCL_SESSIONKEY_MAXLEN);
             writer.Write(new byte[1]);
             writer.Write(MaxWorlds);
             writer.Write(MaxPlayersPerWorld);

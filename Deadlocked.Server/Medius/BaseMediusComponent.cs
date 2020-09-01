@@ -8,7 +8,7 @@ using DotNetty.Handlers.Logging;
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
-using Medius.Crypto;
+using RT.Cryptography;
 using Microsoft.Extensions.Logging.Console;
 using System;
 using System.Collections.Concurrent;
@@ -141,7 +141,7 @@ namespace Deadlocked.Server.Medius
                         pipeline.AddLast(new ByteArrayEncoder());
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
-                        pipeline.AddLast(new ScertLengthFieldBasedFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, MediusConstants.MEDIUS_MESSAGE_MAXLEN, 1, 2, 0, 0, false));
+                        pipeline.AddLast(new ScertLengthFieldBasedFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, Constants.MEDIUS_MESSAGE_MAXLEN, 1, 2, 0, 0, false));
                         pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
                         pipeline.AddLast(_scertHandler);
                     }));

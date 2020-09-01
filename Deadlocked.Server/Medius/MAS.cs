@@ -8,7 +8,7 @@ using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using Medius.Crypto;
+using RT.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -137,7 +137,7 @@ namespace Deadlocked.Server.Medius
                                 ServerKey = Program.GlobalAuthPublic,
                                 AddressList = new NetAddressList()
                                 {
-                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                    AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                         {
                                             new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                             new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
@@ -174,7 +174,7 @@ namespace Deadlocked.Server.Medius
                                 ServerKey = Program.GlobalAuthPublic,
                                 AddressList = new NetAddressList()
                                 {
-                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                    AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
@@ -291,7 +291,7 @@ namespace Deadlocked.Server.Medius
                             AccountName = accountRegRequest.AccountName,
                             AccountPassword = Utils.ComputeSHA256(accountRegRequest.Password),
                             MachineId = null,
-                            MediusStats = Convert.ToBase64String(new byte[MediusConstants.ACCOUNTSTATS_MAXLEN]),
+                            MediusStats = Convert.ToBase64String(new byte[Constants.ACCOUNTSTATS_MAXLEN]),
                             AppId = data.ClientObject.ApplicationId
                         }).ContinueWith((r) =>
                         {
@@ -402,7 +402,7 @@ namespace Deadlocked.Server.Medius
                                 ServerKey = Program.GlobalAuthPublic,
                                 AddressList = new NetAddressList()
                                 {
-                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                    AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
@@ -486,7 +486,7 @@ namespace Deadlocked.Server.Medius
                                                 ServerKey = Program.GlobalAuthPublic,
                                                 AddressList = new NetAddressList()
                                                 {
-                                                    AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                                    AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                                     {
                                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},

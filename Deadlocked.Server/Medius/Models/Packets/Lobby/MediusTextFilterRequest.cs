@@ -21,10 +21,10 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             TextFilterType = reader.Read<MediusTextFilterType>();
-            Text = reader.ReadString(MediusConstants.CHATMESSAGE_MAXLEN);
+            Text = reader.ReadString(Constants.CHATMESSAGE_MAXLEN);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -33,10 +33,10 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
             writer.Write(TextFilterType);
-            writer.Write(Text, MediusConstants.CHATMESSAGE_MAXLEN);
+            writer.Write(Text, Constants.CHATMESSAGE_MAXLEN);
         }
 
 

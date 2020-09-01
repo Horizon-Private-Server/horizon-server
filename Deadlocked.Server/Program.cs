@@ -4,7 +4,7 @@ using Deadlocked.Server.Medius.Models;
 using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Mods;
 using DotNetty.Common.Internal.Logging;
-using Medius.Crypto;
+using RT.Cryptography;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;

@@ -32,7 +32,7 @@ namespace Deadlocked.Server.Medius.Models
         public string GameName;
         public string GamePassword;
         public string SpectatorPassword;
-        public byte[] GameStats = new byte[MediusConstants.GAMESTATS_MAXLEN];
+        public byte[] GameStats = new byte[Constants.GAMESTATS_MAXLEN];
         public MediusGameHostType GameHostType;
         public int MinPlayers;
         public int MaxPlayers;

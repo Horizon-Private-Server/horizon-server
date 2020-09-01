@@ -16,7 +16,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public int LadderStat;
         public int AccountID;
         public string AccountName; // ACCOUNTNAME_MAXLEN
-        public byte[] AccountStats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+        public byte[] AccountStats = new byte[Constants.ACCOUNTSTATS_MAXLEN];
         public MediusPlayerOnlineState OnlineState;
         public bool EndOfList;
 
@@ -31,8 +31,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             LadderPosition = reader.ReadUInt32();
             LadderStat = reader.ReadInt32();
             AccountID = reader.ReadInt32();
-            AccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
-            AccountStats = reader.ReadBytes(MediusConstants.ACCOUNTSTATS_MAXLEN);
+            AccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
+            AccountStats = reader.ReadBytes(Constants.ACCOUNTSTATS_MAXLEN);
             OnlineState = reader.Read<MediusPlayerOnlineState>();
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
@@ -49,8 +49,8 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(LadderPosition);
             writer.Write(LadderStat);
             writer.Write(AccountID);
-            writer.Write(AccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
-            writer.Write(AccountStats, MediusConstants.ACCOUNTSTATS_MAXLEN);
+            writer.Write(AccountName, Constants.ACCOUNTNAME_MAXLEN);
+            writer.Write(AccountStats, Constants.ACCOUNTSTATS_MAXLEN);
             writer.Write(OnlineState);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);

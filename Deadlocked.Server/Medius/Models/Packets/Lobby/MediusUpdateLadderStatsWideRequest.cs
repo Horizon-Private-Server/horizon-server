@@ -12,7 +12,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.UpdateLadderStatsWide;
 
         public MediusLadderType LadderType;
-        public int[] Stats = new int[MediusConstants.LADDERSTATSWIDE_MAXLEN];
+        public int[] Stats = new int[Constants.LADDERSTATSWIDE_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -22,7 +22,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             //
             reader.ReadBytes(3);
             LadderType = reader.Read<MediusLadderType>();
-            for (int i = 0; i < MediusConstants.LADDERSTATSWIDE_MAXLEN; ++i) { Stats[i] = reader.ReadInt32(); }
+            for (int i = 0; i < Constants.LADDERSTATSWIDE_MAXLEN; ++i) { Stats[i] = reader.ReadInt32(); }
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -33,7 +33,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             // 
             writer.Write(new byte[3]);
             writer.Write(LadderType);
-            for (int i = 0; i < MediusConstants.LADDERSTATSWIDE_MAXLEN; ++i) { writer.Write(i >= Stats.Length ? 0 : Stats[i]); }
+            for (int i = 0; i < Constants.LADDERSTATSWIDE_MAXLEN; ++i) { writer.Write(i >= Stats.Length ? 0 : Stats[i]); }
         }
 
 

@@ -15,7 +15,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
         public string SessionKey; // SESSIONKEY_MAXLEN
         public MediusDnasCategory DnasSignatureType;
         public byte DnasSignatureLength;
-        public byte[] DnasSignature = new byte[MediusConstants.DNASSIGNATURE_MAXLEN];
+        public byte[] DnasSignature = new byte[Constants.DNASSIGNATURE_MAXLEN];
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -23,11 +23,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
             DnasSignatureType = reader.Read<MediusDnasCategory>();
             DnasSignatureLength = reader.ReadByte();
-            DnasSignature = reader.ReadBytes(MediusConstants.DNASSIGNATURE_MAXLEN);
+            DnasSignature = reader.ReadBytes(Constants.DNASSIGNATURE_MAXLEN);
             reader.ReadBytes(3);
         }
 
@@ -37,11 +37,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[2]);
             writer.Write(DnasSignatureType);
             writer.Write(DnasSignatureLength);
-            writer.Write(DnasSignature, MediusConstants.DNASSIGNATURE_MAXLEN);
+            writer.Write(DnasSignature, Constants.DNASSIGNATURE_MAXLEN);
             writer.Write(new byte[3]);
         }
 

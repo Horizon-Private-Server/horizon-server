@@ -20,7 +20,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
             base.Deserialize(reader);
 
             // 
-            Version = reader.ReadString(MediusConstants.DME_VERSION_LENGTH);
+            Version = reader.ReadString(Constants.DME_VERSION_LENGTH);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -29,7 +29,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.DME
             base.Serialize(writer);
 
             // 
-            writer.Write(Version, MediusConstants.DME_VERSION_LENGTH);
+            writer.Write(Version, Constants.DME_VERSION_LENGTH);
         }
 
 

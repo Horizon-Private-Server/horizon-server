@@ -6,7 +6,7 @@ using Deadlocked.Server.Medius.Models.Packets.Lobby;
 using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using Medius.Crypto;
+using RT.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -774,7 +774,7 @@ namespace Deadlocked.Server.Medius
                                 var responses = new List<MediusLadderList_ExtraInfoResponse>(r.Result.Length);
                                 foreach (var ladderEntry in r.Result)
                                 {
-                                    byte[] mediusStats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+                                    byte[] mediusStats = new byte[Constants.ACCOUNTSTATS_MAXLEN];
                                     try { var dbAccStats = Convert.FromBase64String(ladderEntry.MediusStats ?? ""); mediusStats = dbAccStats; } catch (Exception) { }
                                     responses.Add(new MediusLadderList_ExtraInfoResponse()
                                     {
@@ -988,7 +988,7 @@ namespace Deadlocked.Server.Medius
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                byte[] mediusStats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+                                byte[] mediusStats = new byte[Constants.ACCOUNTSTATS_MAXLEN];
                                 try { var dbAccStats = Convert.FromBase64String(r.Result.MediusStats ?? ""); mediusStats = dbAccStats; } catch (Exception) { }
                                 var playerClientObject = Program.Manager.GetClientByAccountId(r.Result.AccountId);
                                 data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
@@ -1644,7 +1644,7 @@ namespace Deadlocked.Server.Medius
                                     ServerKey = Program.GlobalAuthPublic,
                                     AddressList = new NetAddressList()
                                     {
-                                        AddressList = new NetAddress[MediusConstants.NET_ADDRESS_LIST_COUNT]
+                                        AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                         {
                                             new NetAddress() { Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                             new NetAddress() { AddressType = NetAddressType.NetAddressNone},

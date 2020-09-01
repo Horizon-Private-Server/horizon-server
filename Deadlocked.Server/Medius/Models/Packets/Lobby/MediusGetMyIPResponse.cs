@@ -21,7 +21,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            IP = IPAddress.Parse(reader.ReadString(MediusConstants.IP_MAXLEN));
+            IP = IPAddress.Parse(reader.ReadString(Constants.IP_MAXLEN));
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
         }
@@ -32,7 +32,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(IP?.MapToIPv4()?.ToString(), MediusConstants.IP_MAXLEN);
+            writer.Write(IP?.MapToIPv4()?.ToString(), Constants.IP_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
         }

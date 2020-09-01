@@ -32,9 +32,9 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             ClanInvitationID = reader.ReadInt32();
             ClanID = reader.ReadInt32();
             ResponseStatus = reader.Read<MediusClanInvitationsResponseStatus>();
-            Message = reader.ReadString(MediusConstants.CLANMSG_MAXLEN);
+            Message = reader.ReadString(Constants.CLANMSG_MAXLEN);
             LeaderAccountID = reader.ReadInt32();
-            LeaderAccountName = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
+            LeaderAccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -50,9 +50,9 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(ClanInvitationID);
             writer.Write(ClanID);
             writer.Write(ResponseStatus);
-            writer.Write(Message, MediusConstants.CLANMSG_MAXLEN);
+            writer.Write(Message, Constants.CLANMSG_MAXLEN);
             writer.Write(LeaderAccountID);
-            writer.Write(LeaderAccountName, MediusConstants.ACCOUNTNAME_MAXLEN);
+            writer.Write(LeaderAccountName, Constants.ACCOUNTNAME_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }

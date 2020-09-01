@@ -22,7 +22,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             //
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(3);
         }
 
@@ -34,7 +34,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[3]);
         }
 

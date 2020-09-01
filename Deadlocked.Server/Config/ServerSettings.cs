@@ -2,7 +2,7 @@
 using Deadlocked.Server.Mods;
 using Deadlocked.Server.SCERT;
 using Deadlocked.Server.SCERT.Models.Packets;
-using Medius.Crypto;
+using RT.Cryptography;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Math;
 using System;

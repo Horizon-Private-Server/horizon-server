@@ -25,7 +25,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             AnnouncementID = reader.ReadInt32();
-            Announcement = reader.ReadString(MediusConstants.ANNOUNCEMENT_MAXLEN);
+            Announcement = reader.ReadString(Constants.ANNOUNCEMENT_MAXLEN);
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -39,7 +39,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(AnnouncementID);
-            writer.Write(Announcement, MediusConstants.ANNOUNCEMENT_MAXLEN);
+            writer.Write(Announcement, Constants.ANNOUNCEMENT_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }

@@ -27,7 +27,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             MediusWorldID = reader.ReadInt32();
-            LobbyName = reader.ReadString(MediusConstants.LOBBYNAME_MAXLEN);
+            LobbyName = reader.ReadString(Constants.LOBBYNAME_MAXLEN);
             PlayerCount = reader.ReadInt32();
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
@@ -42,7 +42,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(MediusWorldID);
-            writer.Write(LobbyName, MediusConstants.LOBBYNAME_MAXLEN);
+            writer.Write(LobbyName, Constants.LOBBYNAME_MAXLEN);
             writer.Write(PlayerCount);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);

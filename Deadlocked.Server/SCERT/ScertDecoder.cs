@@ -10,7 +10,7 @@ using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using Medius.Crypto;
+using RT.Cryptography;
 
 namespace Deadlocked.Server.SCERT
 {

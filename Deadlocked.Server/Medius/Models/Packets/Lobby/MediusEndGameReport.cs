@@ -25,11 +25,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Deserialize(reader);
 
             // 
-            SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(3);
             MediusWorldID = reader.ReadInt32();
-            WinningTeam = reader.ReadString(MediusConstants.WINNINGTEAM_MAXLEN);
-            WinningPlayer = reader.ReadString(MediusConstants.ACCOUNTNAME_MAXLEN);
+            WinningTeam = reader.ReadString(Constants.WINNINGTEAM_MAXLEN);
+            WinningPlayer = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
             FinalScore = reader.ReadInt32();
         }
 
@@ -39,11 +39,11 @@ namespace Deadlocked.Server.Medius.Models.Packets.Lobby
             base.Serialize(writer);
 
             // 
-            writer.Write(SessionKey, MediusConstants.SESSIONKEY_MAXLEN);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(MediusWorldID);
-            writer.Write(WinningTeam, MediusConstants.WINNINGTEAM_MAXLEN);
-            writer.Write(WinningPlayer, MediusConstants.ACCOUNTNAME_MAXLEN);
+            writer.Write(WinningTeam, Constants.WINNINGTEAM_MAXLEN);
+            writer.Write(WinningPlayer, Constants.ACCOUNTNAME_MAXLEN);
             writer.Write(FinalScore);
         }
 

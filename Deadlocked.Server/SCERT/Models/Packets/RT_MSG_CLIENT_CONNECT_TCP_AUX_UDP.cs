@@ -30,8 +30,8 @@ namespace Deadlocked.Server.SCERT.Models.Packets
 
             if (reader.BaseStream.Position < reader.BaseStream.Length)
             {
-                SessionKey = reader.ReadString(MediusConstants.SESSIONKEY_MAXLEN);
-                AccessToken = reader.ReadString(MediusConstants.NET_ACCESS_KEY_LEN);
+                SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
+                AccessToken = reader.ReadString(Constants.NET_ACCESS_KEY_LEN);
             }
         }
 

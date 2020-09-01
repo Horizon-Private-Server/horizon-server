@@ -23,7 +23,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             base.Deserialize(reader);
 
             // 
-            ServerIP = reader.ReadString(MediusConstants.MGCL_SERVERIP_MAXLEN);
+            ServerIP = reader.ReadString(Constants.MGCL_SERVERIP_MAXLEN);
             reader.ReadBytes(3);
             ServerPort = reader.ReadInt32();
             GameWorldID = reader.ReadInt32();
@@ -36,7 +36,7 @@ namespace Deadlocked.Server.Medius.Models.Packets.MGCL
             base.Serialize(writer);
 
             // 
-            writer.Write(ServerIP, MediusConstants.MGCL_SERVERIP_MAXLEN);
+            writer.Write(ServerIP, Constants.MGCL_SERVERIP_MAXLEN);
             writer.Write(new byte[3]);
             writer.Write(ServerPort);
             writer.Write(GameWorldID);
