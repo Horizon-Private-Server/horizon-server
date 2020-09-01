@@ -128,7 +128,7 @@ namespace Server.Medius
                     await AuthenticationServer.Tick();
                     await LobbyServer.Tick();
                     await ProxyServer.Tick();
-                    // NATServer.Tick();
+                    await NATServer.Tick();
 
                     // Tick manager
                     Manager.Tick();
@@ -151,7 +151,7 @@ namespace Server.Medius
                 await AuthenticationServer.Stop();
                 await LobbyServer.Stop();
                 await ProxyServer.Stop();
-                NATServer.Stop();
+                await NATServer.Stop();
             }
         }
 

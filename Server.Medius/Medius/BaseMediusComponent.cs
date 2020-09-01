@@ -37,7 +37,6 @@ namespace Server.Medius
 
         protected abstract IInternalLogger Logger { get; }
         public abstract int Port { get; }
-        public abstract string Name { get; }
 
 
         public abstract PS2_RSA AuthKey { get; }
@@ -117,7 +116,7 @@ namespace Server.Medius
 
                 // Log if id is set
                 if (Program.Settings.IsLog(message))
-                    Logger.Info($"RECV {Name} {data?.ClientObject},{channel}: {message}");
+                    Logger.Info($"RECV {data?.ClientObject},{channel}: {message}");
             };
 
             try

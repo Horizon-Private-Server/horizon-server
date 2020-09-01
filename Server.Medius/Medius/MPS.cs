@@ -22,7 +22,6 @@ namespace Server.Medius
         static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<MPS>();
 
         protected override IInternalLogger Logger => _logger;
-        public override string Name => "MPS";
         public override int Port => Program.Settings.MPSPort;
         public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
@@ -95,7 +94,7 @@ namespace Server.Medius
                     }
                 default:
                     {
-                        Logger.Warn($"{Name} UNHANDLED MESSAGE: {message}");
+                        Logger.Warn($"UNHANDLED MESSAGE: {message}");
 
                         break;
                     }
@@ -217,7 +216,7 @@ namespace Server.Medius
 
                 default:
                     {
-                        Logger.Warn($"{Name} Unhandled Medius Message: {message}");
+                        Logger.Warn($"Unhandled Medius Message: {message}");
                         break;
                     }
             }

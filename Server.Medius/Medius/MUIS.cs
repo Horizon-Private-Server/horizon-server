@@ -20,7 +20,6 @@ namespace Server.Medius
         static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<MUIS>();
 
         protected override IInternalLogger Logger => _logger;
-        public override string Name => "MUIS";
         public override int Port => Program.Settings.MUISPort;
         public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
@@ -98,7 +97,7 @@ namespace Server.Medius
                     }
                 default:
                     {
-                        Logger.Warn($"{Name} UNHANDLED MESSAGE: {message}");
+                        Logger.Warn($"UNHANDLED MESSAGE: {message}");
                         break;
                     }
             }
@@ -147,7 +146,7 @@ namespace Server.Medius
                     }
                 default:
                     {
-                        Logger.Warn($"{Name} UNHANDLED MEDIUS MESSAGE: {message}");
+                        Logger.Warn($"UNHANDLED MEDIUS MESSAGE: {message}");
                         break;
                     }
             }

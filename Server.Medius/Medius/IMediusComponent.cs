@@ -8,7 +8,6 @@ namespace Server.Medius
 {
     public interface IMediusComponent
     {
-        string Name { get; }
         int Port { get; }
 
         void Start();
