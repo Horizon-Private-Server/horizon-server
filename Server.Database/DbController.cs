@@ -1,10 +1,12 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Newtonsoft.Json;
+using RT.Common;
 using Server.Database.Config;
 using Server.Database.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +17,10 @@ namespace Server.Database
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<DbController>();
 
-        private DbSettings settings = new DbSettings();
+        private DbSettings _settings = new DbSettings();
+
+        private int _simulatedAccountIdCounter = 0;
+        private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
 
         #region Cache
 
@@ -76,13 +81,13 @@ namespace Server.Database
             if (File.Exists(configPath))
             {
                 // Populate existing object
-                try { JsonConvert.PopulateObject(File.ReadAllText(configPath), settings); }
+                try { JsonConvert.PopulateObject(File.ReadAllText(configPath), _settings); }
                 catch (Exception e) { Logger.Error(e); }
             }
             else
             {
                 // Save default db config
-                File.WriteAllText(configPath, JsonConvert.SerializeObject(settings, Formatting.Indented));
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(_settings, Formatting.Indented));
             }
         }
 
@@ -99,7 +104,14 @@ namespace Server.Database
 
             try
             {
-                result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}");
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedAccounts.FirstOrDefault(x => x.AccountName.ToLower() == name.ToLower());
+                }
+                else
+                {
+                    result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}");
+                }
             }
             catch (Exception e)
             {
@@ -120,7 +132,14 @@ namespace Server.Database
 
             try
             {
-                result = await GetDbAsync<AccountDTO>($"Account/getAccount?AccountId={id}");
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedAccounts.FirstOrDefault(x => x.AccountId == id);
+                }
+                else
+                {
+                    result = await GetDbAsync<AccountDTO>($"Account/getAccount?AccountId={id}");
+                }
             }
             catch (Exception e)
             {
@@ -141,11 +160,36 @@ namespace Server.Database
 
             try
             {
-                var response = await PostDbAsync($"Account/createAccount", JsonConvert.SerializeObject(createAccount));
+                if (_settings.SimulatedMode)
+                {
+                    var checkExisting = await GetAccountByName(createAccount.AccountName);
+                    if (checkExisting == null)
+                    {
+                        _simulatedAccounts.Add(result = new AccountDTO()
+                        {
+                            AccountId = _simulatedAccountIdCounter++,
+                            AccountName = createAccount.AccountName,
+                            AccountPassword = createAccount.AccountPassword,
+                            AccountWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
+                            MediusStats = createAccount.MediusStats,
+                            Friends = new AccountRelationDTO[0],
+                            Ignored = new AccountRelationDTO[0],
+                            IsBanned = false
+                        });
+                    }
+                    else
+                    {
+                        throw new Exception($"Account creation failed account name already exists!");
+                    }
+                }
+                else
+                {
+                    var response = await PostDbAsync($"Account/createAccount", JsonConvert.SerializeObject(createAccount));
 
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<AccountDTO>(await response.Content.ReadAsStringAsync());
+                    // Deserialize on success
+                    if (response.IsSuccessStatusCode)
+                        result = JsonConvert.DeserializeObject<AccountDTO>(await response.Content.ReadAsStringAsync());
+                }
             }
             catch (Exception e)
             {
@@ -166,7 +210,14 @@ namespace Server.Database
 
             try
             {
-                result = (await GetDbAsync($"Account/deleteAccount?AccountName={accountName}")).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedAccounts.RemoveAll(x => x.AccountName.ToLower() == accountName.ToLower()) > 0;
+                }
+                else
+                {
+                    result = (await GetDbAsync($"Account/deleteAccount?AccountName={accountName}")).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -188,7 +239,14 @@ namespace Server.Database
 
             try
             {
-                result = (await PostDbAsync($"Account/postAccountSignInDate?AccountId={accountId}", time.ToUniversalTime().ToString())).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Account/postAccountSignInDate?AccountId={accountId}", time.ToUniversalTime().ToString())).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -209,7 +267,14 @@ namespace Server.Database
 
             try
             {
-                result = await GetDbAsync<AccountStatusDTO>($"Account/getAccountStatus?AccountId={accountId}");
+                if (_settings.SimulatedMode)
+                {
+                    result = null;
+                }
+                else
+                {
+                    result = await GetDbAsync<AccountStatusDTO>($"Account/getAccountStatus?AccountId={accountId}");
+                }
             }
             catch (Exception e)
             {
@@ -231,7 +296,14 @@ namespace Server.Database
 
             try
             {
-                var response = (await PostDbAsync($"Account/postAccountStatusUpdates", JsonConvert.SerializeObject(status))).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    var response = (await PostDbAsync($"Account/postAccountStatusUpdates", JsonConvert.SerializeObject(status))).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -253,11 +325,18 @@ namespace Server.Database
 
             try
             {
-                var response = await GetDbAsync($"Account/getActiveAccountCountByAppId?AppId={appId}");
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedAccounts.Count;
+                }
+                else
+                {
+                    var response = await GetDbAsync($"Account/getActiveAccountCountByAppId?AppId={appId}");
 
-                // Deserialize on success
-                if (response.IsSuccessStatusCode && int.TryParse(await response.Content.ReadAsStringAsync(), out int r))
-                    result = r;
+                    // Deserialize on success
+                    if (response.IsSuccessStatusCode && int.TryParse(await response.Content.ReadAsStringAsync(), out int r))
+                        result = r;
+                }
             }
             catch (Exception e)
             {
@@ -282,7 +361,27 @@ namespace Server.Database
 
             try
             {
-                result = (await PostDbAsync($"Buddy/addBuddy", JsonConvert.SerializeObject(addBuddy))).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(addBuddy.AccountId);
+                    var buddyAccount = await GetAccountById(addBuddy.BuddyAccountId);
+                    if (account != null && buddyAccount != null)
+                    {
+                        var friends = account.Friends;
+                        Array.Resize(ref friends, account.Friends.Length + 1);
+                        friends[friends.Length - 1] = new AccountRelationDTO()
+                        {
+                            AccountId = buddyAccount.AccountId,
+                            AccountName = buddyAccount.AccountName
+                        };
+                        account.Friends = friends;
+                        result = true;
+                    }
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Buddy/addBuddy", JsonConvert.SerializeObject(addBuddy))).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -303,7 +402,28 @@ namespace Server.Database
 
             try
             {
-                result = (await PostDbAsync($"Buddy/removeBuddy", JsonConvert.SerializeObject(removeBuddy))).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(removeBuddy.AccountId);
+                    var buddyAccount = await GetAccountById(removeBuddy.BuddyAccountId);
+                    if (account != null && buddyAccount != null)
+                    {
+                        var newFriends = new List<AccountRelationDTO>();
+                        foreach (var friend in account.Friends)
+                        {
+                            if (friend.AccountId == buddyAccount.AccountId)
+                                continue;
+
+                            newFriends.Add(friend);
+                        }
+                        account.Friends = newFriends.ToArray();
+                        result = true;
+                    }
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Buddy/removeBuddy", JsonConvert.SerializeObject(removeBuddy))).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -324,7 +444,27 @@ namespace Server.Database
 
             try
             {
-                result = (await PostDbAsync($"Buddy/addIgnored", JsonConvert.SerializeObject(addIgnored))).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(addIgnored.AccountId);
+                    var ignoreAccount = await GetAccountById(addIgnored.IgnoredAccountId);
+                    if (account != null && ignoreAccount != null)
+                    {
+                        var ignored = account.Ignored;
+                        Array.Resize(ref ignored, account.Ignored.Length + 1);
+                        ignored[ignored.Length - 1] = new AccountRelationDTO()
+                        {
+                            AccountId = ignoreAccount.AccountId,
+                            AccountName = ignoreAccount.AccountName
+                        };
+                        account.Ignored = ignored;
+                        result = true;
+                    }
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Buddy/addIgnored", JsonConvert.SerializeObject(addIgnored))).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -345,7 +485,28 @@ namespace Server.Database
 
             try
             {
-                var response = (await PostDbAsync($"Buddy/removeIgnored", JsonConvert.SerializeObject(removeIgnored))).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(removeIgnored.AccountId);
+                    var ignoreAccount = await GetAccountById(removeIgnored.IgnoredAccountId);
+                    if (account != null && ignoreAccount != null)
+                    {
+                        var newIgnored = new List<AccountRelationDTO>();
+                        foreach (var ignored in account.Ignored)
+                        {
+                            if (ignored.AccountId == ignoreAccount.AccountId)
+                                continue;
+
+                            newIgnored.Add(ignored);
+                        }
+                        account.Ignored = newIgnored.ToArray();
+                        result = true;
+                    }
+                }
+                else
+                {
+                    var response = (await PostDbAsync($"Buddy/removeIgnored", JsonConvert.SerializeObject(removeIgnored))).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -372,7 +533,26 @@ namespace Server.Database
 
             try
             {
-                result = await GetDbAsync<LeaderboardDTO>($"Stats/getPlayerLeaderboardIndex?AccountId={accountId}&StatId={statId}");
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(accountId);
+                    if (account == null)
+                        return null;
+
+                    return new LeaderboardDTO()
+                    {
+                        AccountId = accountId,
+                        AccountName = account.AccountName,
+                        Index = 1,
+                        MediusStats = account.MediusStats,
+                        StatValue = account.AccountWideStats[statId],
+                        TotalRankedAccounts = 1
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<LeaderboardDTO>($"Stats/getPlayerLeaderboardIndex?AccountId={accountId}&StatId={statId}");
+                }
             }
             catch (Exception e)
             {
@@ -396,7 +576,23 @@ namespace Server.Database
 
             try
             {
-                result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
+                if (_settings.SimulatedMode)
+                {
+                    var ordered = _simulatedAccounts.OrderBy(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    result = ordered.Select(x => new LeaderboardDTO()
+                    {
+                        AccountId = x.AccountId,
+                        AccountName = x.AccountName,
+                        MediusStats = x.MediusStats,
+                        StatValue = x.AccountWideStats[statId],
+                        TotalRankedAccounts = 0,
+                        Index = startIndex + ordered.IndexOf(x)
+                    }).ToArray();
+                }
+                else
+                {
+                    result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
+                }
             }
             catch (Exception e)
             {
@@ -417,7 +613,19 @@ namespace Server.Database
 
             try
             {
-                var response = (await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(statPost.AccountId);
+                    if (account == null)
+                        return false;
+
+                    account.AccountWideStats = statPost.Stats;
+                    result = true;
+                }
+                else
+                {
+                    var response = (await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -439,7 +647,19 @@ namespace Server.Database
 
             try
             {
-                var response = (await PostDbAsync($"Account/postMediusStats?AccountId={accountId}", stats)).IsSuccessStatusCode;
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(accountId);
+                    if (account == null)
+                        return false;
+
+                    account.MediusStats = stats;
+                    result = true;
+                }
+                else
+                {
+                    var response = (await PostDbAsync($"Account/postMediusStats?AccountId={accountId}", stats)).IsSuccessStatusCode;
+                }
             }
             catch (Exception e)
             {
@@ -466,10 +686,10 @@ namespace Server.Database
 
             try
             {
-                result = await client.GetAsync($"{settings.DatabaseUrl}/{route}");
+                result = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
 
                 // Update cached value
-                GetDbCache.UpdateCache(route, result, settings.CacheDuration);
+                GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
             }
             catch (Exception e)
             {
@@ -497,14 +717,14 @@ namespace Server.Database
 
             try
             {
-                var response = await client.GetAsync($"{settings.DatabaseUrl}/{route}");
+                var response = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
 
                 // Deserialize on success
                 if (response.IsSuccessStatusCode)
                     result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
 
                 // Update cached value
-                GetDbCache.UpdateCache(route, result, settings.CacheDuration);
+                GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
             }
             catch (Exception e)
             {
@@ -532,7 +752,7 @@ namespace Server.Database
 
             try
             {
-                result = await client.PostAsync($"{settings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
+                result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
             }
             catch (Exception e)
             {
@@ -560,7 +780,7 @@ namespace Server.Database
 
             try
             {
-                result = await client.PostAsync($"{settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
             }
             catch (Exception e)
             {
