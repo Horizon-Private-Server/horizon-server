@@ -15,7 +15,7 @@ namespace Server.Medius.Models
     }
     public class Channel
     {
-        public static int IdCounter = 1;
+        public static int IdCounter = 0;
 
         public class ChannelClient
         {

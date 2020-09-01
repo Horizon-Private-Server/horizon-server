@@ -487,6 +487,9 @@ namespace Server.Medius
                                         // 
                                         Logger.Info($"LOGGING IN AS {data.ClientObject.AccountName} with access token {data.ClientObject.Token}");
 
+                                        // Put client in default channel
+                                        data.ClientObject.JoinChannel(Program.Manager.GetDefaultLobbyChannel(data.ApplicationId));
+
                                         // Tell client
                                         data.ClientObject.Queue(new MediusAccountLoginResponse()
                                         {
@@ -624,6 +627,23 @@ namespace Server.Medius
                         data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
                         {
                             MessageID = getAllAnnouncementsRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                            Announcement = Program.Settings.Announcement,
+                            AnnouncementID = 0,
+                            EndOfList = true
+                        });
+                        break;
+                    }
+
+                case MediusGetAnnouncementsRequest getAnnouncementsRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAnnouncementsRequest} without a session.");
+
+                        data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                        {
+                            MessageID = getAnnouncementsRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusSuccess,
                             Announcement = Program.Settings.Announcement,
                             AnnouncementID = 0,

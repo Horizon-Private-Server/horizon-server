@@ -159,11 +159,17 @@ namespace Server.Medius
                             .Take(pageSize);
         }
 
-        public void CreateGame(ClientObject client, MediusCreateGameRequest request)
+        public void CreateGame(ClientObject client, IMediusRequest request)
         {
+            string gameName = null;
+            if (request is MediusCreateGameRequest r)
+                gameName = r.GameName;
+            else if (request is MediusCreateGameRequest1 r1)
+                gameName = r1.GameName;
+
             // Ensure the name is unique
             // If the host leaves then we unreserve the name
-            if (_gameIdToGame.Select(x => x.Value).Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == request.GameName && x.Host != null && x.Host.IsConnected))
+            if (_gameIdToGame.Select(x => x.Value).Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == gameName && x.Host != null && x.Host.IsConnected))
             {
                 client.Queue(new RT_MSG_SERVER_APP()
                 {
@@ -268,6 +274,11 @@ namespace Server.Medius
                 return result;
 
             return null;
+        }
+
+        public uint GetChannelCount(ChannelType type)
+        {
+            return (uint)_channelIdToChannel.Count(x => x.Value.Type == type);
         }
 
         public Channel GetDefaultLobbyChannel(int appId)

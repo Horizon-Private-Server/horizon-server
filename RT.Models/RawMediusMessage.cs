@@ -43,7 +43,7 @@ namespace RT.Models
 
         public override string ToString()
         {
-            return base.ToString() + $" MsgClass:{PacketType} MsgType:{PacketType} Contents:{BitConverter.ToString(Contents)}";
+            return base.ToString() + $" MsgClass:{PacketClass} MsgType:{PacketType} Contents:{BitConverter.ToString(Contents)}";
         }
     }
 }

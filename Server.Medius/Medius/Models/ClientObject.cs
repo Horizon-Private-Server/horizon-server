@@ -327,6 +327,22 @@ namespace Server.Medius.Models
             return result;
         }
 
+        public GameListFilter SetGameListFilter(MediusSetGameListFilterRequest0 request)
+        {
+            GameListFilter result = null;
+
+            GameListFilters.Add(result = new GameListFilter()
+            {
+                FieldID = _gameListFilterIdCounter++,
+                Mask = 0xFFFFFFFF,
+                BaselineValue = request.BaselineValue,
+                ComparisonOperator = request.ComparisonOperator,
+                FilterField = request.FilterField
+            });
+
+            return result;
+        }
+
         public void ClearGameListFilter(uint filterID)
         {
             GameListFilters.RemoveAll(x => x.FieldID == filterID);

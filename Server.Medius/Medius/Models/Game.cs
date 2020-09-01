@@ -62,9 +62,32 @@ namespace Server.Medius.Models
 
         public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 1f;
 
-        public Game(ClientObject client, MediusCreateGameRequest createGame, Channel chatChannel, DMEObject dmeServer)
+        public Game(ClientObject client, IMediusRequest createGame, Channel chatChannel, DMEObject dmeServer)
         {
+            if (createGame is MediusCreateGameRequest r)
+                FromCreateGameRequest(r);
+            else if (createGame is MediusCreateGameRequest1 r1)
+                FromCreateGameRequest1(r1);
+
             Id = IdCounter++;
+            
+            WorldStatus = MediusWorldStatus.WorldPendingCreation;
+            utcTimeCreated = DateTime.UtcNow;
+            utcTimeEmpty = null;
+            DMEServer = dmeServer;
+            ChatChannel = chatChannel;
+            ChatChannel?.RegisterGame(this);
+            Host = client;
+
+            Logger.Info($"Game {Id}:{GameName}: Created by {client}");
+
+#if DEBUG
+            CustomGamemode = Program.Settings.Gamemodes.LastOrDefault();
+#endif
+        }
+
+        private void FromCreateGameRequest(MediusCreateGameRequest createGame)
+        {
             ApplicationId = createGame.ApplicationID;
             GameName = createGame.GameName;
             MinPlayers = createGame.MinPlayers;
@@ -84,19 +107,29 @@ namespace Server.Medius.Models
             SpectatorPassword = createGame.SpectatorPassword;
             GameHostType = createGame.GameHostType;
             Attributes = createGame.Attributes;
-            WorldStatus = MediusWorldStatus.WorldPendingCreation;
-            utcTimeCreated = DateTime.UtcNow;
-            utcTimeEmpty = null;
-            DMEServer = dmeServer;
-            ChatChannel = chatChannel;
-            ChatChannel?.RegisterGame(this);
-            Host = client;
+        }
 
-            Logger.Info($"Game {Id}:{GameName}: Created by {client}");
-
-#if DEBUG
-            CustomGamemode = Program.Settings.Gamemodes.LastOrDefault();
-#endif
+        private void FromCreateGameRequest1(MediusCreateGameRequest1 createGame)
+        {
+            ApplicationId = createGame.ApplicationID;
+            GameName = createGame.GameName;
+            MinPlayers = createGame.MinPlayers;
+            MaxPlayers = createGame.MaxPlayers;
+            GameLevel = createGame.GameLevel;
+            PlayerSkillLevel = createGame.PlayerSkillLevel;
+            RulesSet = createGame.RulesSet;
+            GenericField1 = createGame.GenericField1;
+            GenericField2 = createGame.GenericField2;
+            GenericField3 = createGame.GenericField3;
+            GenericField4 = 0;
+            GenericField5 = 0;
+            GenericField6 = 0;
+            GenericField7 = 0;
+            GenericField8 = 0;
+            GamePassword = createGame.GamePassword;
+            SpectatorPassword = createGame.SpectatorPassword;
+            GameHostType = createGame.GameHostType;
+            Attributes = createGame.Attributes;
         }
 
         public void Tick()

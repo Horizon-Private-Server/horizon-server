@@ -213,7 +213,6 @@ namespace Server.Medius
                 {
                     Manager.AddChannel(new Channel()
                     {
-                        Id = Channel.IdCounter++,
                         ApplicationId = appId,
                         MaxPlayers = 256,
                         Name = "Default",

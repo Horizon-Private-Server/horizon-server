@@ -18,8 +18,9 @@ namespace RT.Models
 
         public override void Deserialize(BinaryReader reader)
         {
-            Parameters = new ushort[5];
-            for (int i = 0; i < 5; ++i)
+            long len = reader.BaseStream.Length - reader.BaseStream.Position;
+            Parameters = new ushort[len / 2];
+            for (int i = 0; i < Parameters.Length; ++i)
                 Parameters[i] = reader.ReadUInt16();
         }
 
