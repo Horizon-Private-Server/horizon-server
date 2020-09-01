@@ -173,7 +173,7 @@ namespace Server.Medius.Models
                 LoggedIn = IsLoggedIn,
                 ChannelId = CurrentChannel?.Id ?? -1,
                 GameId = CurrentGame?.Id ?? -1,
-                WorldId = Program.Settings.DefaultChannelId
+                WorldId = CurrentGame?.Id ?? CurrentChannel?.Id ?? -1
             });
         }
 

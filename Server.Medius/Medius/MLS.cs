@@ -61,6 +61,13 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
+                        if (!Program.Settings.IsCompatAppId(clientConnectTcp.AppId))
+                        {
+                            Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with incompatible app id {clientConnectTcp.AppId}");
+                            await clientChannel.CloseAsync();
+                            return;
+                        }
+
                         // 
                         data.ApplicationId = clientConnectTcp.AppId;
                         data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
@@ -427,7 +434,7 @@ namespace Server.Medius
                                         OnlineState = new MediusPlayerOnlineState()
                                         {
                                             ConnectStatus = (friendClient != null && friendClient.IsLoggedIn) ? friendClient.Status : MediusPlayerStatus.MediusPlayerDisconnected,
-                                            MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Settings.DefaultChannelId,
+                                            MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                                             MediusGameWorldID = friendClient?.CurrentGame?.Id ?? -1,
                                         },
                                         EndOfList = false
@@ -967,7 +974,7 @@ namespace Server.Medius
                             {
                                 MessageID = findPlayerRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusSuccess,
-                                ApplicationID = Program.Settings.ApplicationId,
+                                ApplicationID = data.ApplicationId,
                                 AccountID = foundPlayer.AccountId,
                                 AccountName = foundPlayer.AccountName,
                                 ApplicationType = (foundPlayer.Status == MediusPlayerStatus.MediusPlayerInGameWorld) ? MediusApplicationType.MediusAppTypeGame : MediusApplicationType.LobbyChatChannel,
@@ -1001,7 +1008,7 @@ namespace Server.Medius
                                     MessageID = playerInfoRequest.MessageID,
                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                     AccountName = r.Result.AccountName,
-                                    ApplicationID = Program.Settings.ApplicationId,
+                                    ApplicationID = data.ApplicationId,
                                     PlayerStatus = (playerClientObject != null && playerClientObject.IsLoggedIn) ? playerClientObject.Status : MediusPlayerStatus.MediusPlayerDisconnected,
                                     ConnectionClass = MediusConnectionType.Ethernet,
                                     Stats = mediusStats
@@ -1106,7 +1113,7 @@ namespace Server.Medius
                             MessageID = getMyClansRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusClanNotFound,
                             ClanID = -1,
-                            ApplicationID = Program.Settings.ApplicationId,
+                            ApplicationID = data.ApplicationId,
                             ClanName = null,
                             LeaderAccountID = data.ClientObject.AccountId,
                             LeaderAccountName = data.ClientObject.AccountName,
@@ -1370,7 +1377,7 @@ namespace Server.Medius
                                 PlayerSkillLevel = game.PlayerSkillLevel,
                                 RulesSet = game.RulesSet,
                                 WorldStatus = game.WorldStatus,
-                                ApplicationID = Program.Settings.ApplicationId
+                                ApplicationID = data.ApplicationId
                             });
                         }
 

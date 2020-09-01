@@ -25,9 +25,9 @@ namespace Server.Medius.Config
         public int RefreshConfigInterval = 5000;
 
         /// <summary>
-        /// Application id.
+        /// Compatible application ids. Null means all are accepted.
         /// </summary>
-        public int ApplicationId { get; set; } = 0;
+        public int[] ApplicationIds { get; set; } = null;
 
         /// <summary>
         /// Announcement.
@@ -45,11 +45,6 @@ namespace Server.Medius.Config
         /// Privacy policy.
         /// </summary>
         public string PrivacyPolicy { get; set; } = "";
-
-        /// <summary>
-        /// Default channel for a client to connect to on login.
-        /// </summary>
-        public int DefaultChannelId { get; set; } = 0;
 
         /// <summary>
         /// By default the server will grab its public ip.
@@ -162,6 +157,18 @@ namespace Server.Medius.Config
         private Dictionary<MediusMGCLMessageIds, bool> _mgclLogFilters = new Dictionary<MediusMGCLMessageIds, bool>();
         private Dictionary<MediusLobbyExtMessageIds, bool> _lobbyExtLogFilters = new Dictionary<MediusLobbyExtMessageIds, bool>();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <returns></returns>
+        public bool IsCompatAppId(int appId)
+        {
+            if (ApplicationIds == null)
+                return true;
+
+            return ApplicationIds.Contains(appId);
+        }
 
         /// <summary>
         /// Whether or not the given rt message id should be logged

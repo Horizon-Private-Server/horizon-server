@@ -49,6 +49,13 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
+                        if (!Program.Settings.IsCompatAppId(clientConnectTcp.AppId))
+                        {
+                            Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with incompatible app id {clientConnectTcp.AppId}");
+                            await clientChannel.CloseAsync();
+                            return;
+                        }
+
                         data.ApplicationId = clientConnectTcp.AppId;
                         Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
                         break;
@@ -112,6 +119,8 @@ namespace Server.Medius
 
             switch (message)
             {
+                #region Dme
+
                 case MediusServerSessionBeginRequest mgclSessionBeginRequest:
                     {
                         // Create DME object
@@ -196,6 +205,10 @@ namespace Server.Medius
                         break;
                     }
 
+                #endregion
+
+                #region Session
+
                 case MediusExtendedSessionBeginRequest extendedSessionBeginRequest:
                     {
                         // Create client object
@@ -247,6 +260,9 @@ namespace Server.Medius
                         }, clientChannel);
                         break;
                     }
+
+                #endregion
+
                 case MediusSetLocalizationParamsRequest setLocalizationParamsRequest:
                     {
                         if (data.ClientObject == null)
@@ -264,6 +280,9 @@ namespace Server.Medius
 
                         break;
                     }
+
+                #region Account
+
                 case MediusAccountRegistrationRequest accountRegRequest:
                     {
                         if (data.ClientObject == null)
@@ -390,7 +409,7 @@ namespace Server.Medius
                             StatusCode = MediusCallbackStatus.MediusSuccess,
                             AccountID = -1,
                             AccountType = MediusAccountType.MediusMasterAccount,
-                            MediusWorldID = Program.Settings.DefaultChannelId,
+                            MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                             ConnectInfo = new NetConnectionInfo()
                             {
                                 SessionKey = anonymousLoginRequest.SessionKey,
@@ -478,7 +497,7 @@ namespace Server.Medius
                                             {
                                                 AccessKey = data.ClientObject.Token,
                                                 SessionKey = data.ClientObject.SessionKey,
-                                                WorldID = Program.Settings.DefaultChannelId,
+                                                WorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                                                 ServerKey = Program.GlobalAuthPublic,
                                                 AddressList = new NetAddressList()
                                                 {
@@ -490,7 +509,7 @@ namespace Server.Medius
                                                 },
                                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
                                             },
-                                            MediusWorldID = Program.Settings.DefaultChannelId,
+                                            MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                                             StatusCode = MediusCallbackStatus.MediusSuccess
                                         });
                                     }
@@ -591,6 +610,44 @@ namespace Server.Medius
 
                         break;
                     }
+
+                #endregion
+
+                #region Policy / Announcements
+
+                case MediusGetAllAnnouncementsRequest getAllAnnouncementsRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAllAnnouncementsRequest} without a session.");
+
+                        data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                        {
+                            MessageID = getAllAnnouncementsRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                            Announcement = Program.Settings.Announcement,
+                            AnnouncementID = 0,
+                            EndOfList = true
+                        });
+                        break;
+                    }
+
+                case MediusGetPolicyRequest getPolicyRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getPolicyRequest} without a session.");
+
+                        string policyText = getPolicyRequest.Policy == MediusPolicyType.Privacy ? Program.Settings.PrivacyPolicy : Program.Settings.UsagePolicy;
+
+                        if (!string.IsNullOrEmpty(policyText))
+                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, policyText));
+                        else
+                            data.ClientObject.Queue(new MediusGetPolicyResponse() { MessageID = getPolicyRequest.MessageID, StatusCode = MediusCallbackStatus.MediusSuccess, Policy = "", EndOfText = true });
+                        break;
+                    }
+
+                #endregion
 
                 #region Deadlocked No-op Messages (MAS)
 

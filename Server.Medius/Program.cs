@@ -207,14 +207,24 @@ namespace Server.Medius
             }
 
             // 
-            Manager.AddChannel(new Channel()
+            if (Settings.ApplicationIds != null)
             {
-                Id = Settings.DefaultChannelId,
-                ApplicationId = Program.Settings.ApplicationId,
-                MaxPlayers = 256,
-                Name = "Default",
-                Type = ChannelType.Lobby
-            });
+                foreach (var appId in Settings.ApplicationIds)
+                {
+                    Manager.AddChannel(new Channel()
+                    {
+                        Id = Channel.IdCounter++,
+                        ApplicationId = appId,
+                        MaxPlayers = 256,
+                        Name = "Default",
+                        Type = ChannelType.Lobby
+                    });
+                }
+            }
+            else
+            {
+
+            }
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;

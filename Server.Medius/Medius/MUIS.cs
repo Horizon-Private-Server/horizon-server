@@ -46,6 +46,13 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
+                        if (!Program.Settings.IsCompatAppId(clientConnectTcp.AppId))
+                        {
+                            Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with incompatible app id {clientConnectTcp.AppId}");
+                            await clientChannel.CloseAsync();
+                            return;
+                        }
+
                         data.ApplicationId = clientConnectTcp.AppId;
                         Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
                         break;

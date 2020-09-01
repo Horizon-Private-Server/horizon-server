@@ -203,7 +203,7 @@ namespace Server.Medius
                     MessageID = new MessageId($"{game.Id}-{client.AccountId}-{request.MessageID}"),
                     MediusWorldUID = (uint)game.Id,
                     Attributes = game.Attributes,
-                    ApplicationID = Program.Settings.ApplicationId,
+                    ApplicationID = client.ApplicationId,
                     MaxClients = game.MaxPlayers
                 });
             }
@@ -268,6 +268,23 @@ namespace Server.Medius
                 return result;
 
             return null;
+        }
+
+        public Channel GetDefaultLobbyChannel(int appId)
+        {
+            // If all app ids are compatible then return the default
+            if (Program.Settings.ApplicationIds == null)
+            {
+                return _channelIdToChannel
+                    .Select(x => x.Value)
+                    .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == 0);
+            }
+            else
+            {
+                return _channelIdToChannel
+                    .Select(x => x.Value)
+                    .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == appId);
+            }
         }
 
         public void AddChannel(Channel channel)
