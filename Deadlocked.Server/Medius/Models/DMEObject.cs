@@ -26,6 +26,24 @@ namespace Deadlocked.Server.Medius.Models
         public override bool Timedout => false; // (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.DmeTimeoutSeconds;
         public override bool IsConnected => _hasActiveSession && !Timedout;
 
+        public DMEObject(MediusServerSetAttributesRequest request)
+        {
+            Port = (int)request.ListenServerAddress.Port;
+            SetIp(request.ListenServerAddress.Address);
+
+            // This is not intended behaviour
+            // Our custom dme server sends its app id in the attributes field of this request
+            // It's a hack, a proper handshake should be implemented in the future
+            ApplicationId = request.Attributes;
+
+            // Generate new session key
+            SessionKey = Program.GenerateSessionKey();
+
+            // Generate new token
+            byte[] tokenBuf = new byte[12];
+            RNG.NextBytes(tokenBuf);
+            Token = Convert.ToBase64String(tokenBuf);
+        }
 
         public DMEObject(MediusServerSessionBeginRequest request)
         {

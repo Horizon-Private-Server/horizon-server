@@ -22,8 +22,9 @@ namespace Deadlocked.Server.SCERT
             if (message is null)
                 return;
 
-            if (Program.Settings.IsLog(message.Id))
+            if (Program.Settings.IsLog(message))
                 Logger.Info($"SEND to {ctx.Channel}: {message}");
+
 
             // Serialize
             var msgs = message.Serialize();

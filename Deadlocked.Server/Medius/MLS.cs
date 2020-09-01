@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Deadlocked.Server.Medius
@@ -630,6 +631,16 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateLadderStatsWideRequest} without a being logged in.");
 
+                        if (data.ClientObject.CurrentGame != null && data.ClientObject.CurrentGame.CustomGamemode != null)
+                        {
+                            data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                            {
+                                MessageID = updateLadderStatsWideRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusFail
+                            });
+                            break;
+                        }
+
                         switch (updateLadderStatsWideRequest.LadderType)
                         {
                             case MediusLadderType.MediusLadderTypePlayer:
@@ -763,12 +774,14 @@ namespace Deadlocked.Server.Medius
                                 var responses = new List<MediusLadderList_ExtraInfoResponse>(r.Result.Length);
                                 foreach (var ladderEntry in r.Result)
                                 {
+                                    byte[] mediusStats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+                                    try { var dbAccStats = Convert.FromBase64String(ladderEntry.MediusStats ?? ""); mediusStats = dbAccStats; } catch (Exception) { }
                                     responses.Add(new MediusLadderList_ExtraInfoResponse()
                                     {
                                         MessageID = ladderList_ExtraInfoRequest.MessageID,
                                         AccountID = ladderEntry.AccountId,
                                         AccountName = ladderEntry.AccountName,
-                                        AccountStats = Convert.FromBase64String(ladderEntry.MediusStats ?? ""),
+                                        AccountStats = mediusStats,
                                         LadderPosition = (uint)(ladderEntry.Index + 1),
                                         LadderStat = ladderEntry.StatValue,
                                         OnlineState = new MediusPlayerOnlineState()
@@ -975,6 +988,8 @@ namespace Deadlocked.Server.Medius
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {
+                                byte[] mediusStats = new byte[MediusConstants.ACCOUNTSTATS_MAXLEN];
+                                try { var dbAccStats = Convert.FromBase64String(r.Result.MediusStats ?? ""); mediusStats = dbAccStats; } catch (Exception) { }
                                 var playerClientObject = Program.Manager.GetClientByAccountId(r.Result.AccountId);
                                 data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
                                 {
@@ -984,7 +999,7 @@ namespace Deadlocked.Server.Medius
                                     ApplicationID = Program.Settings.ApplicationId,
                                     PlayerStatus = (playerClientObject != null && playerClientObject.IsLoggedIn) ? playerClientObject.Status : MediusPlayerStatus.MediusPlayerDisconnected,
                                     ConnectionClass = MediusConnectionType.Ethernet,
-                                    Stats = Convert.FromBase64String(r.Result.MediusStats ?? "")
+                                    Stats = mediusStats
                                 });
                             }
                             else
@@ -1302,7 +1317,6 @@ namespace Deadlocked.Server.Medius
                                 EndOfList = true
                             });
                         }
-
 
                         break;
                     }
@@ -2066,7 +2080,7 @@ namespace Deadlocked.Server.Medius
                                         {
                                             channel.SendSystemMessage(clientObject, $"Gamemode is {game.CustomGamemode?.FullName ?? "default"}");
                                         }
-                                        else if (game.Host == clientObject && arg1 == "reset" || arg1 == "r")
+                                        else if (game.Host == clientObject && (arg1 == "reset" || arg1 == "r"))
                                         {
                                             channel.BroadcastSystemMessage(allPlayers, "Gamemode set to default.");
                                             game.CustomGamemode = null;

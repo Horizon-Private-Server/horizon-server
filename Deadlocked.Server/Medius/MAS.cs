@@ -161,10 +161,6 @@ namespace Deadlocked.Server.Medius
                         // Keep the client alive until the dme objects connects to MPS or times out
                         dmeObject.KeepAliveUntilNextConnection();
 
-                        // Override the dme server ip
-                        if (!string.IsNullOrEmpty(Program.Settings.DmeIpOverride))
-                            dmeObject.SetIp(Program.Settings.DmeIpOverride);
-
                         // Reply
                         dmeObject.Queue(new MediusServerAuthenticationResponse()
                         {
@@ -448,6 +444,7 @@ namespace Deadlocked.Server.Medius
                                             MessageID = accountLoginRequest.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusAccountBanned
                                         });
+
                                     }
                                     else if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && Program.Settings.Beta.RestrictSignin && !Program.Settings.Beta.PermittedAccounts.Contains(r.Result.AccountName))
                                     {

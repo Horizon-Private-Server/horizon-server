@@ -43,63 +43,29 @@ namespace Deadlocked.Server.Medius
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
+                        if (data.State > ClientState.HELLO)
+                            throw new Exception($"Unexpected RT_MSG_CLIENT_HELLO from {clientChannel.RemoteAddress}: {clientHello}");
+
+                        data.State = ClientState.HELLO;
                         Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
+                        if (data.State > ClientState.HANDSHAKE)
+                            throw new Exception($"Unexpected RT_MSG_CLIENT_CRYPTKEY_PUBLIC from {clientChannel.RemoteAddress}: {clientCryptKeyPublic}");
+
+                        // Ensure key is correct
+                        if (!clientCryptKeyPublic.Key.Reverse().SequenceEqual(Program.Settings.MPSKey.N.ToByteArrayUnsigned()))
+                        {
+                            Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with invalid key {clientCryptKeyPublic}");
+                            data.State = ClientState.DISCONNECTED;
+                            await clientChannel.CloseAsync();
+                            break;
+                        }
+
+                        data.State = ClientState.AUTHENTICATED;
                         Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
-                        break;
-                    }
-                case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
-                    {
-                        data.ApplicationId = clientConnectTcp.AppId;
-
-                        // Find reserved dme object by token
-                        data.ClientObject = Program.Manager.GetDmeByAccessToken(clientConnectTcp.AccessToken);
-                        if (data.ClientObject == null)
-                        {
-                            await DisconnectClient(clientChannel);
-                        }
-                        else
-                        {
-                            // 
-                            data.ClientObject.OnConnected();
-
-                            // Update app id
-                            data.ClientObject.ApplicationId = clientConnectTcp.AppId;
-
-                            // 
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
-                        }
-                        break;
-                    }
-                case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
-                    {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME()
-                        {
-                            Key = Utils.FromString(Program.KEY)
-                        }, clientChannel);
-
-                        Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
-                        {
-                            UNK_00 = 0,
-                            UNK_02 = GenerateNewScertClientId(),
-                            UNK_04 = 0,
-                            UNK_05 = 0,
-                            UNK_06 = 0x0001,
-                            IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
-                        }, clientChannel);
-                        break;
-                    }
-                case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
-                    {
-                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
-                        {
-                            ARG1 = 0x0001
-                        }, clientChannel);
-
-                        Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -117,13 +83,17 @@ namespace Deadlocked.Server.Medius
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
+                        if (data.State != ClientState.AUTHENTICATED)
+                            throw new Exception($"Unexpected RT_MSG_CLIENT_APP_TOSERVER from {clientChannel.RemoteAddress}: {clientAppToServer}");
+
                         ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        await clientChannel.DisconnectAsync();
+                        data.State = ClientState.DISCONNECTED;
+                        await clientChannel.CloseAsync();
                         break;
                     }
                 default:
@@ -145,6 +115,33 @@ namespace Deadlocked.Server.Medius
 
             switch (message)
             {
+                // This is a bit of a hack to get our custom dme client to authenticate
+                // Our client skips MAS and just connects directly to MPS with this message
+                case MediusServerSetAttributesRequest dmeSetAttributesRequest:
+                    {
+                        // Create DME object
+                        var dme = new DMEObject(dmeSetAttributesRequest);
+                        dme.BeginSession();
+                        Program.Manager.AddDmeClient(dme);
+                        
+                        // 
+                        data.ClientObject = dme;
+
+                        // 
+                        data.ClientObject.OnConnected();
+
+                        Queue(new RT_MSG_SERVER_APP()
+                        {
+                             Message = new MediusServerSetAttributesResponse()
+                             {
+                                 MessageID = dmeSetAttributesRequest.MessageID,
+                                 Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS
+                             }
+                        }, clientChannel);
+
+                        break;
+                    }
+
                 case MediusServerCreateGameWithAttributesResponse createGameWithAttrResponse:
                     {
                         int gameId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[0]);
@@ -171,9 +168,6 @@ namespace Deadlocked.Server.Medius
                         string msgId = joinGameResponse.MessageID.Split('-')[2];
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
-
-                        // Indicate the client is connecting to a different part of Medius
-                        rClient.KeepAliveUntilNextConnection();
 
                         // Join game
                         rClient.JoinGame(game);
@@ -212,7 +206,7 @@ namespace Deadlocked.Server.Medius
                     }
                 case MediusServerConnectNotification connectNotification:
                     {
-                        Program.Manager.GetGameByGameId((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
+                        Program.Manager.GetGameByDmeWorldId((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
 
 
                         break;

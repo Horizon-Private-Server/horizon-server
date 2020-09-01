@@ -37,19 +37,31 @@ namespace Deadlocked.Server.Mods
         public string Address = "0x00000000";
 
         /// <summary>
+        /// The address of the game entrypoint.
+        /// </summary>
+        public string GameEntrypoint = "0x00000000";
+
+        /// <summary>
+        /// The address of the lobby entrypoint.
+        /// </summary>
+        public string LobbyEntrypoint = "0x00000000";
+
+        /// <summary>
         /// Path to the game mode payload.
         /// </summary>
         public string BinPath { get; set; } = null;
 
 
         private uint address = 0;
+        private uint gameEntrypoint = 0;
+        private uint lobbyEntrypoint = 0;
 
         /// <summary>
         /// Whether or not the given game mode is valid.
         /// </summary>
         public bool IsValid(int appId)
         {
-            return Enabled && appId == ApplicationId && address != 0 && File.Exists(BinPath);
+            return Enabled && appId == ApplicationId && address != 0 && (gameEntrypoint != 0 || lobbyEntrypoint != 0) && File.Exists(BinPath);
         }
 
         /// <summary>
@@ -65,7 +77,8 @@ namespace Deadlocked.Server.Mods
             // Add module
             byte[] moduleEntry = new byte[16];
             Array.Copy(BitConverter.GetBytes((int)1), 0, moduleEntry, 0, 4);
-            Array.Copy(BitConverter.GetBytes(address), 0, moduleEntry, 4, 4);
+            Array.Copy(BitConverter.GetBytes(gameEntrypoint), 0, moduleEntry, 4, 4);
+            Array.Copy(BitConverter.GetBytes(lobbyEntrypoint), 0, moduleEntry, 8, 4);
 
             // 
             messages.Add(new RT_MSG_SERVER_MEMORY_POKE()
@@ -99,6 +112,16 @@ namespace Deadlocked.Server.Mods
                 address = Convert.ToUInt32(Address, 16);
             else
                 address = Convert.ToUInt32(Address);
+
+            if (GameEntrypoint.StartsWith("0x"))
+                gameEntrypoint = Convert.ToUInt32(GameEntrypoint, 16);
+            else
+                gameEntrypoint = Convert.ToUInt32(GameEntrypoint);
+
+            if (LobbyEntrypoint.StartsWith("0x"))
+                lobbyEntrypoint = Convert.ToUInt32(LobbyEntrypoint, 16);
+            else
+                lobbyEntrypoint = Convert.ToUInt32(LobbyEntrypoint);
         }
     }
 }

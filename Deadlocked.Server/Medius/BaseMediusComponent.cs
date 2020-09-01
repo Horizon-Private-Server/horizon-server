@@ -27,6 +27,15 @@ namespace Deadlocked.Server.Medius
     {
         public static Random RNG = new Random();
 
+        public enum ClientState
+        {
+            DISCONNECTED,
+            CONNECTED,
+            HELLO,
+            HANDSHAKE,
+            AUTHENTICATED
+        }
+
         protected abstract IInternalLogger Logger { get; }
         public abstract int Port { get; }
         public abstract string Name { get; }
@@ -46,6 +55,10 @@ namespace Deadlocked.Server.Medius
             public ClientObject ClientObject { get; set; } = null;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+
+            public ClientState State { get; set; } = ClientState.DISCONNECTED;
+
+            public DateTime LastSentEcho { get; set; } = DateTime.UnixEpoch;
         }
 
         protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
@@ -76,7 +89,10 @@ namespace Deadlocked.Server.Medius
             _scertHandler.OnChannelActive += (channel) =>
             {
                 string key = channel.Id.AsLongText();
-                _channelDatas.TryAdd(key, new ChannelData());
+                _channelDatas.TryAdd(key, new ChannelData()
+                {
+                    State = ClientState.CONNECTED
+                });
             };
 
             // Remove client on disconnect
@@ -84,7 +100,10 @@ namespace Deadlocked.Server.Medius
             {
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryRemove(key, out var data))
+                {
+                    data.State = ClientState.DISCONNECTED;
                     data.ClientObject?.OnDisconnected();
+                }
             };
 
             // Queue all incoming messages
@@ -98,8 +117,8 @@ namespace Deadlocked.Server.Medius
                 }
 
                 // Log if id is set
-                if (Program.Settings.IsLog(message.Id))
-                    Logger.Info($"{Name} {data?.ClientObject},{channel}: {message}");
+                if (Program.Settings.IsLog(message))
+                    Logger.Info($"RECV {Name} {data?.ClientObject},{channel}: {message}");
             };
 
             try
@@ -199,7 +218,7 @@ namespace Deadlocked.Server.Medius
 
                             // Echo
                             if ((DateTime.UtcNow - data.ClientObject.UtcLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
-                                Echo(ref responses);
+                                Echo(data, ref responses);
                         }
 
                         //
@@ -215,9 +234,13 @@ namespace Deadlocked.Server.Medius
             }
         }
 
-        protected virtual void Echo(ref List<BaseScertMessage> responses)
+        protected virtual void Echo(ChannelData data, ref List<BaseScertMessage> responses)
         {
-            responses.Add(new RT_MSG_SERVER_ECHO() { });
+            if ((DateTime.UtcNow - data.LastSentEcho).TotalSeconds > 2f)
+            {
+                data.LastSentEcho = DateTime.UtcNow;
+                responses.Add(new RT_MSG_SERVER_ECHO() { });
+            }
         }
 
         protected abstract Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data);

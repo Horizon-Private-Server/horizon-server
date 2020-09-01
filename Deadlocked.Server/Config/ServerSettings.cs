@@ -1,6 +1,10 @@
-﻿using Deadlocked.Server.Mods;
+﻿using Deadlocked.Server.Medius.Models.Packets;
+using Deadlocked.Server.Mods;
 using Deadlocked.Server.SCERT;
+using Deadlocked.Server.SCERT.Models.Packets;
+using Medius.Crypto;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Math;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,24 +104,18 @@ namespace Deadlocked.Server.Config
         public int NATPort { get; set; } = 10070;
 
         /// <summary>
-        /// When set, all DME servers will receive this ip. This bypasses how the DME handles local network servers.
-        /// </summary>
-        public string DmeIpOverride { get; set; } = null;
-
-        /// <summary>
-        /// Path to the dme binary.
-        /// </summary>
-        public string DmeStartPath { get; set; } = null;
-
-        /// <summary>
-        /// Whether or not to restart the DME server when it is no longer running.
-        /// </summary>
-        public bool DmeRestartOnCrash { get; set; } = false;
-
-        /// <summary>
         /// Time, in seconds, before timing out a Dme server.
         /// </summary>
         public int DmeTimeoutSeconds { get; set; } = 60;
+
+        /// <summary>
+        /// Key used to authenticate dme servers.
+        /// </summary>
+        public PS2_RSA MPSKey { get; set; } = new PS2_RSA(
+            new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
+            new BigInteger("17", 10),
+            new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
+            );
 
         /// <summary>
         /// Collection of patches to apply to logged in clients.
@@ -139,19 +137,61 @@ namespace Deadlocked.Server.Config
         /// </summary>
         public string[] RtLogFilter { get; set; } = Enum.GetNames(typeof(RT_MSG_TYPE));
 
+        /// <summary>
+        /// Collection of Medius Lobby messages to print out
+        /// </summary>
+        public string[] MediusLobbyLogFilter { get; set; } = Enum.GetNames(typeof(MediusLobbyMessageIds));
+
+        /// <summary>
+        /// Collection of Medius Lobby Ext messages to print out
+        /// </summary>
+        public string[] MediusLobbyExtLogFilter { get; set; } = Enum.GetNames(typeof(MediusLobbyExtMessageIds));
+
+        /// <summary>
+        /// Collection of Medius Lobby Ext messages to print out
+        /// </summary>
+        public string[] MediusMGCLLogFilter { get; set; } = Enum.GetNames(typeof(MediusMGCLMessageIds));
+
+        /// <summary>
+        /// Collection of Medius Lobby Ext messages to print out
+        /// </summary>
+        public string[] MediusDMEExtLogFilter { get; set; } = Enum.GetNames(typeof(MediusDmeMessageIds));
 
         private Dictionary<RT_MSG_TYPE, bool> _rtLogFilters = new Dictionary<RT_MSG_TYPE, bool>();
+        private Dictionary<MediusDmeMessageIds, bool> _dmeLogFilters = new Dictionary<MediusDmeMessageIds, bool>();
+        private Dictionary<MediusLobbyMessageIds, bool> _lobbyLogFilters = new Dictionary<MediusLobbyMessageIds, bool>();
+        private Dictionary<MediusMGCLMessageIds, bool> _mgclLogFilters = new Dictionary<MediusMGCLMessageIds, bool>();
+        private Dictionary<MediusLobbyExtMessageIds, bool> _lobbyExtLogFilters = new Dictionary<MediusLobbyExtMessageIds, bool>();
 
 
         /// <summary>
         /// Whether or not the given rt message id should be logged
         /// </summary>
-        public bool IsLog(RT_MSG_TYPE msgId)
+        public bool IsLog(BaseScertMessage message)
         {
-            if (_rtLogFilters.TryGetValue(msgId, out var result))
-                return result;
+            if (message == null)
+                return false;
 
-            return false;
+            if (!_rtLogFilters.TryGetValue(message.Id, out var result) || !result)
+                return false;
+
+            switch (message)
+            {
+                case RT_MSG_SERVER_APP serverApp:
+                    {
+                        switch (serverApp.Message.PacketClass)
+                        {
+                            case NetMessageTypes.MessageClassDME: { return _dmeLogFilters.TryGetValue((MediusDmeMessageIds)serverApp.Message.PacketType, out var r) && r; }
+                            case NetMessageTypes.MessageClassLobby: { return _lobbyLogFilters.TryGetValue((MediusLobbyMessageIds)serverApp.Message.PacketType, out var r) && r; }
+                            case NetMessageTypes.MessageClassLobbyReport: { return _mgclLogFilters.TryGetValue((MediusMGCLMessageIds)serverApp.Message.PacketType, out var r) && r; }
+                            case NetMessageTypes.MessageClassLobbyExt: { return _lobbyExtLogFilters.TryGetValue((MediusLobbyExtMessageIds)serverApp.Message.PacketType, out var r) && r; }
+                        }
+                        break;
+                    }
+            }
+            
+
+            return true;
         }
 
         /// <summary>
@@ -160,12 +200,40 @@ namespace Deadlocked.Server.Config
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
-            // Load rt log filters in dictionary
+            // Load log filters in dictionary
             _rtLogFilters.Clear();
             if (RtLogFilter != null)
             {
                 foreach (var filter in RtLogFilter)
                     _rtLogFilters.Add((RT_MSG_TYPE)Enum.Parse(typeof(RT_MSG_TYPE), filter), true);
+            }
+
+            _dmeLogFilters.Clear();
+            if (MediusDMEExtLogFilter != null)
+            {
+                foreach (var filter in MediusDMEExtLogFilter)
+                    _dmeLogFilters.Add((MediusDmeMessageIds)Enum.Parse(typeof(MediusDmeMessageIds), filter), true);
+            }
+
+            _lobbyLogFilters.Clear();
+            if (MediusLobbyLogFilter != null)
+            {
+                foreach (var filter in MediusLobbyLogFilter)
+                    _lobbyLogFilters.Add((MediusLobbyMessageIds)Enum.Parse(typeof(MediusLobbyMessageIds), filter), true);
+            }
+
+            _mgclLogFilters.Clear();
+            if (MediusMGCLLogFilter != null)
+            {
+                foreach (var filter in MediusMGCLLogFilter)
+                    _mgclLogFilters.Add((MediusMGCLMessageIds)Enum.Parse(typeof(MediusMGCLMessageIds), filter), true);
+            }
+
+            _lobbyExtLogFilters.Clear();
+            if (MediusLobbyExtLogFilter != null)
+            {
+                foreach (var filter in MediusLobbyExtLogFilter)
+                    _lobbyExtLogFilters.Add((MediusLobbyExtMessageIds)Enum.Parse(typeof(MediusLobbyExtMessageIds), filter), true);
             }
         }
     }
@@ -191,5 +259,10 @@ namespace Deadlocked.Server.Config
         /// Accounts that can be logged into with RestrictSignIn set.
         /// </summary>
         public string[] PermittedAccounts { get; set; } = null;
+    }
+
+    public class MPSConfig
+    {
+        
     }
 }

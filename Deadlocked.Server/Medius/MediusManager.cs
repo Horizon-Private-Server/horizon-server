@@ -133,6 +133,11 @@ namespace Deadlocked.Server.Medius
 
         #region Games
 
+        public Game GetGameByDmeWorldId(int dmeWorldId)
+        {
+            return _gameIdToGame.FirstOrDefault(x => x.Value?.DMEWorldId == dmeWorldId).Value;
+        }
+
         public Game GetGameByGameId(int gameId)
         {
             if (_gameIdToGame.TryGetValue(gameId, out var result))

@@ -29,7 +29,7 @@ namespace Deadlocked.Server.SCERT
             // Serialize and add
             foreach (var msg in messages)
             {
-                if (Program.Settings.IsLog(msg.Id))
+                if (Program.Settings.IsLog(msg))
                     Logger.Info($"SEND to {ctx.Channel}: {msg}");
 
                 msgs.AddRange(msg.Serialize());

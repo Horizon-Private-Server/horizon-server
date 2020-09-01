@@ -37,24 +37,6 @@ namespace Deadlocked.Server
             new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
         );
 
-        public readonly static PS2_RSA GlobalAuthKey2 = new PS2_RSA(
-            new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
-            new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10),
-            new BigInteger("17", 10)
-        );
-
-        /// <summary>
-        /// The DME connects to MPS with its own RSA keypair.
-        /// I'm not sure what it's using because this key doesn't appear to work.
-        /// Refer to BaseScertMessage.Instantiate() for hack solution
-        /// </summary>
-        public readonly static PS2_RSA DmeAuthKey = new PS2_RSA(
-            new BigInteger("9848219843138420844191243034535393511626819869175602765525114154343233366275827782177650840711581912404543790075101312290915342641475187759789398933592597", 10),
-            new BigInteger("17", 10),
-            new BigInteger("5213763446367399270454187488871678917920081107210613228807413375828770605675333161178894352915566278302088822845345481840726284620095756152508903398440785", 10)
-        );
-
-
         public readonly static RSA_KEY GlobalAuthPublic = new RSA_KEY(GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray());
         public readonly static RSA_KEY GlobalAuthPrivate = new RSA_KEY(GlobalAuthKey.D.ToByteArrayUnsigned().Reverse().ToArray());
 
@@ -81,7 +63,6 @@ namespace Deadlocked.Server
 
         static async Task StartServerAsync()
         {
-            DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
 
 #if DEBUG
@@ -151,13 +132,6 @@ namespace Deadlocked.Server
 
                     // Tick manager
                     Manager.Tick();
-
-                    // Check DME
-                    if (Program.Settings.DmeRestartOnCrash && !string.IsNullOrEmpty(Program.Settings.DmeStartPath) && (DateTime.UtcNow - lastDMECheck).TotalSeconds > 1)
-                    {
-                        EnsureDMERunning(Program.Settings.DmeStartPath);
-                        lastDMECheck = DateTime.UtcNow;
-                    }
 
                     // Reload config
                     if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -305,42 +279,6 @@ namespace Deadlocked.Server
             address = address.Substring(first, last - first);
 
             return address;
-        }
-
-        /// <summary>
-        /// Ensures that the DME server is running while this is running.
-        /// </summary>
-        static void EnsureDMERunning(string dmePath)
-        {
-            if (!File.Exists(dmePath))
-            {
-                Logger.Error($"Unable to find DmeServer binary at {dmePath}");
-                return;
-            }
-
-            var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName.Contains("DmeServer"));
-            if (process == null)
-            {
-                Logger.Error("Dme Server not running. Starting...");
-
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    Process.Start(new ProcessStartInfo()
-                    {
-                        WorkingDirectory = Environment.CurrentDirectory,
-                        FileName = dmePath,
-                        UseShellExecute = true
-                    });
-                }
-                else
-                {
-                    Process.Start(new ProcessStartInfo()
-                    {
-                        WorkingDirectory = Environment.CurrentDirectory,
-                        FileName = dmePath
-                    });
-                }
-            }
         }
         public static string GenerateSessionKey()
         {

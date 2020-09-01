@@ -55,6 +55,7 @@ namespace Deadlocked.Server.Medius.Models
 
         public Gamemode CustomGamemode = null;
 
+        private bool hasHostJoined = false;
         private DateTime utcTimeCreated;
         private DateTime? utcTimeEmpty;
 
@@ -95,6 +96,10 @@ namespace Deadlocked.Server.Medius.Models
             Host = client;
 
             Logger.Info($"Game {Id}:{GameName}: Created by {client}");
+
+#if DEBUG
+            CustomGamemode = Program.Settings.Gamemodes.LastOrDefault();
+#endif
         }
 
         public void Tick()
@@ -112,7 +117,7 @@ namespace Deadlocked.Server.Medius.Models
             }
 
             // Auto close when everyone leaves or if host fails to connect after timeout time
-            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (DateTime.UtcNow - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds)
+            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (hasHostJoined || (DateTime.UtcNow - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds))
             {
                 utcTimeEmpty = DateTime.UtcNow;
                 WorldStatus = MediusWorldStatus.WorldClosed;
@@ -143,6 +148,9 @@ namespace Deadlocked.Server.Medius.Models
         private void OnPlayerJoined(GameClient player)
         {
             player.InGame = true;
+
+            if (player.Client == Host)
+                hasHostJoined = true;
         }
 
         public void AddPlayer(ClientObject client)
@@ -160,8 +168,7 @@ namespace Deadlocked.Server.Medius.Models
             });
 
             // Inform the client of any custom game mode
-            if (CustomGamemode != null)
-                client.CurrentChannel?.SendSystemMessage(client, $"Gamemode is {CustomGamemode.FullName}.");
+            client.CurrentChannel?.SendSystemMessage(client, $"Gamemode is {CustomGamemode?.FullName ?? "default"}.");
         }
 
         private void OnPlayerLeft(GameClient player)

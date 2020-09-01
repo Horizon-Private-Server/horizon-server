@@ -15,7 +15,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
         public byte EncodingType;
         public byte LanguageType;
         public bool EndOfMessage;
-        public string Message;
+        public byte[] Message;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -23,7 +23,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
             EncodingType = reader.ReadByte();
             LanguageType = reader.ReadByte();
             EndOfMessage = reader.ReadBoolean();
-            Message = reader.ReadRestAsString();
+            Message = reader.ReadRest();
         }
 
         protected override void Serialize(BinaryWriter writer)
@@ -33,7 +33,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
             writer.Write(LanguageType);
             writer.Write(EndOfMessage);
             if (Message != null)
-                writer.Write(Message, Message.Length + 1);
+                writer.Write(Message, 63); // Message.Length + 1);
         }
 
         public override string ToString()
@@ -43,7 +43,7 @@ namespace Deadlocked.Server.SCERT.Models.Packets
                 $"EncodingType:{EncodingType} " +
                 $"MediusLanguageType:{LanguageType} " +
                 $"EndOfMessage:{EndOfMessage} " +
-                $"Message:{Message}";
+                $"Message:{BitConverter.ToString(Message)}";
         }
     }
 }
