@@ -167,7 +167,7 @@ namespace Server.Medius.Models
         /// </summary>
         protected virtual void PostStatus()
         {
-            _ = DbController.PostAccountStatus(new AccountStatusDTO()
+            _ = Program.Database.PostAccountStatus(new AccountStatusDTO()
             {
                 AccountId = AccountId,
                 LoggedIn = IsLoggedIn,

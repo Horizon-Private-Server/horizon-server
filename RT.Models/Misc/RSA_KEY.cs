@@ -10,6 +10,8 @@ namespace RT.Models
 {
     public class RSA_KEY : IStreamSerializer
     {
+        public readonly static RSA_KEY Empty = new RSA_KEY();
+
         // 
         public uint[] key = new uint[Constants.RSA_SIZE_DWORD];
 

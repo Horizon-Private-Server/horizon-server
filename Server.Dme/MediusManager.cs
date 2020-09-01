@@ -270,6 +270,7 @@ namespace Server.Dme
                         {
                             Message = new MediusServerSetAttributesRequest()
                             {
+                                MessageID = new MessageId(),
                                 // This is a hack to tell our server what app id this is compatible with
                                 Attributes = Program.Settings.ApplicationId,
                                 ListenServerAddress = new NetAddress()

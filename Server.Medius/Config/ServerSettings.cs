@@ -10,7 +10,7 @@ using RT.Models;
 using RT.Common;
 using Server.Mods;
 
-namespace Deadlocked.Server.Config
+namespace Server.Medius.Config
 {
     public class ServerSettings
     {

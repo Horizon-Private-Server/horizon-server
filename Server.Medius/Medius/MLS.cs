@@ -247,7 +247,7 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountGetIdRequest} without a session.");
 
-                        _ = DbController.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -284,7 +284,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountUpdateStatsRequest} without a being logged in.");
 
                         // Post
-                        _ = DbController.PostMediusStats(data.ClientObject.AccountId, Convert.ToBase64String(accountUpdateStatsRequest.Stats)).ContinueWith((r) =>
+                        _ = Program.Database.PostMediusStats(data.ClientObject.AccountId, Convert.ToBase64String(accountUpdateStatsRequest.Stats)).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -324,7 +324,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {addToBuddyListRequest} without a being logged in.");
 
                         // Add
-                        _ = DbController.AddBuddy(new BuddyDTO()
+                        _ = Program.Database.AddBuddy(new BuddyDTO()
                         {
                             AccountId = data.ClientObject.AccountId,
                             BuddyAccountId = addToBuddyListRequest.AccountID
@@ -364,7 +364,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {removeFromBuddyListRequest} without a being logged in.");
 
                         // Remove
-                        _ = DbController.RemoveBuddy(new BuddyDTO()
+                        _ = Program.Database.RemoveBuddy(new BuddyDTO()
                         {
                             AccountId = data.ClientObject.AccountId,
                             BuddyAccountId = removeFromBuddyListRequest.AccountID
@@ -404,7 +404,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel},{data.ClientObject} sent {getBuddyList_ExtraInfoRequest} without a being logged in.");
 
                         // 
-                        _ = DbController.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
+                        _ = Program.Database.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -483,7 +483,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getIgnoreListRequest} without a being logged in.");
 
                         // 
-                        _ = DbController.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
+                        _ = Program.Database.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -553,7 +553,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {addToIgnoreList} without a being logged in.");
 
                         // Add
-                        _ = DbController.AddIgnored(new IgnoredDTO()
+                        _ = Program.Database.AddIgnored(new IgnoredDTO()
                         {
                             AccountId = data.ClientObject.AccountId,
                             IgnoredAccountId = addToIgnoreList.IgnoreAccountID
@@ -593,7 +593,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {removeFromIgnoreListRequest} without a being logged in.");
 
                         // Remove
-                        _ = DbController.RemoveIgnored(new IgnoredDTO()
+                        _ = Program.Database.RemoveIgnored(new IgnoredDTO()
                         {
                             AccountId = data.ClientObject.AccountId,
                             IgnoredAccountId = removeFromIgnoreListRequest.IgnoreAccountID
@@ -651,7 +651,7 @@ namespace Server.Medius
                             case MediusLadderType.MediusLadderTypePlayer:
                                 {
 
-                                    _ = DbController.PostLadderStats(new StatPostDTO()
+                                    _ = Program.Database.PostLadderStats(new StatPostDTO()
                                     {
                                         AccountId = data.ClientObject.AccountId,
                                         Stats = updateLadderStatsWideRequest.Stats
@@ -714,7 +714,7 @@ namespace Server.Medius
                         {
                             case MediusLadderType.MediusLadderTypePlayer:
                                 {
-                                    _ = DbController.GetAccountById(getLadderStatsWideRequest.AccountID_or_ClanID).ContinueWith((r) =>
+                                    _ = Program.Database.GetAccountById(getLadderStatsWideRequest.AccountID_or_ClanID).ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                             return;
@@ -769,7 +769,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderList_ExtraInfoRequest} without a being logged in.");
 
                         //
-                        _ = DbController.GetLeaderboard(ladderList_ExtraInfoRequest.LadderStatIndex + 1, (int)ladderList_ExtraInfoRequest.StartPosition - 1, (int)ladderList_ExtraInfoRequest.PageSize).ContinueWith((r) =>
+                        _ = Program.Database.GetLeaderboard(ladderList_ExtraInfoRequest.LadderStatIndex + 1, (int)ladderList_ExtraInfoRequest.StartPosition - 1, (int)ladderList_ExtraInfoRequest.PageSize).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -856,7 +856,7 @@ namespace Server.Medius
                                 {
 
                                     // 
-                                    _ = DbController.GetActiveAccountCountByAppId(data.ClientObject.ApplicationId).ContinueWith((r) =>
+                                    _ = Program.Database.GetActiveAccountCountByAppId(data.ClientObject.ApplicationId).ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                             return;
@@ -898,7 +898,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderPosition_ExtraInfoRequest} without a being logged in.");
 
 
-                        _ = DbController.GetPlayerLeaderboardIndex(ladderPosition_ExtraInfoRequest.AccountID, ladderPosition_ExtraInfoRequest.LadderStatIndex + 1).ContinueWith((r) =>
+                        _ = Program.Database.GetPlayerLeaderboardIndex(ladderPosition_ExtraInfoRequest.AccountID, ladderPosition_ExtraInfoRequest.LadderStatIndex + 1).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -989,7 +989,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {playerInfoRequest} without a being logged in.");
 
-                        _ = DbController.GetAccountById(playerInfoRequest.AccountID).ContinueWith((r) =>
+                        _ = Program.Database.GetAccountById(playerInfoRequest.AccountID).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {

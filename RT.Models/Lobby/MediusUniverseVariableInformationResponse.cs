@@ -90,7 +90,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             //
-            writer.Write(MessageID);
+            writer.Write(MessageID ?? MessageId.Empty);
 
             // 
             writer.Write(StatusCode);

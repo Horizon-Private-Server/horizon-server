@@ -29,7 +29,7 @@ namespace RT.Cryptography
             public int y;
         }
 
-        private byte[] workingKey;
+        private readonly byte[] workingKey;
 
         /// <summary>
         /// Initialize with key.
@@ -43,10 +43,6 @@ namespace RT.Cryptography
 
         #region Initialization
 
-        private void SetKey(RC4State state, byte[] keyBytes)
-        {
-            SetKey(state, keyBytes, null);
-        }
 
         private void SetKey(RC4State state, byte[] key, byte[] hash = null)
         {

@@ -1,5 +1,4 @@
-﻿using Deadlocked.Server.Config;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using RT.Cryptography;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
@@ -22,6 +21,7 @@ using RT.Models;
 using Server.Mods;
 using Server.Medius.Models;
 using Server.Database;
+using Server.Medius.Config;
 
 namespace Server.Medius
 {
@@ -41,7 +41,7 @@ namespace Server.Medius
         public readonly static RSA_KEY GlobalAuthPrivate = new RSA_KEY(GlobalAuthKey.D.ToByteArrayUnsigned().Reverse().ToArray());
 
         public static ServerSettings Settings = new ServerSettings();
-        public static DbSettings DbSettings = new DbSettings();
+        public static DbController Database = new DbController(DB_CONFIG_FILE);
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
@@ -195,23 +195,6 @@ namespace Server.Medius
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
-
-            // Load db settings
-            if (File.Exists(DB_CONFIG_FILE))
-            {
-                // Populate existing object
-                try { JsonConvert.PopulateObject(File.ReadAllText(DB_CONFIG_FILE), DbSettings, serializerSettings); }
-                catch (Exception e) { Logger.Error(e); }
-            }
-            else
-            {
-                // Save default db config
-                File.WriteAllText(DB_CONFIG_FILE, JsonConvert.SerializeObject(DbSettings, Formatting.Indented));
-            }
-
-            // Update db controller
-            DbController.CacheDuration = DbSettings.CacheDuration;
-            DbController.Url = DbSettings.DatabaseUrl;
 
             // Determine server ip
             if (!String.IsNullOrEmpty(Settings.ServerIpOverride))

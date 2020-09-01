@@ -282,7 +282,7 @@ namespace Server.Medius
                             return;
                         }
 
-                        _ = DbController.CreateAccount(new Database.Models.CreateAccountDTO()
+                        _ = Program.Database.CreateAccount(new Database.Models.CreateAccountDTO()
                         {
                             AccountName = accountRegRequest.AccountName,
                             AccountPassword = Utils.ComputeSHA256(accountRegRequest.Password),
@@ -318,7 +318,7 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountGetIdRequest} without a session.");
 
-                        _ = DbController.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {
@@ -354,7 +354,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without a being logged in.");
 
-                        _ = DbController.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result)
                             {
@@ -427,7 +427,7 @@ namespace Server.Medius
                         }
                         else
                         {
-                            _ = DbController.GetAccountByName(accountLoginRequest.Username).ContinueWith((r) =>
+                            Program.Database.GetAccountByName(accountLoginRequest.Username).ContinueWith((r) =>
                             {
                                 if (r.IsCompletedSuccessfully && r.Result != null && data != null && data.ClientObject != null && data.ClientObject.IsConnected)
                                 {

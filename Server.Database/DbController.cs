@@ -1,8 +1,10 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Newtonsoft.Json;
+using Server.Database.Config;
 using Server.Database.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,8 +15,7 @@ namespace Server.Database
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<DbController>();
 
-        public static int CacheDuration = 0;
-        public static string Url = null;
+        private DbSettings settings = new DbSettings();
 
         #region Cache
 
@@ -24,10 +25,17 @@ namespace Server.Database
 
             public DateTime LastUpdate;
 
+            public int Lifetime = 0;
+
             public object Value;
 
-            public bool IsValid => Value != null && (DateTime.UtcNow - LastUpdate).TotalSeconds < CacheDuration;
+            public bool IsValid => Value != null && (DateTime.UtcNow - LastUpdate).TotalSeconds < Lifetime;
 
+
+            public GetDbCache(int lifetime)
+            {
+                this.Lifetime = lifetime;
+            }
 
             public static bool TryGetCache<T>(string route, out T value)
             {
@@ -41,7 +49,7 @@ namespace Server.Database
                 return false;
             }
 
-            public static void UpdateCache(string route, object value)
+            public static void UpdateCache(string route, object value, int lifetime)
             {
                 if (_getCache.TryGetValue(route, out var cache))
                 {
@@ -50,7 +58,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    _getCache.Add(route, new GetDbCache()
+                    _getCache.Add(route, new GetDbCache(lifetime)
                     {
                         LastUpdate = DateTime.UtcNow,
                         Value = value
@@ -61,6 +69,23 @@ namespace Server.Database
 
         #endregion
 
+
+        public DbController(string configPath)
+        {
+            // Load db settings
+            if (File.Exists(configPath))
+            {
+                // Populate existing object
+                try { JsonConvert.PopulateObject(File.ReadAllText(configPath), settings); }
+                catch (Exception e) { Logger.Error(e); }
+            }
+            else
+            {
+                // Save default db config
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(settings, Formatting.Indented));
+            }
+        }
+
         #region Account
 
         /// <summary>
@@ -68,7 +93,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="name">Case insensitive name of player.</param>
         /// <returns>Returns account.</returns>
-        public static async Task<AccountDTO> GetAccountByName(string name)
+        public async Task<AccountDTO> GetAccountByName(string name)
         {
             AccountDTO result = null;
 
@@ -89,7 +114,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="id">Id of player.</param>
         /// <returns>Returns account.</returns>
-        public static async Task<AccountDTO> GetAccountById(int id)
+        public async Task<AccountDTO> GetAccountById(int id)
         {
             AccountDTO result = null;
 
@@ -110,7 +135,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="createAccount">Account creation parameters.</param>
         /// <returns>Returns created account.</returns>
-        public static async Task<AccountDTO> CreateAccount(CreateAccountDTO createAccount)
+        public async Task<AccountDTO> CreateAccount(CreateAccountDTO createAccount)
         {
             AccountDTO result = null;
 
@@ -135,7 +160,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="accountName">Case insensitive name of account.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> DeleteAccount(string accountName)
+        public async Task<bool> DeleteAccount(string accountName)
         {
             bool result = false;
 
@@ -157,7 +182,7 @@ namespace Server.Database
         /// <param name="accountId">Id to post login date to.</param>
         /// <param name="time">Time logged in.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> PostAccountSignInDate(int accountId, DateTime time)
+        public async Task<bool> PostAccountSignInDate(int accountId, DateTime time)
         {
             bool result = false;
 
@@ -178,7 +203,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="accountId">Unique id of account.</param>
         /// <returns>Account status.</returns>
-        public static async Task<AccountStatusDTO> GetAccountStatus(int accountId)
+        public async Task<AccountStatusDTO> GetAccountStatus(int accountId)
         {
             AccountStatusDTO result = null;
 
@@ -200,7 +225,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="status">Account status.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> PostAccountStatus(AccountStatusDTO status)
+        public async Task<bool> PostAccountStatus(AccountStatusDTO status)
         {
             bool result = false;
 
@@ -222,7 +247,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="appId">App Id to filter total active accounts by.</param>
         /// <returns>Number of active accounts or null.</returns>
-        public static async Task<int?> GetActiveAccountCountByAppId(int appId)
+        public async Task<int?> GetActiveAccountCountByAppId(int appId)
         {
             int? result = null;
 
@@ -251,7 +276,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="addBuddy">Add buddy parameters.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> AddBuddy(BuddyDTO addBuddy)
+        public async Task<bool> AddBuddy(BuddyDTO addBuddy)
         {
             bool result = false;
 
@@ -272,7 +297,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="removeBuddy">Remove buddy parameters.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> RemoveBuddy(BuddyDTO removeBuddy)
+        public async Task<bool> RemoveBuddy(BuddyDTO removeBuddy)
         {
             bool result = false;
 
@@ -293,7 +318,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="addIgnored">Add ignored parameters.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> AddIgnored(IgnoredDTO addIgnored)
+        public async Task<bool> AddIgnored(IgnoredDTO addIgnored)
         {
             bool result = false;
 
@@ -314,7 +339,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="removeIgnored">Remove ignored parameters.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> RemoveIgnored(IgnoredDTO removeIgnored)
+        public async Task<bool> RemoveIgnored(IgnoredDTO removeIgnored)
         {
             bool result = false;
 
@@ -341,7 +366,7 @@ namespace Server.Database
         /// <param name="accountId">Account id of player.</param>
         /// <param name="statId">Index of stat. Starts at 1.</param>
         /// <returns>Leaderboard result for player.</returns>
-        public static async Task<LeaderboardDTO> GetPlayerLeaderboardIndex(int accountId, int statId)
+        public async Task<LeaderboardDTO> GetPlayerLeaderboardIndex(int accountId, int statId)
         {
             LeaderboardDTO result = null;
 
@@ -365,7 +390,7 @@ namespace Server.Database
         /// <param name="startIndex">Position to start gathering results from. Starts at 0.</param>
         /// <param name="size">Max number of items to retrieve.</param>
         /// <returns>Collection of leaderboard results for each player in page.</returns>
-        public static async Task<LeaderboardDTO[]> GetLeaderboard(int statId, int startIndex, int size)
+        public async Task<LeaderboardDTO[]> GetLeaderboard(int statId, int startIndex, int size)
         {
             LeaderboardDTO[] result = null;
 
@@ -386,7 +411,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="statPost">Model containing account id and ladder stats collection.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> PostLadderStats(StatPostDTO statPost)
+        public async Task<bool> PostLadderStats(StatPostDTO statPost)
         {
             bool result = false;
 
@@ -408,7 +433,7 @@ namespace Server.Database
         /// <param name="accountId">Account id to post stats to.</param>
         /// <param name="stats">Stats to post encoded as a Base64 string.</param>
         /// <returns>Success or failure.</returns>
-        public static async Task<bool> PostMediusStats(int accountId, string stats)
+        public async Task<bool> PostMediusStats(int accountId, string stats)
         {
             bool result = false;
 
@@ -428,7 +453,7 @@ namespace Server.Database
 
         #region Http
 
-        private static async Task<HttpResponseMessage> GetDbAsync(string route)
+        private async Task<HttpResponseMessage> GetDbAsync(string route)
         {
             // Try to get a cached result first
             if (GetDbCache.TryGetCache(route, out HttpResponseMessage value))
@@ -441,10 +466,10 @@ namespace Server.Database
 
             try
             {
-                result = await client.GetAsync($"{Url}/{route}");
+                result = await client.GetAsync($"{settings.DatabaseUrl}/{route}");
 
                 // Update cached value
-                GetDbCache.UpdateCache(route, result);
+                GetDbCache.UpdateCache(route, result, settings.CacheDuration);
             }
             catch (Exception e)
             {
@@ -459,7 +484,7 @@ namespace Server.Database
             return result;
         }
 
-        private static async Task<T> GetDbAsync<T>(string route)
+        private async Task<T> GetDbAsync<T>(string route)
         {
             // Try to get a cached result first
             if (GetDbCache.TryGetCache(route, out T value))
@@ -472,14 +497,14 @@ namespace Server.Database
 
             try
             {
-                var response = await client.GetAsync($"{Url}/{route}");
+                var response = await client.GetAsync($"{settings.DatabaseUrl}/{route}");
 
                 // Deserialize on success
                 if (response.IsSuccessStatusCode)
                     result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
 
                 // Update cached value
-                GetDbCache.UpdateCache(route, result);
+                GetDbCache.UpdateCache(route, result, settings.CacheDuration);
             }
             catch (Exception e)
             {
@@ -494,7 +519,7 @@ namespace Server.Database
             return result;
         }
 
-        private static async Task<HttpResponseMessage> PostDbAsync(string route, string body)
+        private async Task<HttpResponseMessage> PostDbAsync(string route, string body)
         {
             var handler = new HttpClientHandler()
             {
@@ -507,7 +532,7 @@ namespace Server.Database
 
             try
             {
-                result = await client.PostAsync($"{Url}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
+                result = await client.PostAsync($"{settings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
             }
             catch (Exception e)
             {
@@ -522,7 +547,7 @@ namespace Server.Database
             return result;
         }
 
-        private static async Task<HttpResponseMessage> PostDbAsync(string route, object body)
+        private async Task<HttpResponseMessage> PostDbAsync(string route, object body)
         {
             var handler = new HttpClientHandler()
             {
@@ -535,7 +560,7 @@ namespace Server.Database
 
             try
             {
-                result = await client.PostAsync($"{Url}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                result = await client.PostAsync($"{settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
             }
             catch (Exception e)
             {

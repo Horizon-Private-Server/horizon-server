@@ -37,7 +37,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID);
+            writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(new byte[3]);
             writer.Write(CurrentMediusWorldID);
             writer.Write(NewGameWorldID);

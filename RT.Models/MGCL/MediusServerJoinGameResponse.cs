@@ -41,11 +41,11 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID);
+            writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(Confirmation);
             writer.Write(AccessKey, Constants.MGCL_ACCESSKEY_MAXLEN);
             writer.Write(new byte[1]);
-            writer.Write(pubKey);
+            writer.Write(pubKey ?? RSA_KEY.Empty);
             writer.Write(DmeClientIndex);
         }
 

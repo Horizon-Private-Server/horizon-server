@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Deadlocked.Server.Config
+namespace Server.Database.Config
 {
     public class DbSettings
     {

@@ -74,7 +74,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID);
+            writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(GameName, Constants.MGCL_GAMENAME_MAXLEN);
             writer.Write(GameStats, Constants.MGCL_GAMESTATS_MAXLEN);
             writer.Write(GamePassword, Constants.MGCL_GAMEPASSWORD_MAXLEN);

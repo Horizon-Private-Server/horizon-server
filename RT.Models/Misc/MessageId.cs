@@ -9,6 +9,8 @@ namespace RT.Models
 {
     public class MessageId : IStreamSerializer
     {
+        public readonly static MessageId Empty = new MessageId("");
+
         public string Value { get; protected set; }
 
         public MessageId()
