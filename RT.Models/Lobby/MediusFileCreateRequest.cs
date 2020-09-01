@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileCreate)]
-    public class MediusFileCreateRequest : BaseLobbyMessage
+    public class MediusFileCreateRequest : BaseLobbyMessage, IMediusRequest
     {
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.FileCreate;
+
+        public string MessageID { get; set; }
 
         public MediusFile MediusFileToCreate;
         public MediusFileAttributes MediusFileCreateAttributes;
@@ -23,6 +26,9 @@ namespace RT.Models
 
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
             reader.ReadBytes(3);
         }
 
@@ -34,6 +40,9 @@ namespace RT.Models
 
             // 
             base.Serialize(writer);
+
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
             writer.Write(new byte[3]);
         }
 
@@ -41,6 +50,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"MediusFileToCreate:{MediusFileToCreate} " +
 $"MediusFileCreateAttributes:{MediusFileCreateAttributes}";
         }

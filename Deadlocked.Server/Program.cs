@@ -1,7 +1,6 @@
 ﻿using Deadlocked.Server.Config;
 using Deadlocked.Server.Medius;
 using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.Medius.Models.Packets;
 using Deadlocked.Server.Mods;
 using DotNetty.Common.Internal.Logging;
 using RT.Cryptography;
@@ -22,6 +21,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using RT.Models;
 
 namespace Deadlocked.Server
 {

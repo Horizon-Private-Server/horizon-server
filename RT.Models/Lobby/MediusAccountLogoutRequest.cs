@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountLogout)]
-    public class MediusAccountLogoutRequest : BaseLobbyMessage
+    public class MediusAccountLogoutRequest : BaseLobbyMessage, IMediusRequest
     {
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.AccountLogout;
+
+        public string MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
 
@@ -18,6 +21,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
@@ -28,6 +34,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
         }
@@ -36,6 +45,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"SessionKey:{SessionKey}";
         }
     }

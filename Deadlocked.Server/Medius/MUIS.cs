@@ -1,11 +1,9 @@
-﻿using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.Medius.Models.Packets.Lobby;
-using Deadlocked.Server.SCERT;
-using Deadlocked.Server.SCERT.Models;
-using Deadlocked.Server.SCERT.Models.Packets;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
+using RT.Common;
 using RT.Cryptography;
+using RT.Models;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,7 +58,6 @@ namespace Deadlocked.Server.Medius
                             UNK_00 = 0,
                             UNK_02 = GenerateNewScertClientId(),
                             UNK_04 = 0,
-                            UNK_05 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);

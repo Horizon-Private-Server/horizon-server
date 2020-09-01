@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.ClearGameListFilter)]
-    public class MediusClearGameListFilterRequest : BaseLobbyMessage
+    public class MediusClearGameListFilterRequest : BaseLobbyExtMessage, IMediusRequest
     {
 
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.ClearGameListFilter;
+
+        public string MessageID { get; set; }
 
         public uint FilterID;
 
@@ -18,6 +21,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             reader.ReadBytes(3);
@@ -29,6 +35,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(new byte[3]);
             writer.Write(FilterID);
@@ -38,6 +47,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"FilterID:{FilterID}";
         }
     }

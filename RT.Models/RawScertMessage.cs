@@ -1,10 +1,11 @@
 ﻿using RT.Common;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace RT.Models.Packets
+namespace RT.Models
 {
     public class RawScertMessage : BaseScertMessage
     {

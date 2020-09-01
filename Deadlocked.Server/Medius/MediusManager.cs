@@ -1,10 +1,7 @@
 ﻿using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.Medius.Models.Packets.Lobby;
-using Deadlocked.Server.Medius.Models.Packets.MGCL;
-using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
-using Org.BouncyCastle.Math.EC.Rfc7748;
+using RT.Common;
+using RT.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

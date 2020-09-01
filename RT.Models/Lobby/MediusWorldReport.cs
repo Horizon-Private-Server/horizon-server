@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,10 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.WorldReport)]
-    public class MediusWorldReport : BaseMediusMessage
+    public class MediusWorldReport : BaseLobbyExtMessage
     {
 
-		public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyExt;
+
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.WorldReport;
 
         public int MediusWorldID;

@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountUpdateStats)]
-    public class MediusAccountUpdateStatsRequest : BaseLobbyMessage
+    public class MediusAccountUpdateStatsRequest : BaseLobbyMessage, IMediusRequest
     {
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.AccountUpdateStats;
+
+        public string MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public byte[] Stats = new byte[Constants.ACCOUNTSTATS_MAXLEN];
@@ -19,6 +22,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
@@ -30,6 +36,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(Stats, Constants.ACCOUNTSTATS_MAXLEN);
@@ -39,6 +48,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"SessionKey:{SessionKey} " +
 $"Stats:{BitConverter.ToString(Stats)}";
         }

@@ -1,8 +1,4 @@
 ﻿using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.SCERT;
-using Deadlocked.Server.SCERT.Models;
-using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Handlers.Logging;
 using DotNetty.Transport.Bootstrapping;
@@ -20,6 +16,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RT.Models;
+using RT.Common;
+using RT.Pipeline.Tcp;
 
 namespace Deadlocked.Server.Medius
 {
@@ -129,19 +128,13 @@ namespace Deadlocked.Server.Medius
                     .Channel<TcpServerSocketChannel>()
                     .Option(ChannelOption.SoBacklog, 100)
                     .Handler(new LoggingHandler(LogLevel.INFO))
-                    //.ChildOption(ChannelOption.TcpNodelay, true)
-                    //.ChildOption(ChannelOption.AutoRead, true)
-                    //.ChildOption(ChannelOption.SoKeepalive, true)
-                    //.ChildOption(ChannelOption.SoReuseaddr, true)
-                    //.ChildOption(ChannelOption.RcvbufAllocator, new FixedRecvByteBufAllocator(1024 * 4))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
 
-                        pipeline.AddLast(new ByteArrayEncoder());
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
-                        pipeline.AddLast(new ScertLengthFieldBasedFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, Constants.MEDIUS_MESSAGE_MAXLEN, 1, 2, 0, 0, false));
+                        pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
                         pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
                         pipeline.AddLast(_scertHandler);
                     }));

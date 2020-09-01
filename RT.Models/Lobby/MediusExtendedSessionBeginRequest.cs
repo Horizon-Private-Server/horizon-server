@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,11 +8,13 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.ExtendedSessionBeginRequest)]
-    public class MediusExtendedSessionBeginRequest : MediusSessionBeginRequest
+    public class MediusExtendedSessionBeginRequest : BaseLobbyExtMessage, IMediusRequest
     {
 
-		public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyExt;
+
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.ExtendedSessionBeginRequest;
+
+        public string MessageID { get; set; }
 
         public int ClientVersionMajor;
         public int ClientVersionMinor;
@@ -21,6 +24,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             ClientVersionMajor = reader.ReadInt32();
@@ -33,6 +39,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(ClientVersionMajor);
             writer.Write(ClientVersionMinor);
@@ -43,6 +52,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
 $"ClientVersionMajor:{ClientVersionMajor} " +
 $"ClientVersionMinor:{ClientVersionMinor} " +
 $"ClientVersionBuild:{ClientVersionBuild}";

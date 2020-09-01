@@ -1,15 +1,13 @@
 ﻿using Deadlocked.Server.Medius;
-using Deadlocked.Server.SCERT.Models;
 using Deadlocked.Server.Mods;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
-using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.Medius.Models.Packets.Lobby;
-using Deadlocked.Server.Medius.Models.Packets.MGCL;
 using DotNetty.Common.Internal.Logging;
+using RT.Common;
+using RT.Models;
 
 namespace Deadlocked.Server.Medius.Models
 {

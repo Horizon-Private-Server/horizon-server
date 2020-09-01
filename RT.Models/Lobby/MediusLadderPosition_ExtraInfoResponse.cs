@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,13 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.LadderPosition_ExtraInfoResponse)]
-    public class MediusLadderPosition_ExtraInfoResponse : BaseLobbyMessage
+    public class MediusLadderPosition_ExtraInfoResponse : BaseLobbyMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.LadderPosition_ExtraInfoResponse;
+
+        public bool IsSuccess => StatusCode >= 0;
+
+        public string MessageID { get; set; }
 
         public MediusCallbackStatus StatusCode;
         public uint LadderPosition;
@@ -19,6 +24,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             reader.ReadBytes(3);
@@ -32,6 +40,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
@@ -43,6 +54,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"StatusCode:{StatusCode} " +
 $"LadderPosition:{LadderPosition} " +
 $"TotalRankings:{TotalRankings}";

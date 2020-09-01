@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GameList_ExtraInfo)]
-    public class MediusGameList_ExtraInfoRequest : BaseLobbyExtMessage
+    public class MediusGameList_ExtraInfoRequest : BaseLobbyExtMessage, IMediusRequest
     {
 
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GameList_ExtraInfo;
+
+        public string MessageID { get; set; }
 
         public ushort PageID;
         public ushort PageSize;
@@ -19,6 +22,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             //
             reader.ReadBytes(1);
@@ -31,6 +37,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(new byte[1]);
             writer.Write(PageID);
@@ -41,6 +50,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"PageID:{PageID} " +
 $"PageSize:{PageSize}";
         }

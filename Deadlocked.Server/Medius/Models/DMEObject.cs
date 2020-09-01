@@ -1,8 +1,5 @@
-﻿using Deadlocked.Server.Medius.Models.Packets.MGCL;
-using DotNetty.Common.Internal.Logging;
-using Org.BouncyCastle.Asn1.Cms;
-using Org.BouncyCastle.Asn1.Ocsp;
-using Org.BouncyCastle.Ocsp;
+﻿using DotNetty.Common.Internal.Logging;
+using RT.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

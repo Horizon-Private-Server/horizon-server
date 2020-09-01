@@ -1,13 +1,10 @@
 ﻿using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.Medius.Models.Packets.Lobby;
-using Deadlocked.Server.Medius.Models.Packets.MGCL;
-using Deadlocked.Server.SCERT.Models;
-using Deadlocked.Server.SCERT.Models.Packets;
-using Deadlocked.Server.Stream;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
+using RT.Common;
 using RT.Cryptography;
+using RT.Models;
+using Server.Common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -1,20 +1,17 @@
-﻿using Dme.Server.Medius.Models.Packets;
-using Dme.Server.Pipeline.Udp;
-using Dme.Server.SCERT.Models;
-using Dme.Server.SCERT.Models.Packets;
-using DotNetty.Buffers;
+﻿using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using Microsoft.Extensions.Logging;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Dme.Server.Pipeline.Udp
+namespace RT.Pipeline.Udp
 {
     public class ScertDatagramIEnumerableEncoder : MessageToMessageEncoder<IEnumerable<ScertDatagramPacket>>
     {
@@ -37,9 +34,6 @@ namespace Dme.Server.Pipeline.Udp
             // Serialize and add
             foreach (var msg in messages)
             {
-                if (Program.Settings.IsLog(msg.Message.Id))
-                    Logger.Info($"SEND to {msg.Destination}: {msg.Message}");
-
                 if (!msgsByEndpoint.TryGetValue(msg.Destination, out msgs))
                     msgsByEndpoint.Add(msg.Destination, msgs = new List<byte[]>());
 

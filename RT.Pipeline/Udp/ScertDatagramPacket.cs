@@ -1,11 +1,11 @@
-﻿using Dme.Server.SCERT.Models.Packets;
+﻿using RT.Models;
 using DotNetty.Transport.Channels.Sockets;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-namespace Dme.Server.Pipeline.Udp
+namespace RT.Pipeline.Udp
 {
     public class ScertDatagramPacket
     {

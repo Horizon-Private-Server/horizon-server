@@ -1,7 +1,4 @@
-﻿using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.Mods;
-using Deadlocked.Server.SCERT;
-using Deadlocked.Server.SCERT.Models.Packets;
+﻿using Deadlocked.Server.Mods;
 using RT.Cryptography;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Math;
@@ -10,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using RT.Models;
+using RT.Common;
 
 namespace Deadlocked.Server.Config
 {

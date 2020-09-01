@@ -8,4 +8,10 @@
     <PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RT.Common\RT.Common.csproj" />
+    <ProjectReference Include="..\RT.Cryptography\RT.Cryptography.csproj" />
+    <ProjectReference Include="..\RT.Models\RT.Models.csproj" />
+  </ItemGroup>
+
 </Project>

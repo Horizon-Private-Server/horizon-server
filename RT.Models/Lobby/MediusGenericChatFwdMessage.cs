@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,10 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GenericChatFwdMessage)]
-    public class MediusGenericChatFwdMessage : BaseMediusMessage
+    public class MediusGenericChatFwdMessage : BaseLobbyExtMessage
     {
 
-		public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyExt;
+
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GenericChatFwdMessage;
 
         public uint TimeStamp;

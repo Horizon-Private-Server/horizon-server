@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,11 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.UpdateLadderStatsWide)]
-    public class MediusUpdateLadderStatsWideRequest : BaseLobbyExtMessage
+    public class MediusUpdateLadderStatsWideRequest : BaseLobbyExtMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.UpdateLadderStatsWide;
+
+        public string MessageID { get; set; }
 
         public MediusLadderType LadderType;
         public int[] Stats = new int[Constants.LADDERSTATSWIDE_MAXLEN];
@@ -18,6 +21,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             //
             reader.ReadBytes(3);
@@ -30,6 +36,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(new byte[3]);
             writer.Write(LadderType);
@@ -40,6 +49,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"LadderType:{LadderType} " +
 $"Stats:{Stats}";
         }

@@ -1,12 +1,12 @@
 ﻿using Deadlocked.Server.Database;
 using Deadlocked.Server.Database.Models;
 using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.Medius.Models.Packets;
-using Deadlocked.Server.Medius.Models.Packets.Lobby;
-using Deadlocked.Server.SCERT.Models.Packets;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
+using RT.Common;
 using RT.Cryptography;
+using RT.Models;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +37,12 @@ namespace Deadlocked.Server.Medius
             return client;
         }
 
+        public ClientObject ReserveClient(MediusExtendedSessionBeginRequest request)
+        {
+            var client = new ClientObject();
+            client.BeginSession();
+            return client;
+        }
 
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
@@ -83,7 +89,6 @@ namespace Deadlocked.Server.Medius
                             UNK_00 = 0x0019,
                             UNK_02 = GenerateNewScertClientId(),
                             UNK_04 = 0,
-                            UNK_05 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);

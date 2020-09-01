@@ -1,11 +1,10 @@
-﻿using RT.SCERT;
-using RT.SCERT.Models;
-using RT.SCERT.Models.Packets;
-using DotNetty.Buffers;
+﻿using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using RT.Cryptography;
+using RT.Models;
+using RT.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +14,7 @@ namespace RT.Pipeline.Tcp
 {
     public class ScertEncoder : MessageToMessageEncoder<BaseScertMessage>
     {
-        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ScertIEnumerableEncoder>();
+        static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ScertEncoder>();
         
         readonly ICipher[] _ciphers = null;
         readonly Func<RT_MSG_TYPE, CipherContext, ICipher> _getCipher = null;
@@ -33,9 +32,6 @@ namespace RT.Pipeline.Tcp
         {
             if (message is null)
                 return;
-
-            if (Program.Settings.IsLog(message.Id))
-                Logger.Info($"SEND to {ctx.Channel}: {message}");
 
             // Serialize
             var msgs = message.Serialize();

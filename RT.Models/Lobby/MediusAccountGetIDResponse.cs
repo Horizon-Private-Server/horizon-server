@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,14 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountGetIDResponse)]
-    public class MediusAccountGetIDResponse : BaseLobbyMessage
+    public class MediusAccountGetIDResponse : BaseLobbyMessage, IMediusResponse
     {
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.AccountGetIDResponse;
+
+        public bool IsSuccess => StatusCode >= 0;
+
+        public string MessageID { get; set; }
 
         public int AccountID;
         public MediusCallbackStatus StatusCode;
@@ -19,6 +24,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             reader.ReadBytes(3);
@@ -31,6 +39,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(new byte[3]);
             writer.Write(AccountID);
@@ -41,6 +52,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"AccountID:{AccountID} " +
 $"StatusCode:{StatusCode}";
         }

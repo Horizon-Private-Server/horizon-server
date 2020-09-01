@@ -4,14 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dme.Server.SCERT;
-using Dme.Server.SCERT.Models;
-using Dme.Server.SCERT.Models.Packets;
 using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
+using RT.Common;
 using RT.Cryptography;
+using RT.Models;
 
 namespace RT.Pipeline.Tcp
 {

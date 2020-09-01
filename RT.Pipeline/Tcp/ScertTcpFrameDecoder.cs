@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Dme.Server.Pipeline.Tcp
+namespace RT.Pipeline.Tcp
 {
     public class ScertTcpFrameDecoder : ByteToMessageDecoder
     {
@@ -194,7 +194,7 @@ namespace Dme.Server.Pipeline.Tcp
             {
                 long discard = frameLength - input.ReadableBytes;
                 this.tooLongFrameLength = frameLength;
-                int startOff = (int)MathF.Min(20, input.ArrayOffset);
+                int startOff = (int)Math.Min(20, input.ArrayOffset);
                 Logger.Error($"{context.Channel.RemoteAddress} Frame Length exceeds max frame length on buffer: start:{startOff} {BitConverter.ToString(input.Array, input.ArrayOffset - startOff, startOff + input.ReadableBytes)}");
 
                 if (discard < 0)

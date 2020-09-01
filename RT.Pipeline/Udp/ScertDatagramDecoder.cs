@@ -1,6 +1,5 @@
-﻿using Dme.Server.Medius;
-using Dme.Server.SCERT;
-using Dme.Server.SCERT.Models.Packets;
+﻿using RT.Models;
+using RT.Common;
 using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
@@ -12,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Dme.Server.Pipeline.Udp
+namespace RT.Pipeline.Udp
 {
     public class ScertDatagramDecoder : MessageToMessageDecoder<DatagramPacket>
     {

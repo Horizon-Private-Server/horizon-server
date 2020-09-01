@@ -3,12 +3,13 @@ using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Dme.Server.Pipeline.Udp
+namespace RT.Pipeline.Udp
 {
     public class ScertDatagramEncoder : MessageToMessageEncoder<ScertDatagramPacket>
     {
@@ -25,9 +26,6 @@ namespace Dme.Server.Pipeline.Udp
         {
             if (message is null)
                 return;
-
-            if (Program.Settings.IsLog(message.Message.Id))
-                Logger.Info($"SEND to {message.Destination}: {message.Message}");
 
             // Serialize
             var msgs = message.Message.Serialize();
@@ -47,7 +45,6 @@ namespace Dme.Server.Pipeline.Udp
         public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
         {
             Logger.Error(exception);
-            // context.CloseAsync();
         }
 
     }

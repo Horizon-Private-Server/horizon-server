@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,9 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.PlayerReport)]
-    public class MediusPlayerReport : BaseMediusMessage
+    public class MediusPlayerReport : BaseLobbyMessage
     {
-        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobby;
+
         public override byte PacketType => (byte)MediusLobbyMessageIds.PlayerReport;
 
         public string SessionKey; // SESSIONKEY_MAXLEN

@@ -1,6 +1,5 @@
-﻿using Dme.Server.Medius.Models.Packets;
-using Dme.Server.SCERT.Models;
-using Dme.Server.SCERT.Models.Packets;
+﻿using RT.Models;
+using RT.Common;
 using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
@@ -10,8 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Server.Common;
 
-namespace Dme.Server.Pipeline.Tcp
+namespace RT.Pipeline.Tcp
 {
     public class ScertIEnumerableEncoder : MessageToMessageEncoder<IEnumerable<BaseScertMessage>>
     {
@@ -29,17 +29,14 @@ namespace Dme.Server.Pipeline.Tcp
             // Serialize and add
             foreach (var msg in messages)
             {
-                if (Program.Settings.IsLog(msg.Id))
-                    Logger.Info($"SEND to {ctx.Channel}: {msg}");
-
                 msgs.AddRange(msg.Serialize());
             }
 
             // Condense as much as possible
-            var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < Constants.MEDIUS_MESSAGE_MAXLEN).SelectMany(x => x);
+            //var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < Constants.MEDIUS_MESSAGE_MAXLEN).SelectMany(x => x);
 
             // 
-            foreach (var msg in condensedMsgs)
+            foreach (var msg in msgs)
             {
                 var byteBuffer = ctx.Allocator.Buffer(msg.Length);
                 byteBuffer.WriteBytes(msg);

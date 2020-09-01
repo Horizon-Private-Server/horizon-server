@@ -1,17 +1,14 @@
-﻿using Dme.Server.Pipeline.Udp;
-using Dme.Server.SCERT.Models.Packets;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Groups;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dme.Server.Pipeline.Udp
+namespace RT.Pipeline.Udp
 {
     public class ScertDatagramHandler : SimpleChannelInboundHandler<ScertDatagramPacket>
     {
@@ -58,7 +55,6 @@ namespace Dme.Server.Pipeline.Udp
         public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
         {
             Logger.Error(exception);
-            // context.CloseAsync();
         }
     }
 }

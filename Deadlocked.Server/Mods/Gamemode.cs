@@ -1,6 +1,5 @@
 ﻿using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.SCERT.Models;
-using Deadlocked.Server.SCERT.Models.Packets;
+using RT.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;

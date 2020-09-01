@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using RT.Common;
 using Server.Common;
 
 namespace RT.Models
@@ -10,9 +11,6 @@ namespace RT.Models
     [ScertMessage(RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_AUX_UDP)]
     public class RT_MSG_CLIENT_CONNECT_AUX_UDP : BaseScertMessage
     {
-        // 03 00 00 00 B0 2B 00 00 31 36 30 2E 33 33 2E 33 34 2E 39 30 00 00 00 00 5F 27 00 00 D4 52 00 00 
-
-
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_AUX_UDP;
 
         // 

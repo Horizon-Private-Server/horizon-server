@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,8 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.BinaryFwdMessage;
 
+        public string MessageID { get; set; }
+
         public int OriginatorAccountID;
         public MediusBinaryMessageType MessageType;
         public byte[] Message = new byte[Constants.BINARYMESSAGE_MAXLEN];
@@ -20,6 +23,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             //
             reader.ReadBytes(3);
@@ -33,6 +39,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(new byte[3]);
             writer.Write(OriginatorAccountID);
@@ -44,6 +53,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"OriginatorAccountID:{OriginatorAccountID} " +
 $"MessageType:{MessageType} " +
 $"Message:{Message}";

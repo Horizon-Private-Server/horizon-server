@@ -6,12 +6,12 @@ namespace RT.Models
 {
     public interface IMediusRequest
     {
-        string MessageID { get; set; }
+        MessageId MessageID { get; set; }
     }
 
     public interface IMediusResponse
     {
-        string MessageID { get; set; }
+        MessageId MessageID { get; set; }
 
         bool IsSuccess { get; }
     }

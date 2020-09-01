@@ -1,3 +1,4 @@
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,13 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.UniverseVariableInformationResponse)]
-    public class MediusUniverseVariableInformationResponse : BaseLobbyExtMessage
+    public class MediusUniverseVariableInformationResponse : BaseLobbyExtMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.UniverseVariableInformationResponse;
+
+        public bool IsSuccess => StatusCode >= 0;
+
+        public string MessageID { get; set; }
 
         public MediusCallbackStatus StatusCode;
         public MediusUniverseVariableInformationInfoFilter InfoFilter;
@@ -31,6 +36,9 @@ namespace RT.Models
         {
             // 
             base.Deserialize(reader);
+
+            //
+            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
 
             // 
             StatusCode = reader.Read<MediusCallbackStatus>();
@@ -81,6 +89,9 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            //
+            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+
             // 
             writer.Write(StatusCode);
             writer.Write(InfoFilter);
@@ -127,6 +138,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
+                $"MessageID:{MessageID} " +
              $"StatusCode:{StatusCode} " +
 $"InfoFilter:{InfoFilter} " +
 $"UniverseID:{UniverseID} " +
