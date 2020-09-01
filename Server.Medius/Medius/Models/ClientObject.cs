@@ -1,8 +1,8 @@
-﻿using Deadlocked.Server.Database;
-using Deadlocked.Server.Database.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Database;
+using Server.Database.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Deadlocked.Server.Medius.Models
+namespace Server.Medius.Models
 {
     public class ClientObject
     {

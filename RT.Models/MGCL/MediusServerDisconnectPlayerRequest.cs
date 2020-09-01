@@ -13,7 +13,7 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerDisconnectPlayerRequest;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
         public int DmeWorldID;
         public int DmeClientIndex;
 
@@ -23,7 +23,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             // 
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
             reader.ReadBytes(3);
             DmeWorldID = reader.ReadInt32();
             DmeClientIndex = reader.ReadInt32();
@@ -35,7 +35,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
             writer.Write(new byte[3]);
             writer.Write(DmeWorldID);
             writer.Write(DmeClientIndex);

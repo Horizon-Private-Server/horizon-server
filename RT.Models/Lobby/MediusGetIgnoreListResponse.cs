@@ -21,7 +21,7 @@ namespace RT.Models
 
         public bool IsSuccess => StatusCode >= 0;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
 
         public MediusCallbackStatus StatusCode;
         public int IgnoreAccountID;
@@ -35,7 +35,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             //
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
 
             // 
             reader.ReadBytes(3);
@@ -53,7 +53,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             //
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
 
             // 
             writer.Write(new byte[3]);
@@ -77,7 +77,7 @@ $"PlayerStatus:{PlayerStatus} " +
 $"EndOfList:{EndOfList}";
         }
 
-        public static List<MediusGetIgnoreListResponse> FromCollection(string messageId, IEnumerable<MediusGetIgnoreListResponseItem> items)
+        public static List<MediusGetIgnoreListResponse> FromCollection(MessageId messageId, IEnumerable<MediusGetIgnoreListResponseItem> items)
         {
             List<MediusGetIgnoreListResponse> ignoreList = new List<MediusGetIgnoreListResponse>();
 

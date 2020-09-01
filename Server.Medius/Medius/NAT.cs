@@ -7,7 +7,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     /// <summary>
     /// Unimplemented NAT.

@@ -15,7 +15,7 @@ namespace RT.Models
 
         public bool IsSuccess => StatusCode >= 0;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
 
         public IPAddress IP = IPAddress.Any;
         public MediusCallbackStatus StatusCode;
@@ -26,7 +26,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             //
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
 
             // 
             IP = IPAddress.Parse(reader.ReadString(Constants.IP_MAXLEN));
@@ -40,7 +40,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             //
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
 
             // 
             writer.Write(IP?.MapToIPv4()?.ToString(), Constants.IP_MAXLEN);

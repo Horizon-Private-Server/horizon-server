@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public interface IMediusComponent
     {

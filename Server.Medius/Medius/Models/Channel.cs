@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Deadlocked.Server.Medius.Models
+namespace Server.Medius.Models
 {
     public enum ChannelType
     {

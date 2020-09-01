@@ -13,7 +13,7 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.CreateClan;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public int ApplicationID;
@@ -25,7 +25,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             //
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
 
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
@@ -40,7 +40,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             //
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
 
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);

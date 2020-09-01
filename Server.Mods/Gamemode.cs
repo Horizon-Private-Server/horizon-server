@@ -1,12 +1,11 @@
-﻿using Deadlocked.Server.Medius.Models;
-using RT.Models;
+﻿using RT.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace Deadlocked.Server.Mods
+namespace Server.Mods
 {
     public class Gamemode
     {
@@ -66,42 +65,25 @@ namespace Deadlocked.Server.Mods
         /// <summary>
         /// Apply game mode to a given set of clients.
         /// </summary>
-        public void Apply(IEnumerable<ClientObject> clients)
+        public List<BaseScertMessage> GetPayload()
         {
             List<BaseScertMessage> messages = new List<BaseScertMessage>();
 
             // Add paylaod
             messages.AddRange(RT_MSG_SERVER_MEMORY_POKE.FromPayload(address, File.ReadAllBytes(BinPath)));
 
-            // Add module
-            byte[] moduleEntry = new byte[16];
-            Array.Copy(BitConverter.GetBytes((int)1), 0, moduleEntry, 0, 4);
-            Array.Copy(BitConverter.GetBytes(gameEntrypoint), 0, moduleEntry, 4, 4);
-            Array.Copy(BitConverter.GetBytes(lobbyEntrypoint), 0, moduleEntry, 8, 4);
-
-            // 
-            messages.Add(new RT_MSG_SERVER_MEMORY_POKE()
-            {
-                Address = 0x000CF000 + (0 * 16),
-                Payload = moduleEntry
-            });
-
-            // Send each
-            foreach (var client in clients)
-                client?.Queue(messages);
+            return messages;
         }
-
+        
         /// <summary>
-        /// Disables the gamemode module.
+        /// 
         /// </summary>
-        public static void Disable(IEnumerable<ClientObject> clients)
+        public void SetModuleEntry(byte[] buffer, int index, bool isEnabled)
         {
-            // reset
-            var modulePokes = RT_MSG_SERVER_MEMORY_POKE.FromPayload(0x000CF000 + (0 * 16), new byte[16]);
-
-            // Send each
-            foreach (var client in clients)
-                client?.Queue(modulePokes);
+            // Add module
+            Array.Copy(BitConverter.GetBytes((int)(isEnabled ? 1 : 0)), 0, buffer, index + 0, 4);
+            Array.Copy(BitConverter.GetBytes(gameEntrypoint), 0, buffer, index + 4, 4);
+            Array.Copy(BitConverter.GetBytes(lobbyEntrypoint), 0, buffer, index + 8, 4);
         }
 
         [OnDeserialized]

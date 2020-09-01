@@ -1,5 +1,4 @@
-﻿using Deadlocked.Server.Medius.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Handlers.Logging;
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
@@ -19,8 +18,9 @@ using System.Threading.Tasks;
 using RT.Models;
 using RT.Common;
 using RT.Pipeline.Tcp;
+using Server.Medius.Models;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public abstract class BaseMediusComponent : IMediusComponent
     {

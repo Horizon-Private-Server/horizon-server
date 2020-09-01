@@ -1,10 +1,10 @@
-﻿using Deadlocked.Server.Medius.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
 using Server.Common;
+using Server.Medius.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public class MPS : BaseMediusComponent
     {
@@ -141,16 +141,16 @@ namespace Deadlocked.Server.Medius
 
                 case MediusServerCreateGameWithAttributesResponse createGameWithAttrResponse:
                     {
-                        int gameId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[0]);
-                        int accountId = int.Parse(createGameWithAttrResponse.MessageID.Split('-')[1]);
-                        string msgId = createGameWithAttrResponse.MessageID.Split('-')[2];
+                        int gameId = int.Parse(createGameWithAttrResponse.MessageID.Value.Split('-')[0]);
+                        int accountId = int.Parse(createGameWithAttrResponse.MessageID.Value.Split('-')[1]);
+                        string msgId = createGameWithAttrResponse.MessageID.Value.Split('-')[2];
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
                         game.DMEWorldId = createGameWithAttrResponse.WorldID;
 
                         rClient.Queue(new MediusCreateGameResponse()
                         {
-                            MessageID = msgId,
+                            MessageID = new MessageId(msgId),
                             StatusCode = MediusCallbackStatus.MediusSuccess,
                             MediusWorldID = game.Id
                         });
@@ -160,9 +160,9 @@ namespace Deadlocked.Server.Medius
                     }
                 case MediusServerJoinGameResponse joinGameResponse:
                     {
-                        int gameId = int.Parse(joinGameResponse.MessageID.Split('-')[0]);
-                        int accountId = int.Parse(joinGameResponse.MessageID.Split('-')[1]);
-                        string msgId = joinGameResponse.MessageID.Split('-')[2];
+                        int gameId = int.Parse(joinGameResponse.MessageID.Value.Split('-')[0]);
+                        int accountId = int.Parse(joinGameResponse.MessageID.Value.Split('-')[1]);
+                        string msgId = joinGameResponse.MessageID.Value.Split('-')[2];
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
 
@@ -172,7 +172,7 @@ namespace Deadlocked.Server.Medius
                         // 
                         rClient.Queue(new MediusJoinGameResponse()
                         {
-                            MessageID = msgId,
+                            MessageID = new MessageId(msgId),
                             StatusCode = MediusCallbackStatus.MediusSuccess,
                             GameHostType = game.GameHostType,
                             ConnectInfo = new NetConnectionInfo()

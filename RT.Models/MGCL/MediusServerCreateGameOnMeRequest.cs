@@ -13,7 +13,7 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerCreateGameOnMeRequest;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
         public string GameName; // MGCL_GAMENAME_MAXLEN
         public byte[] GameStats = new byte[Constants.MGCL_GAMESTATS_MAXLEN];
         public string GamePassword; // MGCL_GAMEPASSWORD_MAXLEN
@@ -42,7 +42,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             // 
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
             GameName = reader.ReadString(Constants.MGCL_GAMENAME_MAXLEN);
             GameStats = reader.ReadBytes(Constants.MGCL_GAMESTATS_MAXLEN);
             GamePassword = reader.ReadString(Constants.MGCL_GAMEPASSWORD_MAXLEN);
@@ -74,7 +74,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
             writer.Write(GameName, Constants.MGCL_GAMENAME_MAXLEN);
             writer.Write(GameStats, Constants.MGCL_GAMESTATS_MAXLEN);
             writer.Write(GamePassword, Constants.MGCL_GAMEPASSWORD_MAXLEN);

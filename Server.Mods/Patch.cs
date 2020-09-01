@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace Deadlocked.Server.Mods
+namespace Server.Mods
 {
     public class Patch
     {

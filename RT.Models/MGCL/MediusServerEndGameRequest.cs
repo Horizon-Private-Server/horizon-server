@@ -13,7 +13,7 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerEndGameRequest;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
         public int WorldID;
         public bool BrutalFlag;
 
@@ -23,7 +23,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             // 
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
             reader.ReadBytes(3);
             WorldID = reader.ReadInt32();
             BrutalFlag = reader.ReadBoolean();
@@ -36,7 +36,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
             writer.Write(new byte[3]);
             writer.Write(WorldID);
             writer.Write(BrutalFlag);

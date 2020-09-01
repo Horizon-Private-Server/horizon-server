@@ -1,6 +1,4 @@
-﻿using Deadlocked.Server.Medius;
-using Deadlocked.Server.Mods;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -8,8 +6,9 @@ using System.Text;
 using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Mods;
 
-namespace Deadlocked.Server.Medius.Models
+namespace Server.Medius.Models
 {
     public class Game
     {
@@ -238,13 +237,33 @@ namespace Deadlocked.Server.Medius.Models
             // This just fixes that. At the cost of the game not showing after a host leaves a game.
             if (WorldStatus != MediusWorldStatus.WorldClosed)
             {
-                // When game starts, send game mode payload
+                // When game starts, send custom gamemode payload
                 if (report.WorldStatus == MediusWorldStatus.WorldActive && WorldStatus != MediusWorldStatus.WorldActive)
                 {
-                    if (CustomGamemode != null)
-                        CustomGamemode.Apply(Clients.Select(x => x.Client));
-                    else
-                        Gamemode.Disable(Clients.Select(x => x.Client));
+                    var payloads = new List<BaseScertMessage>();
+
+                    // Add payloads and set payload defs
+                    int count = CustomGamemode == null ? 0 : 1;
+                    byte[] moduleDefinitions = new byte[16 * (count + 1)];
+                    for (int i = 0; i < count; ++i)
+                    {
+                        if (i == 0 && CustomGamemode != null)
+                        {
+                            payloads.AddRange(CustomGamemode.GetPayload());
+                            CustomGamemode.SetModuleEntry(moduleDefinitions, i * 16, true);
+                        }
+                    }
+
+                    // Add module definitions payload
+                    payloads.Add(new RT_MSG_SERVER_MEMORY_POKE()
+                    {
+                        Address = 0x000CF000,
+                        Payload = moduleDefinitions
+                    });
+
+                    // Send
+                    foreach (var client in Clients.Select(x => x.Client))
+                        client.Queue(payloads);
                 }
 
                 WorldStatus = report.WorldStatus;

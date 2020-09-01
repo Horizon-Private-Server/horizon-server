@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using RT.Cryptography;
 using System;
 using System.Collections.Generic;

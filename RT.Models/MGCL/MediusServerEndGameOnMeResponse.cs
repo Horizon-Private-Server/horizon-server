@@ -13,7 +13,7 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerEndGameOnMeResponse;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
         public MGCL_ERROR_CODE Confirmation;
 
         public bool IsSuccess => Confirmation >= 0;
@@ -25,7 +25,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             // 
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
             Confirmation = reader.Read<MGCL_ERROR_CODE>();
         }
 
@@ -35,7 +35,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             // 
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
             writer.Write(Confirmation);
         }
 

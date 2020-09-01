@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Deadlocked.Server.Database.Models
+namespace Server.Database.Models
 {
     public class BuddyDTO
     {

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Deadlocked.Server.Medius.Models
+namespace Server.Medius.Models
 {
     public class DMEObject : ClientObject
     {

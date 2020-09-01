@@ -1,5 +1,4 @@
-﻿using Deadlocked.Server.Mods;
-using RT.Cryptography;
+﻿using RT.Cryptography;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Math;
 using System;
@@ -9,6 +8,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using RT.Models;
 using RT.Common;
+using Server.Mods;
 
 namespace Deadlocked.Server.Config
 {

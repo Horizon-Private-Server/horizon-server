@@ -1,11 +1,11 @@
-﻿using Deadlocked.Server.Database;
-using Deadlocked.Server.Medius.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
 using Server.Common;
+using Server.Database;
+using Server.Medius.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public class MAS : BaseMediusComponent
     {
@@ -282,7 +282,7 @@ namespace Deadlocked.Server.Medius
                             return;
                         }
 
-                        DbController.CreateAccount(new Database.Models.CreateAccountDTO()
+                        _ = DbController.CreateAccount(new Database.Models.CreateAccountDTO()
                         {
                             AccountName = accountRegRequest.AccountName,
                             AccountPassword = Utils.ComputeSHA256(accountRegRequest.Password),
@@ -318,7 +318,7 @@ namespace Deadlocked.Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountGetIdRequest} without a session.");
 
-                        DbController.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
+                        _ = DbController.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {
@@ -354,7 +354,7 @@ namespace Deadlocked.Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without a being logged in.");
 
-                        DbController.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
+                        _ = DbController.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result)
                             {
@@ -427,7 +427,7 @@ namespace Deadlocked.Server.Medius
                         }
                         else
                         {
-                            DbController.GetAccountByName(accountLoginRequest.Username).ContinueWith((r) =>
+                            _ = DbController.GetAccountByName(accountLoginRequest.Username).ContinueWith((r) =>
                             {
                                 if (r.IsCompletedSuccessfully && r.Result != null && data != null && data.ClientObject != null && data.ClientObject.IsConnected)
                                 {

@@ -1,12 +1,12 @@
-﻿using Deadlocked.Server.Database;
-using Deadlocked.Server.Database.Models;
-using Deadlocked.Server.Medius.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
 using Server.Common;
+using Server.Database;
+using Server.Database.Models;
+using Server.Medius.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public class MLS : BaseMediusComponent
     {

@@ -1,7 +1,4 @@
 ﻿using Deadlocked.Server.Config;
-using Deadlocked.Server.Medius;
-using Deadlocked.Server.Medius.Models;
-using Deadlocked.Server.Mods;
 using DotNetty.Common.Internal.Logging;
 using RT.Cryptography;
 using Microsoft.Extensions.Logging;
@@ -22,8 +19,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using RT.Models;
+using Server.Mods;
+using Server.Medius.Models;
+using Server.Database;
 
-namespace Deadlocked.Server
+namespace Server.Medius
 {
     class Program
     {
@@ -208,6 +208,10 @@ namespace Deadlocked.Server
                 // Save default db config
                 File.WriteAllText(DB_CONFIG_FILE, JsonConvert.SerializeObject(DbSettings, Formatting.Indented));
             }
+
+            // Update db controller
+            DbController.CacheDuration = DbSettings.CacheDuration;
+            DbController.Url = DbSettings.DatabaseUrl;
 
             // Determine server ip
             if (!String.IsNullOrEmpty(Settings.ServerIpOverride))

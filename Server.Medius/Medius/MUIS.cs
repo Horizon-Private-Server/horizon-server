@@ -13,7 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public class MUIS : BaseMediusComponent
     {
@@ -113,6 +113,7 @@ namespace Deadlocked.Server.Medius
                         {
                             Message = new MediusUniverseVariableSvoURLResponse()
                             {
+                                MessageID = new MessageId(),
                                 Result = 1
                             }
                         }, clientChannel);

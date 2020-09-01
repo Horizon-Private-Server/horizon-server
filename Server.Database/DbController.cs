@@ -1,17 +1,20 @@
-﻿using Deadlocked.Server.Database.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using Newtonsoft.Json;
+using Server.Database.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Deadlocked.Server.Database
+namespace Server.Database
 {
     public class DbController
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<DbController>();
+
+        public static int CacheDuration = 0;
+        public static string Url = null;
 
         #region Cache
 
@@ -23,7 +26,7 @@ namespace Deadlocked.Server.Database
 
             public object Value;
 
-            public bool IsValid => Value != null && (DateTime.UtcNow - LastUpdate).TotalSeconds < Program.DbSettings.CacheDuration;
+            public bool IsValid => Value != null && (DateTime.UtcNow - LastUpdate).TotalSeconds < CacheDuration;
 
 
             public static bool TryGetCache<T>(string route, out T value)
@@ -438,7 +441,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                result = await client.GetAsync($"{Program.DbSettings.DatabaseUrl}/{route}");
+                result = await client.GetAsync($"{Url}/{route}");
 
                 // Update cached value
                 GetDbCache.UpdateCache(route, result);
@@ -469,7 +472,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                var response = await client.GetAsync($"{Program.DbSettings.DatabaseUrl}/{route}");
+                var response = await client.GetAsync($"{Url}/{route}");
 
                 // Deserialize on success
                 if (response.IsSuccessStatusCode)
@@ -504,7 +507,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                result = await client.PostAsync($"{Program.DbSettings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
+                result = await client.PostAsync($"{Url}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
             }
             catch (Exception e)
             {
@@ -532,7 +535,7 @@ namespace Deadlocked.Server.Database
 
             try
             {
-                result = await client.PostAsync($"{Program.DbSettings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                result = await client.PostAsync($"{Url}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
             }
             catch (Exception e)
             {

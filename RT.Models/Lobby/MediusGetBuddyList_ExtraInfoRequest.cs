@@ -12,7 +12,7 @@ namespace RT.Models
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.GetBuddyList_ExtraInfo;
 
-        public string MessageID { get; set; }
+        public MessageId MessageID { get; set; }
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -20,7 +20,7 @@ namespace RT.Models
             base.Deserialize(reader);
 
             //
-            MessageID = reader.ReadString(Constants.MESSAGEID_MAXLEN);
+            MessageID = reader.Read<MessageId>();
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -29,7 +29,7 @@ namespace RT.Models
             base.Serialize(writer);
 
             //
-            writer.Write(MessageID, Constants.MESSAGEID_MAXLEN);
+            writer.Write(MessageID);
         }
 
 

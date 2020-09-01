@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Deadlocked.Server.Medius.Models
+namespace Server.Medius.Models
 {
     public class GameListFilter
     {

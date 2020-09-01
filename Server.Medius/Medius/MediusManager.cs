@@ -1,13 +1,13 @@
-﻿using Deadlocked.Server.Medius.Models;
-using DotNetty.Common.Internal.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Medius.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Deadlocked.Server.Medius
+namespace Server.Medius
 {
     public class MediusManager
     {
@@ -200,7 +200,7 @@ namespace Deadlocked.Server.Medius
                 // Send create game request to dme server
                 dme.Queue(new MediusServerCreateGameWithAttributesRequest()
                 {
-                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
+                    MessageID = new MessageId($"{game.Id}-{client.AccountId}-{request.MessageID}"),
                     MediusWorldUID = (uint)game.Id,
                     Attributes = game.Attributes,
                     ApplicationID = Program.Settings.ApplicationId,
@@ -246,7 +246,7 @@ namespace Deadlocked.Server.Medius
                 var dme = game.DMEServer;
                 dme.Queue(new MediusServerJoinGameRequest()
                 {
-                    MessageID = $"{game.Id}-{client.AccountId}-{request.MessageID}",
+                    MessageID = new MessageId($"{game.Id}-{client.AccountId}-{request.MessageID}"),
                     ConnectInfo = new NetConnectionInfo()
                     {
                         Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP,
