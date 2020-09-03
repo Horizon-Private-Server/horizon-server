@@ -54,6 +54,11 @@ namespace Server.Dme.Config
         public int TickRate { get; set; } = 10;
 
         /// <summary>
+        /// Number of ticks per second for the udp server.
+        /// </summary>
+        public int UdpTickRate { get; set; } = 30;
+
+        /// <summary>
         /// Port of the TCP server.
         /// </summary>
         public int TCPPort { get; set; } = 10073;

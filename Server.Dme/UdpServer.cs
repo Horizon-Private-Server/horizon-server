@@ -37,6 +37,9 @@ namespace Server.Dme
         protected ClientObject ClientObject { get; set; } = null;
         protected EndPoint AuthenticatedEndPoint { get; set; } = null;
 
+        private ConcurrentQueue<ScertDatagramPacket> _recvQueue = new ConcurrentQueue<ScertDatagramPacket>();
+        private ConcurrentQueue<ScertDatagramPacket> _sendQueue = new ConcurrentQueue<ScertDatagramPacket>();
+
         private BaseScertMessage _lastMessage { get; set; } = null;
 
         #region Port Management
@@ -90,9 +93,11 @@ namespace Server.Dme
             // Queue all incoming messages
             _scertHandler.OnChannelMessage += (channel, message) =>
             {
-                ProcessMessage(message);
+                _recvQueue.Enqueue(message);
 
-                _lastMessage = message.Message;
+                //ProcessMessage(message);
+
+                //_lastMessage = message.Message;
 
                 // Log if id is set
                 //if (Program.Settings.IsLog(message.Message.Id))
@@ -180,6 +185,7 @@ namespace Server.Dme
                         if (AuthenticatedEndPoint == null || !AuthenticatedEndPoint.Equals(packet.Source))
                             break;
 
+                        /*
                         // Don't send dupes
                         if (_lastMessage != null && _lastMessage is RT_MSG_CLIENT_APP_BROADCAST lastBroadcast && lastBroadcast.Equals(clientAppBroadcast))
                             break;
@@ -202,6 +208,7 @@ namespace Server.Dme
                                 break;
                             }
                         }
+                        */
 
                         dododood:;
                         ClientObject.DmeWorld?.BroadcastUdp(ClientObject, clientAppBroadcast.Payload);
@@ -293,7 +300,7 @@ namespace Server.Dme
             if (target == null)
                 return;
 
-            _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(message, target));
+            _sendQueue.Enqueue(new ScertDatagramPacket(message, target));
         }
 
         public void Send(BaseScertMessage message)
@@ -301,18 +308,67 @@ namespace Server.Dme
             if (AuthenticatedEndPoint == null)
                 return;
 
-            _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(message, AuthenticatedEndPoint));
+            _sendQueue.Enqueue(new ScertDatagramPacket(message, AuthenticatedEndPoint));
         }
 
-        public async Task Send(IEnumerable<BaseScertMessage> messages)
+        public void Send(IEnumerable<BaseScertMessage> messages)
         {
             if (AuthenticatedEndPoint == null)
                 return;
 
             foreach (var message in messages)
-                await _boundChannel.WriteAsync(new ScertDatagramPacket(message, AuthenticatedEndPoint));
+                _sendQueue.Enqueue(new ScertDatagramPacket(message, AuthenticatedEndPoint));
+        }
 
-            _boundChannel.Flush();
+        #endregion
+
+        #region Tick
+
+        public async Task Tick()
+        {
+            if (_boundChannel == null || !_boundChannel.Active)
+                return;
+
+            // 
+            List<ScertDatagramPacket> responses = new List<ScertDatagramPacket>();
+
+            try
+            {
+                // Process all messages in queue
+                while (_recvQueue.TryDequeue(out var message))
+                {
+                    try
+                    {
+                        ProcessMessage(message);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                    }
+                }
+
+                // Send if writeable
+                if (_boundChannel.IsWritable)
+                {
+                    // Add send queue to responses
+                    while (_sendQueue.TryDequeue(out var message))
+                        responses.Add(message);
+
+                    //
+                    if (responses.Count > 0)
+                    {
+                        if (responses.Count > 1)
+                        {
+
+                        }
+                        await _boundChannel.WriteAndFlushAsync(responses);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
         }
 
         #endregion

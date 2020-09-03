@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Server.Dme
 {
@@ -38,10 +39,13 @@ namespace Server.Dme
         public static TcpServer TcpServer = new TcpServer();
 
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
+        public static int UdpTickMS => 1000 / (Settings?.UdpTickRate ?? 30);
 
         private static ulong _sessionKeyCounter = 0;
-        private static int sleepMS = 0;
+        private static int _sleepMS = 0;
+        private static int _udpSleepMs = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
+        private static bool _isRunning = true;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -51,6 +55,7 @@ namespace Server.Dme
         {
             DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
+            Stopwatch tickSw = new Stopwatch();
 
 #if DEBUG
             Stopwatch sw = new Stopwatch();
@@ -69,6 +74,29 @@ namespace Server.Dme
 
             // 
             Logger.Info("Started.");
+
+            new Thread(new ParameterizedThreadStart(async (s) =>
+            {
+                Stopwatch udpTickSw = new Stopwatch();
+                while (_isRunning)
+                {
+                    // Restart stopwatch
+                    udpTickSw.Restart();
+
+                    try
+                    {
+                        // 
+                        await Manager.TickUdp();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                    }
+
+                    // Sleep
+                    Thread.Sleep((int)Math.Max(0, _udpSleepMs - udpTickSw.ElapsedMilliseconds));
+                }
+            })).Start();
 
             try
             {
@@ -96,7 +124,8 @@ namespace Server.Dme
 #endif
 
 
-
+                    //
+                    tickSw.Restart();
 
                     // Tick
                     await TcpServer.Tick();
@@ -114,11 +143,12 @@ namespace Server.Dme
                         lastConfigRefresh = DateTime.UtcNow;
                     }
 
-                    Thread.Sleep(sleepMS);
+                    Thread.Sleep((int)Math.Max(0, _sleepMS - tickSw.ElapsedMilliseconds));
                 }
             }
             finally
             {
+                _isRunning = false;
                 await TcpServer.Stop();
                 await Manager.Stop();
             }
@@ -167,7 +197,8 @@ namespace Server.Dme
             }
 
             // Load tick time into sleep ms for main loop
-            sleepMS = TickMS;
+            _sleepMS = TickMS;
+            _udpSleepMs = UdpTickMS;
         }
 
         /// <summary>
@@ -189,7 +220,8 @@ namespace Server.Dme
             }
 
             // Load tick time into sleep ms for main loop
-            sleepMS = TickMS;
+            _sleepMS = TickMS;
+            _udpSleepMs = UdpTickMS;
         }
 
         /// <summary>

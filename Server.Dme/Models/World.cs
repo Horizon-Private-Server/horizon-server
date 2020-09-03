@@ -99,6 +99,12 @@ namespace Server.Dme.Models
             Dispose();
         }
 
+        public async Task TickUdp()
+        {
+            // Process clients
+            await Task.WhenAll(Clients.Select(x => x.Value.Udp?.Tick()));
+        }
+
         public async Task Tick()
         {
             // Process clients

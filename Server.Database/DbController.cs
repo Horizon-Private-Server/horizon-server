@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -680,25 +681,34 @@ namespace Server.Database
                 return value;
 
             // 
-            HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
             HttpResponseMessage result = null;
 
-            try
+            using (var handler = new HttpClientHandler())
             {
-                result = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
 
-                // Update cached value
-                GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e);
-                result = null;
-            }
-            finally
-            {
-                client.Dispose();
+                using (var client = new HttpClient(handler))
+                {
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        result = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
+
+                        // Update cached value
+                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = null;
+                    }
+                }
             }
 
             return result;
@@ -711,29 +721,38 @@ namespace Server.Database
                 return value;
 
             // 
-            HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
             T result = default(T);
 
-            try
+            using (var handler = new HttpClientHandler())
             {
-                var response = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
 
-                // Deserialize on success
-                if (response.IsSuccessStatusCode)
-                    result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+                using (var client = new HttpClient(handler))
+                {
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                // Update cached value
-                GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e);
-                result = default(T);
-            }
-            finally
-            {
-                client.Dispose();
+                    try
+                    {
+                        var response = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
+
+                        // Deserialize on success
+                        if (response.IsSuccessStatusCode)
+                            result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+
+                        // Update cached value
+                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = default(T);
+                    }
+                }
             }
 
             return result;
@@ -741,27 +760,32 @@ namespace Server.Database
 
         private async Task<HttpResponseMessage> PostDbAsync(string route, string body)
         {
-            var handler = new HttpClientHandler()
-            {
-                AllowAutoRedirect = false
-            };
-
-            HttpClient client = new HttpClient(handler);
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            // 
             HttpResponseMessage result = null;
 
-            try
+            using (var handler = new HttpClientHandler())
             {
-                result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e);
-                result = null;
-            }
-            finally
-            {
-                client.Dispose();
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = null;
+                    }
+                }
             }
 
             return result;
@@ -769,27 +793,32 @@ namespace Server.Database
 
         private async Task<HttpResponseMessage> PostDbAsync(string route, object body)
         {
-            var handler = new HttpClientHandler()
-            {
-                AllowAutoRedirect = false
-            };
-
-            HttpClient client = new HttpClient(handler);
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            // 
             HttpResponseMessage result = null;
 
-            try
+            using (var handler = new HttpClientHandler())
             {
-                result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e);
-                result = null;
-            }
-            finally
-            {
-                client.Dispose();
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = null;
+                    }
+                }
             }
 
             return result;

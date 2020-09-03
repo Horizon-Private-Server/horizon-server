@@ -158,6 +158,14 @@ namespace Server.Dme
             await _group.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
         }
 
+        public async Task TickUdp()
+        {
+            if (_mpsChannel == null)
+                return;
+
+            await Task.WhenAll(_worlds.Select(x => x.TickUdp()));
+        }
+
         public async Task Tick()
         {
             if (_mpsChannel == null)
