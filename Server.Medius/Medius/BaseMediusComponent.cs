@@ -115,7 +115,7 @@ namespace Server.Medius
                 }
 
                 // Log if id is set
-                if (Program.Settings.IsLog(message))
+                if (message.CanLog())
                     Logger.Info($"RECV {data?.ClientObject},{channel}: {message}");
             };
 

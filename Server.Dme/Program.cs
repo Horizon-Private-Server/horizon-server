@@ -5,6 +5,7 @@ using NReco.Logging.File;
 using Org.BouncyCastle.Math;
 using RT.Cryptography;
 using RT.Models;
+using Server.Common.Logging;
 using Server.Dme.Config;
 using System;
 using System.Diagnostics;
@@ -161,30 +162,30 @@ namespace Server.Dme
             Initialize();
 
             // Add file logger if path is valid
-            if (new FileInfo(Settings.LogPath)?.Directory?.Exists ?? false)
+            if (new FileInfo(LogSettings.Singleton.LogPath)?.Directory?.Exists ?? false)
             {
                 var loggingOptions = new FileLoggerOptions()
                 {
                     Append = false,
-                    FileSizeLimitBytes = 1024 * 1024 * 1,
-                    MaxRollingFiles = 100,
+                    FileSizeLimitBytes = LogSettings.Singleton.RollingFileSize,
+                    MaxRollingFiles = LogSettings.Singleton.RollingFileCount,
                     FormatLogEntry = (msg) =>
                     {
-                        if (msg.LogLevel >= Settings.LogLevel)
+                        if (msg.LogLevel >= LogSettings.Singleton.LogLevel)
                             return msg.Message;
 
                         return null;
                     }
                 };
-                InternalLoggerFactory.DefaultFactory.AddProvider(new FileLoggerProvider(Settings.LogPath, loggingOptions));
+                InternalLoggerFactory.DefaultFactory.AddProvider(new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
             }
 
             // Optionally add console logger (always enabled when debugging)
 #if DEBUG
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, true));
+            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #else
             if (Settings.LogToConsole)
-                InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, true));
+                InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #endif
 
             // 
@@ -210,6 +211,9 @@ namespace Server.Dme
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
+
+            // Set LogSettings singleton
+            LogSettings.Singleton = Settings.Logging;
 
             // Determine server ip
             if (!String.IsNullOrEmpty(Settings.ServerIpOverride))

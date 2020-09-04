@@ -33,6 +33,10 @@ namespace RT.Pipeline.Tcp
             if (message is null)
                 return;
 
+            // Log
+            if (message.CanLog())
+                Logger.Info($"SEND {ctx.Channel}: {message}");
+
             // Serialize
             var msgs = message.Serialize();
 

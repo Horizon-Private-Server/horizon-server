@@ -30,6 +30,11 @@ namespace RT.Models
             }
         }
 
+        public override bool CanLog()
+        {
+            return base.CanLog() && (Message?.CanLog() ?? true);
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +

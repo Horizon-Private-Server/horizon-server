@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Math;
 using RT.Common;
 using RT.Cryptography;
+using Server.Common.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,54 +70,9 @@ namespace Server.Dme.Config
         public int UDPPort { get; set; } = 50000;
 
         /// <summary>
-        /// Path to the log file.
+        /// Logging settings.
         /// </summary>
-        public string LogPath { get; set; } = "logs/dme.log";
-
-        /// <summary>
-        /// Whether to also log to the console.
-        /// </summary>
-        public bool LogToConsole { get; set; } = false;
-
-        /// <summary>
-        /// Log level.
-        /// </summary>
-        public LogLevel LogLevel { get; set; } = LogLevel.Information;
-
-        /// <summary>
-        /// Collection of RT messages to print out
-        /// </summary>
-        public string[] RtLogFilter { get; set; } = Enum.GetNames(typeof(RT_MSG_TYPE));
-
-
-        private Dictionary<RT_MSG_TYPE, bool> _rtLogFilters = new Dictionary<RT_MSG_TYPE, bool>();
-
-
-        /// <summary>
-        /// Whether or not the given rt message id should be logged
-        /// </summary>
-        public bool IsLog(RT_MSG_TYPE msgId)
-        {
-            if (_rtLogFilters.TryGetValue(msgId, out var result))
-                return result;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Does some post processing on the deserialized model.
-        /// </summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            // Load rt log filters in dictionary
-            _rtLogFilters.Clear();
-            if (RtLogFilter != null)
-            {
-                foreach (var filter in RtLogFilter)
-                    _rtLogFilters.Add((RT_MSG_TYPE)Enum.Parse(typeof(RT_MSG_TYPE), filter), true);
-            }
-        }
+        public LogSettings Logging { get; set; } = new LogSettings();
     }
 
     public class MPSSettings

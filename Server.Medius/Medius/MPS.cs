@@ -168,7 +168,7 @@ namespace Server.Medius
                         // Join game
                         rClient.JoinGame(game);
 
-                        if (joinGameResponse.IsSuccess)
+                        if (!joinGameResponse.IsSuccess)
                         {
                             rClient.Queue(new MediusJoinGameResponse()
                             {

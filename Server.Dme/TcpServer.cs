@@ -89,7 +89,7 @@ namespace Server.Dme
                 }
 
                 // Log if id is set
-                if (Program.Settings.IsLog(message.Id))
+                if (message.CanLog())
                     Logger.Info($"TCP RECV {data?.ClientObject},{channel}: {message}");
             };
 

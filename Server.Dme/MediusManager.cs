@@ -129,7 +129,7 @@ namespace Server.Dme
                 _mpsRecvQueue.Enqueue(message);
 
                 // Log if id is set
-                if (Program.Settings.IsLog(message.Id))
+                if (message.CanLog())
                     Logger.Info($"MPS RECV {channel}: {message}");
             };
 

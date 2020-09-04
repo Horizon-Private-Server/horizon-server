@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using RT.Common;
 using Server.Common;
+using Server.Common.Logging;
 
 namespace RT.Models
 {
@@ -74,6 +75,25 @@ namespace RT.Models
         public virtual void Serialize(BinaryWriter writer)
         {
 
+        }
+
+        #endregion
+
+        #region Logging
+
+        /// <summary>
+        /// Whether or not this message passes the log filter.
+        /// </summary>
+        public virtual bool CanLog()
+        {
+            switch (this.PacketClass)
+            {
+                case NetMessageTypes.MessageClassDME: return LogSettings.Singleton?.IsLog((MediusDmeMessageIds)this.PacketType) ?? false;
+                case NetMessageTypes.MessageClassLobby: return LogSettings.Singleton?.IsLog((MediusLobbyMessageIds)this.PacketType) ?? false;
+                case NetMessageTypes.MessageClassLobbyReport: return LogSettings.Singleton?.IsLog((MediusMGCLMessageIds)this.PacketType) ?? false;
+                case NetMessageTypes.MessageClassLobbyExt: return LogSettings.Singleton?.IsLog((MediusLobbyExtMessageIds)this.PacketType) ?? false;
+                default: return true;
+            }
         }
 
         #endregion

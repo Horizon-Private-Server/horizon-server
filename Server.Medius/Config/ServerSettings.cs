@@ -9,6 +9,7 @@ using System.Text;
 using RT.Models;
 using RT.Common;
 using Server.Mods;
+using Server.Common.Logging;
 
 namespace Server.Medius.Config
 {
@@ -122,50 +123,9 @@ namespace Server.Medius.Config
         public List<Gamemode> Gamemodes { get; set; } = new List<Gamemode>();
 
         /// <summary>
-        /// Path to the log file.
+        /// Logging settings.
         /// </summary>
-        public string LogPath { get; set; } = "logs/medius.log";
-
-        /// <summary>
-        /// Whether to also log to the console.
-        /// </summary>
-        public bool LogToConsole { get; set; } = false;
-
-        /// <summary>
-        /// Log level.
-        /// </summary>
-        public LogLevel LogLevel { get; set; } = LogLevel.Information;
-
-        /// <summary>
-        /// Collection of RT messages to print out
-        /// </summary>
-        public string[] RtLogFilter { get; set; } = Enum.GetNames(typeof(RT_MSG_TYPE));
-
-        /// <summary>
-        /// Collection of Medius Lobby messages to print out
-        /// </summary>
-        public string[] MediusLobbyLogFilter { get; set; } = Enum.GetNames(typeof(MediusLobbyMessageIds));
-
-        /// <summary>
-        /// Collection of Medius Lobby Ext messages to print out
-        /// </summary>
-        public string[] MediusLobbyExtLogFilter { get; set; } = Enum.GetNames(typeof(MediusLobbyExtMessageIds));
-
-        /// <summary>
-        /// Collection of Medius Lobby Ext messages to print out
-        /// </summary>
-        public string[] MediusMGCLLogFilter { get; set; } = Enum.GetNames(typeof(MediusMGCLMessageIds));
-
-        /// <summary>
-        /// Collection of Medius Lobby Ext messages to print out
-        /// </summary>
-        public string[] MediusDMEExtLogFilter { get; set; } = Enum.GetNames(typeof(MediusDmeMessageIds));
-
-        private Dictionary<RT_MSG_TYPE, bool> _rtLogFilters = new Dictionary<RT_MSG_TYPE, bool>();
-        private Dictionary<MediusDmeMessageIds, bool> _dmeLogFilters = new Dictionary<MediusDmeMessageIds, bool>();
-        private Dictionary<MediusLobbyMessageIds, bool> _lobbyLogFilters = new Dictionary<MediusLobbyMessageIds, bool>();
-        private Dictionary<MediusMGCLMessageIds, bool> _mgclLogFilters = new Dictionary<MediusMGCLMessageIds, bool>();
-        private Dictionary<MediusLobbyExtMessageIds, bool> _lobbyExtLogFilters = new Dictionary<MediusLobbyExtMessageIds, bool>();
+        public LogSettings Logging { get; set; } = new LogSettings();
 
         /// <summary>
         /// 
@@ -178,79 +138,6 @@ namespace Server.Medius.Config
                 return true;
 
             return ApplicationIds.Contains(appId);
-        }
-
-        /// <summary>
-        /// Whether or not the given rt message id should be logged
-        /// </summary>
-        public bool IsLog(BaseScertMessage message)
-        {
-            if (message == null)
-                return false;
-
-            if (!_rtLogFilters.TryGetValue(message.Id, out var result) || !result)
-                return false;
-
-            switch (message)
-            {
-                case RT_MSG_SERVER_APP serverApp:
-                    {
-                        switch (serverApp.Message.PacketClass)
-                        {
-                            case NetMessageTypes.MessageClassDME: { return _dmeLogFilters.TryGetValue((MediusDmeMessageIds)serverApp.Message.PacketType, out var r) && r; }
-                            case NetMessageTypes.MessageClassLobby: { return _lobbyLogFilters.TryGetValue((MediusLobbyMessageIds)serverApp.Message.PacketType, out var r) && r; }
-                            case NetMessageTypes.MessageClassLobbyReport: { return _mgclLogFilters.TryGetValue((MediusMGCLMessageIds)serverApp.Message.PacketType, out var r) && r; }
-                            case NetMessageTypes.MessageClassLobbyExt: { return _lobbyExtLogFilters.TryGetValue((MediusLobbyExtMessageIds)serverApp.Message.PacketType, out var r) && r; }
-                        }
-                        break;
-                    }
-            }
-            
-
-            return true;
-        }
-
-        /// <summary>
-        /// Does some post processing on the deserialized model.
-        /// </summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            // Load log filters in dictionary
-            _rtLogFilters.Clear();
-            if (RtLogFilter != null)
-            {
-                foreach (var filter in RtLogFilter)
-                    _rtLogFilters.Add((RT_MSG_TYPE)Enum.Parse(typeof(RT_MSG_TYPE), filter), true);
-            }
-
-            _dmeLogFilters.Clear();
-            if (MediusDMEExtLogFilter != null)
-            {
-                foreach (var filter in MediusDMEExtLogFilter)
-                    _dmeLogFilters.Add((MediusDmeMessageIds)Enum.Parse(typeof(MediusDmeMessageIds), filter), true);
-            }
-
-            _lobbyLogFilters.Clear();
-            if (MediusLobbyLogFilter != null)
-            {
-                foreach (var filter in MediusLobbyLogFilter)
-                    _lobbyLogFilters.Add((MediusLobbyMessageIds)Enum.Parse(typeof(MediusLobbyMessageIds), filter), true);
-            }
-
-            _mgclLogFilters.Clear();
-            if (MediusMGCLLogFilter != null)
-            {
-                foreach (var filter in MediusMGCLLogFilter)
-                    _mgclLogFilters.Add((MediusMGCLMessageIds)Enum.Parse(typeof(MediusMGCLMessageIds), filter), true);
-            }
-
-            _lobbyExtLogFilters.Clear();
-            if (MediusLobbyExtLogFilter != null)
-            {
-                foreach (var filter in MediusLobbyExtLogFilter)
-                    _lobbyExtLogFilters.Add((MediusLobbyExtMessageIds)Enum.Parse(typeof(MediusLobbyExtMessageIds), filter), true);
-            }
         }
     }
 

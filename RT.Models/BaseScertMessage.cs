@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using RT.Common;
+using Server.Common.Logging;
 
 namespace RT.Models
 {
@@ -108,6 +109,18 @@ namespace RT.Models
         /// Serialize contents of the message.
         /// </summary>
         protected abstract void Serialize(BinaryWriter writer);
+
+        #endregion
+
+        #region Logging
+
+        /// <summary>
+        /// Whether or not this message passes the log filter.
+        /// </summary>
+        public virtual bool CanLog()
+        {
+            return LogSettings.Singleton?.IsLog(this.Id) ?? false;
+        }
 
         #endregion
 
