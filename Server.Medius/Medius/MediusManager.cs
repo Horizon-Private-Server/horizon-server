@@ -247,6 +247,14 @@ namespace Server.Medius
                     StatusCode = MediusCallbackStatus.MediusInvalidPassword
                 });
             }
+            else if (game.PlayerCount >= game.MaxPlayers)
+            {
+                client.Queue(new MediusJoinGameResponse()
+                {
+                    MessageID = request.MessageID,
+                    StatusCode = MediusCallbackStatus.MediusWorldIsFull
+                });
+            }
             else
             {
                 var dme = game.DMEServer;

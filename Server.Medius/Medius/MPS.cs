@@ -168,29 +168,40 @@ namespace Server.Medius
                         // Join game
                         rClient.JoinGame(game);
 
-                        // 
-                        rClient.Queue(new MediusJoinGameResponse()
+                        if (joinGameResponse.IsSuccess)
                         {
-                            MessageID = new MessageId(msgId),
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            GameHostType = game.GameHostType,
-                            ConnectInfo = new NetConnectionInfo()
+                            rClient.Queue(new MediusJoinGameResponse()
                             {
-                                AccessKey = joinGameResponse.AccessKey,
-                                SessionKey = rClient.SessionKey,
-                                WorldID = game.DMEWorldId,
-                                ServerKey = joinGameResponse.pubKey,
-                                AddressList = new NetAddressList()
+                                MessageID = new MessageId(msgId),
+                                StatusCode = MediusCallbackStatus.MediusFail
+                            });
+                        }
+                        else
+                        {
+                            // 
+                            rClient.Queue(new MediusJoinGameResponse()
+                            {
+                                MessageID = new MessageId(msgId),
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                GameHostType = game.GameHostType,
+                                ConnectInfo = new NetConnectionInfo()
                                 {
-                                    AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
+                                    AccessKey = joinGameResponse.AccessKey,
+                                    SessionKey = rClient.SessionKey,
+                                    WorldID = game.DMEWorldId,
+                                    ServerKey = joinGameResponse.pubKey,
+                                    AddressList = new NetAddressList()
                                     {
+                                        AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
+                                        {
                                         new NetAddress() { Address = (data.ClientObject as DMEObject).IP.MapToIPv4().ToString(), Port = (uint)(data.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
                                         new NetAddress() { AddressType = NetAddressType.NetAddressNone},
-                                    }
-                                },
-                                Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP
-                            }
-                        });
+                                        }
+                                    },
+                                    Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP
+                                }
+                            });
+                        }
                         break;
                     }
 

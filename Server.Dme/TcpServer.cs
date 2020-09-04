@@ -355,6 +355,11 @@ namespace Server.Dme
                         }, clientChannel);
                         break;
                     }
+                case RT_MSG_CLIENT_TOKEN_MESSAGE tokenMessage:
+                    {
+
+                        break;
+                    }
                 case RT_MSG_CLIENT_APP_BROADCAST clientAppBroadcast:
                     {
                         data.ClientObject.DmeWorld?.BroadcastTcp(data.ClientObject, clientAppBroadcast.Payload);
