@@ -23,7 +23,7 @@ namespace Server.Medius.Models
         }
 
         public int Id = 0;
-        public int DMEWorldId = 0;
+        public int DMEWorldId = -1;
         public int ApplicationId = 0;
         public List<GameClient> Clients = new List<GameClient>();
         public string GameName;
@@ -328,11 +328,14 @@ namespace Server.Medius.Models
             ChatChannel?.UnregisterGame(this);
 
             // Send end game
-            DMEServer?.Queue(new MediusServerEndGameRequest()
+            if (this.DMEWorldId > 0)
             {
-                WorldID = this.DMEWorldId,
-                BrutalFlag = false
-            });
+                DMEServer?.Queue(new MediusServerEndGameRequest()
+                {
+                    WorldID = this.DMEWorldId,
+                    BrutalFlag = false
+                });
+            }
         }
     }
 }

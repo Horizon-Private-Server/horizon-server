@@ -145,15 +145,27 @@ namespace Server.Medius
                         string msgId = createGameWithAttrResponse.MessageID.Value.Split('-')[2];
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
-                        game.DMEWorldId = createGameWithAttrResponse.WorldID;
 
-                        rClient.Queue(new MediusCreateGameResponse()
+                        if (!createGameWithAttrResponse.IsSuccess)
                         {
-                            MessageID = new MessageId(msgId),
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            MediusWorldID = game.Id
-                        });
+                            rClient.Queue(new MediusCreateGameResponse()
+                            {
+                                MessageID = new MessageId(msgId),
+                                StatusCode = MediusCallbackStatus.MediusFail
+                            });
 
+                            game.EndGame();
+                        }
+                        else
+                        {
+                            game.DMEWorldId = createGameWithAttrResponse.WorldID;
+                            rClient.Queue(new MediusCreateGameResponse()
+                            {
+                                MessageID = new MessageId(msgId),
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                MediusWorldID = game.Id
+                            });
+                        }
 
                         break;
                     }
