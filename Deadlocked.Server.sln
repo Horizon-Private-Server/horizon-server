@@ -13,13 +13,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RT.Cryptography", "RT.Crypt
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Common", "Server.Common\Server.Common.csproj", "{C44AE504-CAD9-4F01-B553-D51C686A51F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Medius", "Server.Medius\Server.Medius.csproj", "{5AA00294-172A-4D03-88CA-953325825CE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Medius", "Server.Medius\Server.Medius.csproj", "{5AA00294-172A-4D03-88CA-953325825CE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Database", "Server.Database\Server.Database.csproj", "{89B594AA-D8E0-4FC2-984E-3D1DB9B5645C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Database", "Server.Database\Server.Database.csproj", "{89B594AA-D8E0-4FC2-984E-3D1DB9B5645C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Mods", "Server.Mods\Server.Mods.csproj", "{6B975211-3885-4D7E-BE41-CD793EDBC389}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Mods", "Server.Mods\Server.Mods.csproj", "{6B975211-3885-4D7E-BE41-CD793EDBC389}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Dme", "Server.Dme\Server.Dme.csproj", "{F65CE071-2D60-43C6-8158-9B9F8C5A5146}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Dme", "Server.Dme\Server.Dme.csproj", "{F65CE071-2D60-43C6-8158-9B9F8C5A5146}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Plugins", "Server.Plugins\Server.Plugins.csproj", "{876CBA8F-45C3-46A0-881D-FD2A6749F66E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{F65CE071-2D60-43C6-8158-9B9F8C5A5146}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F65CE071-2D60-43C6-8158-9B9F8C5A5146}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F65CE071-2D60-43C6-8158-9B9F8C5A5146}.Release|Any CPU.Build.0 = Release|Any CPU
+		{876CBA8F-45C3-46A0-881D-FD2A6749F66E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{876CBA8F-45C3-46A0-881D-FD2A6749F66E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{876CBA8F-45C3-46A0-881D-FD2A6749F66E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{876CBA8F-45C3-46A0-881D-FD2A6749F66E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

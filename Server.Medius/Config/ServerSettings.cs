@@ -113,16 +113,6 @@ namespace Server.Medius.Config
             );
 
         /// <summary>
-        /// Collection of patches to apply to logged in clients.
-        /// </summary>
-        public List<Patch> Patches { get; set; } = new List<Patch>();
-
-        /// <summary>
-        /// Collection of custom game modes.
-        /// </summary>
-        public List<Gamemode> Gamemodes { get; set; } = new List<Gamemode>();
-
-        /// <summary>
         /// Logging settings.
         /// </summary>
         public LogSettings Logging { get; set; } = new LogSettings();

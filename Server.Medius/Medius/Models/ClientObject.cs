@@ -3,6 +3,8 @@ using RT.Common;
 using RT.Models;
 using Server.Database;
 using Server.Database.Models;
+using Server.Medius.Plugins;
+using Server.Plugins;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -186,6 +188,12 @@ namespace Server.Medius.Models
         /// </summary>
         public void Logout()
         {
+            if (!IsLoggedIn)
+                return;
+
+            // Raise plugin event
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_OUT, new OnPlayerArgs() { Player = this });
+
             // Leave game
             LeaveCurrentGame();
 
@@ -210,6 +218,9 @@ namespace Server.Medius.Models
             // 
             AccountId = account.AccountId;
             AccountName = account.AccountName;
+
+            // Raise plugin event
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
 
             // Tell database
             PostStatus();

@@ -24,6 +24,7 @@ using Server.Database;
 using Server.Medius.Config;
 using NReco.Logging.File;
 using Server.Common.Logging;
+using Server.Plugins;
 
 namespace Server.Medius
 {
@@ -31,6 +32,7 @@ namespace Server.Medius
     {
         public const string CONFIG_FILE = "config.json";
         public const string DB_CONFIG_FILE = "db.config.json";
+        public const string PLUGINS_PATH = "plugins/";
         public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
 
         public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
@@ -48,6 +50,7 @@ namespace Server.Medius
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
         public static MediusManager Manager = new MediusManager();
+        public static PluginsManager Plugins = null;
 
         public static MUIS UniverseInfoServer = new MUIS();
         public static MAS AuthenticationServer = new MAS();
@@ -189,6 +192,9 @@ namespace Server.Medius
                 InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #endif
 
+            // Initialize plugins
+            Plugins = new PluginsManager(PLUGINS_PATH);
+
             // 
             StartServerAsync().Wait();
         }
@@ -209,15 +215,6 @@ namespace Server.Medius
             }
             else
             {
-                // Add empty patch to default config output
-                // This helps a user understand the format
-                if (Settings.Patches.Count == 0)
-                    Settings.Patches.Add(new Patch());
-
-                // Add empty game mode to default config output
-                if (Settings.Gamemodes.Count == 0)
-                    Settings.Gamemodes.Add(new Gamemode());
-
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
@@ -268,10 +265,6 @@ namespace Server.Medius
             // Load settings
             if (File.Exists(CONFIG_FILE))
             {
-                // Clear collections to prevent additive loading
-                Settings.Patches.Clear();
-                Settings.Gamemodes.Clear();
-
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }

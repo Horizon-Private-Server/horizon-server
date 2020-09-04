@@ -13,17 +13,12 @@ namespace Server.Medius.Models
         Lobby,
         Game
     }
+
     public class Channel
     {
         public static int IdCounter = 0;
 
-        public class ChannelClient
-        {
-            public ClientObject Client;
-        }
-
-
-        public List<ChannelClient> Clients = new List<ChannelClient>();
+        public List<ClientObject> Clients = new List<ClientObject>();
 
         public int Id = 0;
         public int ApplicationId = 0;
@@ -72,7 +67,7 @@ namespace Server.Medius.Models
             // Remove inactive clients
             for (int i = 0; i < Clients.Count; ++i)
             {
-                if (!Clients[i].Client.IsConnected)
+                if (!Clients[i].IsConnected)
                 {
                     Clients.RemoveAt(i);
                     --i;
@@ -82,15 +77,12 @@ namespace Server.Medius.Models
 
         public void OnPlayerJoined(ClientObject client)
         {
-            Clients.Add(new ChannelClient()
-            {
-                Client = client
-            });
+            Clients.Add(client);
         }
 
         public void OnPlayerLeft(ClientObject client)
         {
-            Clients.RemoveAll(x => x.Client == client);
+            Clients.RemoveAll(x => x == client);
         }
 
 
@@ -113,7 +105,7 @@ namespace Server.Medius.Models
 
         public void BroadcastBinaryMessage(ClientObject source, MediusBinaryMessage msg)
         {
-            foreach (var client in Clients.Where(x => x.Client != source).Select(x => x.Client))
+            foreach (var client in Clients.Where(x => x != source))
             {
                 client?.Queue(new MediusBinaryFwdMessage()
                 {

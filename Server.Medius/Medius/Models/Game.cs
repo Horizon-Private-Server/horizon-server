@@ -6,7 +6,9 @@ using System.Text;
 using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Medius.Plugins;
 using Server.Mods;
+using Server.Plugins;
 
 namespace Server.Medius.Models
 {
@@ -49,8 +51,7 @@ namespace Server.Medius.Models
         public DMEObject DMEServer;
         public Channel ChatChannel;
         public ClientObject Host;
-
-        public Gamemode CustomGamemode = null;
+        public bool AcceptStats = true;
 
         private bool hasHostJoined = false;
         private DateTime utcTimeCreated;
@@ -58,7 +59,7 @@ namespace Server.Medius.Models
 
         public uint Time => (uint)(DateTime.UtcNow - utcTimeCreated).TotalMilliseconds;
 
-        public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected);
+        public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected && x.InGame);
 
         public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 1f;
 
@@ -80,10 +81,6 @@ namespace Server.Medius.Models
             Host = client;
 
             Logger.Info($"Game {Id}:{GameName}: Created by {client}");
-
-#if DEBUG
-            CustomGamemode = Program.Settings.Gamemodes.LastOrDefault();
-#endif
         }
 
         private void FromCreateGameRequest(MediusCreateGameRequest createGame)
@@ -181,6 +178,9 @@ namespace Server.Medius.Models
 
             if (player.Client == Host)
                 hasHostJoined = true;
+
+            // Send to plugins
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOINED_GAME, new OnPlayerGameArgs() { Player = player.Client, Game = this });
         }
 
         public void AddPlayer(ClientObject client)
@@ -198,7 +198,7 @@ namespace Server.Medius.Models
             });
 
             // Inform the client of any custom game mode
-            client.CurrentChannel?.SendSystemMessage(client, $"Gamemode is {CustomGamemode?.FullName ?? "default"}.");
+            //client.CurrentChannel?.SendSystemMessage(client, $"Gamemode is {CustomGamemode?.FullName ?? "default"}.");
         }
 
         private void OnPlayerLeft(GameClient player)
@@ -224,7 +224,15 @@ namespace Server.Medius.Models
 
             // Remove host
             if (Host == client)
+            {
+                // Send to plugins
+                Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_HOST_LEFT, new OnPlayerGameArgs() { Player = client, Game = this });
+
                 Host = null;
+            }
+
+            // Send to plugins
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LEFT_GAME, new OnPlayerGameArgs() { Player = client, Game = this });
 
             // Remove from clients list
             Clients.RemoveAll(x => x.Client == client);
@@ -233,6 +241,9 @@ namespace Server.Medius.Models
         public void OnEndGameReport(MediusEndGameReport report)
         {
             WorldStatus = MediusWorldStatus.WorldClosed;
+
+            // Send to plugins
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_ENDED, new OnGameArgs() { Game = this });
         }
 
 
@@ -273,6 +284,10 @@ namespace Server.Medius.Models
                 // When game starts, send custom gamemode payload
                 if (report.WorldStatus == MediusWorldStatus.WorldActive && WorldStatus != MediusWorldStatus.WorldActive)
                 {
+                    // Send to plugins
+                    Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_STARTED, new OnGameArgs() { Game = this });
+
+                    /*
                     var payloads = new List<BaseScertMessage>();
 
                     // Add payloads and set payload defs
@@ -297,6 +312,7 @@ namespace Server.Medius.Models
                     // Send
                     foreach (var client in Clients.Select(x => x.Client))
                         client.Queue(payloads);
+                    */
                 }
 
                 WorldStatus = report.WorldStatus;
@@ -307,6 +323,9 @@ namespace Server.Medius.Models
         {
             // 
             Logger.Info($"Game {Id}:{GameName}: EndGame() called.");
+
+            // Send to plugins
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_DESTROYED, new OnGameArgs() { Game = this });
 
             // Remove players from game world
             while (Clients.Count > 0)

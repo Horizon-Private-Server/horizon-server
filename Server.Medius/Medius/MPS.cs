@@ -5,6 +5,8 @@ using RT.Cryptography;
 using RT.Models;
 using Server.Common;
 using Server.Medius.Models;
+using Server.Medius.Plugins;
+using Server.Plugins;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -165,6 +167,9 @@ namespace Server.Medius
                                 StatusCode = MediusCallbackStatus.MediusSuccess,
                                 MediusWorldID = game.Id
                             });
+
+                            // Send to plugins
+                            Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_CREATED, new OnPlayerGameArgs() { Player = rClient, Game = game });
                         }
 
                         break;
@@ -177,8 +182,6 @@ namespace Server.Medius
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
 
-                        // Join game
-                        rClient.JoinGame(game);
 
                         if (!joinGameResponse.IsSuccess)
                         {
@@ -190,6 +193,9 @@ namespace Server.Medius
                         }
                         else
                         {
+                            // Join game
+                            rClient.JoinGame(game);
+
                             // 
                             rClient.Queue(new MediusJoinGameResponse()
                             {

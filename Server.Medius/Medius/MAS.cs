@@ -6,6 +6,7 @@ using RT.Models;
 using Server.Common;
 using Server.Database;
 using Server.Medius.Models;
+using Server.Plugins;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -476,12 +477,6 @@ namespace Server.Medius
 
                                         // Add to logged in clients
                                         Program.Manager.AddClient(data.ClientObject);
-
-                                        // Send patches
-                                        if (Program.Settings.Patches != null)
-                                            foreach (var patch in Program.Settings.Patches)
-                                                if (patch.Enabled && patch.ApplicationId == data.ClientObject.ApplicationId)
-                                                    data.ClientObject.Queue(patch.Serialize());
 
                                         // 
                                         Logger.Info($"LOGGING IN AS {data.ClientObject.AccountName} with access token {data.ClientObject.Token}");

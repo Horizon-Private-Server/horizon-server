@@ -7,6 +7,8 @@ using Server.Common;
 using Server.Database;
 using Server.Database.Models;
 using Server.Medius.Models;
+using Server.Medius.Plugins;
+using Server.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -659,7 +661,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateLadderStatsWideRequest} without a being logged in.");
 
-                        if (data.ClientObject.CurrentGame != null && data.ClientObject.CurrentGame.CustomGamemode != null)
+                        if (data.ClientObject.CurrentGame != null && !data.ClientObject.CurrentGame.AcceptStats)
                         {
                             data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
                             {
@@ -1651,6 +1653,9 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest} without a being logged in.");
 
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = createGameRequest });
+
                         Program.Manager.CreateGame(data.ClientObject, createGameRequest);
                         break;
                     }
@@ -1664,6 +1669,9 @@ namespace Server.Medius
                         // ERROR -- Need to be logged in
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest1} without a being logged in.");
+
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = createGameRequest1 });
 
                         Program.Manager.CreateGame(data.ClientObject, createGameRequest1);
                         break;
@@ -1679,6 +1687,9 @@ namespace Server.Medius
                         // ERROR -- Need to be logged in
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
+
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOIN_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = joinGameRequest });
 
                         Program.Manager.JoinGame(data.ClientObject, joinGameRequest);
                         break;
@@ -1758,12 +1769,12 @@ namespace Server.Medius
                         }
                         else
                         {
-                            var results = channel.Clients.Where(x => x.Client.IsConnected).Select(x => new MediusGetLobbyPlayerNamesResponse()
+                            var results = channel.Clients.Where(x => x.IsConnected).Select(x => new MediusGetLobbyPlayerNamesResponse()
                             {
                                 MessageID = getLobbyPlayerNamesRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusSuccess,
-                                AccountID = x.Client.AccountId,
-                                AccountName = x.Client.AccountName,
+                                AccountID = x.AccountId,
+                                AccountName = x.AccountName,
                                 EndOfList = false
                             }).ToArray();
 
@@ -2295,9 +2306,9 @@ namespace Server.Medius
         {
             var channel = clientObject.CurrentChannel;
             var game = clientObject.CurrentGame;
-            var allPlayers = channel.Clients.Select(x => x.Client);
-            var allButSender = channel.Clients.Where(x => x.Client != clientObject).Select(x => x.Client);
-            var targetPlayer = channel.Clients.FirstOrDefault(x => x.Client.AccountId == chatMessage.TargetID);
+            var allPlayers = channel.Clients;
+            var allButSender = channel.Clients.Where(x => x != clientObject);
+            var targetPlayer = channel.Clients.FirstOrDefault(x => x.AccountId == chatMessage.TargetID);
             List<BaseScertMessage> chatResponses = new List<BaseScertMessage>();
 
             // ERROR -- Need to be logged in
@@ -2332,7 +2343,7 @@ namespace Server.Medius
                 case MediusChatMessageType.Whisper:
                     {
                         // Send to
-                        targetPlayer?.Client?.Queue(new MediusChatFwdMessage()
+                        targetPlayer?.Queue(new MediusChatFwdMessage()
                         {
                             MessageID = new MessageId(),
                             OriginatorAccountID = clientObject.AccountId,
@@ -2355,8 +2366,8 @@ namespace Server.Medius
         {
             var channel = clientObject.CurrentChannel;
             var game = clientObject.CurrentGame;
-            var allPlayers = channel.Clients.Select(x => x.Client);
-            var allButSender = channel.Clients.Where(x => x.Client != clientObject).Select(x => x.Client);
+            var allPlayers = channel.Clients;
+            var allButSender = channel.Clients.Where(x => x != clientObject);
             List<BaseScertMessage> chatResponses = new List<BaseScertMessage>();
 
             // ERROR -- Need to be logged in
@@ -2370,19 +2381,17 @@ namespace Server.Medius
             if (channel == null)
                 return;
 
-            // Deadlocked prefixes all chat message with 0x41 so we can skip that here
-            string message = chatMessage.Message.Substring(1);
-            string[] words = message.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (words == null || words.Length == 0)
-                return;
+            // Send to plugins
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CHAT_MESSAGE, new OnPlayerChatMessageArgs() { Player = clientObject, Message = chatMessage });
 
             switch (chatMessage.MessageType)
             {
                 case MediusChatMessageType.Broadcast:
                     {
                         // Relay
-                        channel.BroadcastChatMessage(allButSender, clientObject, message);
+                        channel.BroadcastChatMessage(allButSender, clientObject, chatMessage.Message.Substring(1));
 
+                        /*
                         // Handle commands
                         switch (words[0].ToLower())
                         {
@@ -2422,6 +2431,7 @@ namespace Server.Medius
                                     break;
                                 }
                         }
+                        */
                         break;
                     }
                 default:
