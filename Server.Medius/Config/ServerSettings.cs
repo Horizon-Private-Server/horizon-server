@@ -122,6 +122,16 @@ namespace Server.Medius.Config
         public List<Gamemode> Gamemodes { get; set; } = new List<Gamemode>();
 
         /// <summary>
+        /// Path to the log file.
+        /// </summary>
+        public string LogPath { get; set; } = "logs/medius.log";
+
+        /// <summary>
+        /// Whether to also log to the console.
+        /// </summary>
+        public bool LogToConsole { get; set; } = false;
+
+        /// <summary>
         /// Log level.
         /// </summary>
         public LogLevel LogLevel { get; set; } = LogLevel.Information;
@@ -265,10 +275,5 @@ namespace Server.Medius.Config
         /// Accounts that can be logged into with RestrictSignIn set.
         /// </summary>
         public string[] PermittedAccounts { get; set; } = null;
-    }
-
-    public class MPSConfig
-    {
-        
     }
 }

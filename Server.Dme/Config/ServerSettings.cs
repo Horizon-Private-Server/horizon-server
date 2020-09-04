@@ -69,6 +69,16 @@ namespace Server.Dme.Config
         public int UDPPort { get; set; } = 50000;
 
         /// <summary>
+        /// Path to the log file.
+        /// </summary>
+        public string LogPath { get; set; } = "logs/dme.log";
+
+        /// <summary>
+        /// Whether to also log to the console.
+        /// </summary>
+        public bool LogToConsole { get; set; } = false;
+
+        /// <summary>
         /// Log level.
         /// </summary>
         public LogLevel LogLevel { get; set; } = LogLevel.Information;

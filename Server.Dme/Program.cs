@@ -1,6 +1,7 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
+using NReco.Logging.File;
 using Org.BouncyCastle.Math;
 using RT.Cryptography;
 using RT.Models;
@@ -157,10 +158,34 @@ namespace Server.Dme
         static void Main(string[] args)
         {
             // 
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, true));
-
-            // 
             Initialize();
+
+            // Add file logger if path is valid
+            if (new FileInfo(Settings.LogPath)?.Directory?.Exists ?? false)
+            {
+                var loggingOptions = new FileLoggerOptions()
+                {
+                    Append = false,
+                    FileSizeLimitBytes = 1024 * 1024 * 1,
+                    MaxRollingFiles = 100,
+                    FormatLogEntry = (msg) =>
+                    {
+                        if (msg.LogLevel >= Settings.LogLevel)
+                            return msg.Message;
+
+                        return null;
+                    }
+                };
+                InternalLoggerFactory.DefaultFactory.AddProvider(new FileLoggerProvider(Settings.LogPath, loggingOptions));
+            }
+
+            // Optionally add console logger (always enabled when debugging)
+#if DEBUG
+            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, true));
+#else
+            if (Settings.LogToConsole)
+                InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= Settings.LogLevel, true));
+#endif
 
             // 
             StartServerAsync().Wait();

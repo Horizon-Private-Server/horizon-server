@@ -208,9 +208,11 @@ namespace Server.Dme
                                 break;
                             }
                         }
+
+                        
+                        dododood:;
                         */
 
-                        dododood:;
                         ClientObject.DmeWorld?.BroadcastUdp(ClientObject, clientAppBroadcast.Payload);
                         break;
                     }
