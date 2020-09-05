@@ -18,7 +18,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using RT.Models;
-using Server.Mods;
 using Server.Medius.Models;
 using Server.Database;
 using Server.Medius.Config;
@@ -52,7 +51,6 @@ namespace Server.Medius
         public static MediusManager Manager = new MediusManager();
         public static PluginsManager Plugins = null;
 
-        public static MUIS UniverseInfoServer = new MUIS();
         public static MAS AuthenticationServer = new MAS();
         public static MLS LobbyServer = new MLS();
         public static MPS ProxyServer = new MPS();
@@ -76,10 +74,6 @@ namespace Server.Medius
 #endif
 
             Logger.Info("Starting medius components...");
-
-            Logger.Info($"Starting MUIS on port {UniverseInfoServer.Port}.");
-            UniverseInfoServer.Start();
-            Logger.Info($"MUIS started.");
 
             Logger.Info($"Starting MAS on port {AuthenticationServer.Port}.");
             AuthenticationServer.Start();
@@ -125,11 +119,7 @@ namespace Server.Medius
                     }
 #endif
 
-
-
-
                     // Tick
-                    await UniverseInfoServer.Tick();
                     await AuthenticationServer.Tick();
                     await LobbyServer.Tick();
                     await ProxyServer.Tick();
@@ -145,14 +135,11 @@ namespace Server.Medius
                         lastConfigRefresh = DateTime.UtcNow;
                     }
 
-
-
-                    Thread.Sleep(sleepMS);
+                    await Task.Delay(sleepMS);
                 }
             }
             finally
             {
-                await UniverseInfoServer.Stop();
                 await AuthenticationServer.Stop();
                 await LobbyServer.Stop();
                 await ProxyServer.Stop();
@@ -188,7 +175,7 @@ namespace Server.Medius
 #if DEBUG
             InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #else
-            if (Settings.LogToConsole)
+            if (Settings.Logging.LogToConsole)
                 InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #endif
 

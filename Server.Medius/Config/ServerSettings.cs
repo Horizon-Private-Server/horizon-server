@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 using System.Text;
 using RT.Models;
 using RT.Common;
-using Server.Mods;
 using Server.Common.Logging;
 
 namespace Server.Medius.Config

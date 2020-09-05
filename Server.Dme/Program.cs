@@ -96,7 +96,7 @@ namespace Server.Dme
                     }
 
                     // Sleep
-                    Thread.Sleep((int)Math.Max(0, _udpSleepMs - udpTickSw.ElapsedMilliseconds));
+                    await Task.Delay((int)Math.Max(0, _udpSleepMs - udpTickSw.ElapsedMilliseconds));
                 }
             })).Start();
 
@@ -145,7 +145,7 @@ namespace Server.Dme
                         lastConfigRefresh = DateTime.UtcNow;
                     }
 
-                    Thread.Sleep((int)Math.Max(0, _sleepMS - tickSw.ElapsedMilliseconds));
+                    await Task.Delay((int)Math.Max(0, _sleepMS - tickSw.ElapsedMilliseconds));
                 }
             }
             finally

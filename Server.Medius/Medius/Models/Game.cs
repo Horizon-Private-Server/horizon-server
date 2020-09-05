@@ -7,7 +7,6 @@ using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
 using Server.Medius.Plugins;
-using Server.Mods;
 using Server.Plugins;
 
 namespace Server.Medius.Models
