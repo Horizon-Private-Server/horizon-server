@@ -54,7 +54,6 @@ namespace Server.Medius
         public static MAS AuthenticationServer = new MAS();
         public static MLS LobbyServer = new MLS();
         public static MPS ProxyServer = new MPS();
-        public static NAT NATServer = new NAT();
 
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
 
@@ -86,10 +85,6 @@ namespace Server.Medius
             Logger.Info($"Starting MPS on port {ProxyServer.Port}.");
             ProxyServer.Start();
             Logger.Info($"MPS started.");
-
-            Logger.Info($"Starting NAT on port {NATServer.Port}.");
-            NATServer.Start();
-            Logger.Info($"NAT started.");
 
             // 
             Logger.Info("Started.");
@@ -123,7 +118,6 @@ namespace Server.Medius
                     await AuthenticationServer.Tick();
                     await LobbyServer.Tick();
                     await ProxyServer.Tick();
-                    await NATServer.Tick();
 
                     // Tick manager
                     Manager.Tick();
@@ -143,7 +137,6 @@ namespace Server.Medius
                 await AuthenticationServer.Stop();
                 await LobbyServer.Stop();
                 await ProxyServer.Stop();
-                await NATServer.Stop();
             }
         }
 

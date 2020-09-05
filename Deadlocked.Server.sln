@@ -21,7 +21,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Dme", "Server.Dme\Se
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Plugins", "Server.Plugins\Server.Plugins.csproj", "{876CBA8F-45C3-46A0-881D-FD2A6749F66E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.UniverseManager", "Server.UniverseManager\Server.UniverseManager.csproj", "{EAE252A9-33FD-4212-9FDB-1324474E4A6E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.UniverseManager", "Server.UniverseManager\Server.UniverseManager.csproj", "{EAE252A9-33FD-4212-9FDB-1324474E4A6E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.NAT", "Server.NAT\Server.NAT.csproj", "{3F9AC5FB-3512-4419-A78F-8DE396915A27}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +71,10 @@ Global
 		{EAE252A9-33FD-4212-9FDB-1324474E4A6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAE252A9-33FD-4212-9FDB-1324474E4A6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAE252A9-33FD-4212-9FDB-1324474E4A6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

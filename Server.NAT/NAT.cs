@@ -13,14 +13,15 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server.Medius
+namespace Server.NAT
 {
     /// <summary>
     /// Unimplemented NAT.
     /// </summary>
-    public class NAT : IMediusComponent
+    public class NAT
     {
-        public int Port => Program.Settings.NATPort;
+        public int Port => Program.Settings.Port;
+        public bool IsRunning => _boundChannel != null && _boundChannel.Active;
 
         protected IEventLoopGroup _workerGroup = null;
         protected IChannel _boundChannel = null;
@@ -34,7 +35,7 @@ namespace Server.Medius
         /// <summary>
         /// Start the Dme Udp Client Server.
         /// </summary>
-        public async void Start()
+        public async Task Start()
         {
             //
             _workerGroup = new MultithreadEventLoopGroup();

@@ -145,7 +145,7 @@ namespace Server.Medius
                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                         {
                                             new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                            new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                         }
                                 },
                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
@@ -182,7 +182,7 @@ namespace Server.Medius
                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.ProxyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                     }
                                 },
                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
@@ -420,7 +420,7 @@ namespace Server.Medius
                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                     }
                                 },
                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
@@ -501,7 +501,7 @@ namespace Server.Medius
                                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                                     {
                                                         new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.NATServer.Port, AddressType = NetAddressType.NetAddressTypeNATService},
+                                                        new NetAddress() {Address = Program.SERVER_IP.ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                                     }
                                                 },
                                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
