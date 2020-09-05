@@ -15,7 +15,7 @@ namespace Server.UniverseManager.Config
         /// <summary>
         /// Port of the MUIS server.
         /// </summary>
-        public int Port { get; set; } = 10071;
+        public int[] Ports { get; set; } = new int[] { 10071 };
 
         /// <summary>
         /// Universes.

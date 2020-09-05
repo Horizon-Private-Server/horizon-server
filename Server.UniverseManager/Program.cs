@@ -3,11 +3,13 @@ using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
 using NReco.Logging.File;
 using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Math.EC.Rfc7748;
 using RT.Cryptography;
 using Server.Common.Logging;
 using Server.UniverseManager.Config;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,7 +28,7 @@ namespace Server.UniverseManager
             new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
         );
 
-        public static MUIS UniverseInfoServer = new MUIS();
+        public static MUIS[] UniverseInfoServers = null;
 
 
 
@@ -34,16 +36,21 @@ namespace Server.UniverseManager
         {
             DateTime lastConfigRefresh = DateTime.UtcNow;
 
-            Logger.Info($"Starting MUIS on port {UniverseInfoServer.Port}.");
-            UniverseInfoServer.Start();
-            Logger.Info($"MUIS started.");
+            UniverseInfoServers = new MUIS[Settings.Ports.Length];
+            for (int i = 0; i < UniverseInfoServers.Length; ++i)
+            {
+                Logger.Info($"Starting MUIS on port {Settings.Ports[i]}.");
+                UniverseInfoServers[i] = new MUIS(Settings.Ports[i]);
+                UniverseInfoServers[i].Start();
+                Logger.Info($"MUIS started.");
+            }
 
             try
             {
                 while (true)
                 {
                     // Tick
-                    await UniverseInfoServer.Tick();
+                    await Task.WhenAll(UniverseInfoServers.Select(x => x.Tick()));
 
                     // Reload config
                     if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -57,7 +64,7 @@ namespace Server.UniverseManager
             }
             finally
             {
-                await UniverseInfoServer.Stop();
+                await Task.WhenAll(UniverseInfoServers.Select(x => x.Stop()));
             }
         }
 

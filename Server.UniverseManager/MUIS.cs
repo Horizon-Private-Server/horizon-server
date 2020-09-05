@@ -26,7 +26,8 @@ namespace Server.UniverseManager
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<MUIS>();
 
-        public int Port => Program.Settings.Port;
+        private int _port = 0;
+        public int Port => _port;
         public PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         protected IEventLoopGroup _bossGroup = null;
@@ -47,8 +48,10 @@ namespace Server.UniverseManager
 
         protected PS2_RC4 _sessionCipher = null;
 
-        public MUIS()
+        public MUIS(int port)
         {
+            this._port = port;
+
             RNG.NextBytes(_clientSessionKey);
             _sessionCipher = new PS2_RC4(_clientSessionKey, CipherContext.RC_CLIENT_SESSION);
         }
