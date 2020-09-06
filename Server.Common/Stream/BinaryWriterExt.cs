@@ -8,6 +8,34 @@ namespace Server.Common
 {
     public static class BinaryWriterExt
     {
+        public static void Write(this BinaryWriter writer, IPAddress ip)
+        {
+            if (ip == null)
+                writer.Write(new byte[16]);
+            else
+                writer.Write(Encoding.UTF8.GetBytes(ip.MapToIPv4().ToString().PadRight(16, '\0')));
+        }
+
+        public static void Write(this BinaryWriter writer, string str, int length)
+        {
+            if (str == null)
+                writer.Write(new byte[length]);
+            else if (str.Length >= length)
+                writer.Write(Encoding.UTF8.GetBytes(str.Substring(0, length - 1) + "\0"));
+            else
+                writer.Write(Encoding.UTF8.GetBytes(str.PadRight(length, '\0')));
+        }
+
+        public static void WriteStr(this BinaryWriter writer, string str, int length)
+        {
+            if (str == null)
+                writer.Write(new byte[length]);
+            else if (str.Length >= length)
+                writer.Write(Encoding.UTF8.GetBytes(str.Substring(0, length - 1) + "\0"));
+            else
+                writer.Write(Encoding.UTF8.GetBytes(str.PadRight(length, '\0')));
+        }
+
         public static void Write(this BinaryWriter writer, byte[] value, int fixedLength)
         {
             if (value == null)

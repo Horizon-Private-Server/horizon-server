@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RT.Pipeline.Udp
+namespace Server.Pipeline.Udp
 {
     public class ScertDatagramDecoder : MessageToMessageDecoder<DatagramPacket>
     {

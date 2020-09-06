@@ -57,10 +57,10 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-             $"SessionKey:{SessionKey} " +
-$"MessageType:{MessageType} " +
-$"TargetAccountID:{TargetAccountID} " +
-$"Message:{BitConverter.ToString(Message)}";
+                $"SessionKey:{SessionKey} " +
+                $"MessageType:{MessageType} " +
+                $"TargetAccountID:{TargetAccountID} " +
+                $"Message:{BitConverter.ToString(Message)}";
         }
     }
 }

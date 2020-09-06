@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RT.Models;
 using RT.Common;
-using RT.Pipeline.Tcp;
+using Server.Pipeline.Tcp;
 using Server.Medius.Models;
 
 namespace Server.Medius

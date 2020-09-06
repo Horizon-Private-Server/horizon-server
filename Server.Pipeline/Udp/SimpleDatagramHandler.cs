@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RT.Pipeline.Udp
+namespace Server.Pipeline.Udp
 {
     public class SimpleDatagramHandler : SimpleChannelInboundHandler<DatagramPacket>
     {

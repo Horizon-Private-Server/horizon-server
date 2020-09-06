@@ -54,9 +54,9 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-             $"OriginatorAccountID:{OriginatorAccountID} " +
-$"MessageType:{MessageType} " +
-$"Message:{Message}";
+                $"OriginatorAccountID:{OriginatorAccountID} " +
+                $"MessageType:{MessageType} " +
+                $"Message:{BitConverter.ToString(Message)}";
         }
     }
 }

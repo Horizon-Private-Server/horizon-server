@@ -219,6 +219,13 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAllAnnouncementsRequest} without a session.");
 
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ALL_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        {
+                            Player = data.ClientObject,
+                            Request = getAllAnnouncementsRequest
+                        });
+
                         _ = Program.Database.GetLatestAnnouncements().ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -263,6 +270,13 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAnnouncementsRequest} without a session.");
 
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        {
+                            Player = data.ClientObject,
+                            Request = getAnnouncementsRequest
+                        });
+
                         _ = Program.Database.GetLatestAnnouncement().ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -300,6 +314,13 @@ namespace Server.Medius
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getPolicyRequest} without a session.");
+
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_POLICY, new OnPlayerRequestArgs()
+                        {
+                            Player = data.ClientObject,
+                            Request = getPolicyRequest
+                        });
 
                         switch (getPolicyRequest.Policy)
                         {

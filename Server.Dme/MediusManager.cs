@@ -8,7 +8,7 @@ using DotNetty.Transport.Channels.Sockets;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
-using RT.Pipeline.Tcp;
+using Server.Pipeline.Tcp;
 using Server.Common;
 using Server.Dme.Models;
 using System;

@@ -11,7 +11,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace RT.Pipeline.Udp
+namespace Server.Pipeline.Udp
 {
     public class ScertDatagramIEnumerableEncoder : MessageToMessageEncoder<IEnumerable<ScertDatagramPacket>>
     {

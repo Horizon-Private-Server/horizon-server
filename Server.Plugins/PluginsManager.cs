@@ -46,6 +46,8 @@ namespace Server.Plugins
                 this._reload = false;
                 reloadPlugins();
             }
+
+            OnEvent(PluginEvent.MEDIUS_TICK, null);
         }
 
         public void OnEvent(PluginEvent eventType, object data)

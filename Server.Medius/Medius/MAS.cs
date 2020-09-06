@@ -6,6 +6,7 @@ using RT.Models;
 using Server.Common;
 using Server.Database;
 using Server.Medius.Models;
+using Server.Medius.Plugins;
 using Server.Plugins;
 using System;
 using System.Collections.Generic;
@@ -619,6 +620,13 @@ namespace Server.Medius
 
                 case MediusGetAllAnnouncementsRequest getAllAnnouncementsRequest:
                     {
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ALL_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        {
+                            Player = data.ClientObject,
+                            Request = getAllAnnouncementsRequest
+                        });
+
                         Program.Database.GetLatestAnnouncements().ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -659,6 +667,13 @@ namespace Server.Medius
 
                 case MediusGetAnnouncementsRequest getAnnouncementsRequest:
                     {
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        {
+                            Player = data.ClientObject,
+                            Request = getAnnouncementsRequest
+                        });
+
                         Program.Database.GetLatestAnnouncement().ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -692,6 +707,13 @@ namespace Server.Medius
 
                 case MediusGetPolicyRequest getPolicyRequest:
                     {
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_POLICY, new OnPlayerRequestArgs()
+                        {
+                            Player = data.ClientObject,
+                            Request = getPolicyRequest
+                        });
+
                         switch (getPolicyRequest.Policy)
                         {
                             case MediusPolicyType.Privacy:

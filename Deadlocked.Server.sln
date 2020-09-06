@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29920.165
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RT.Pipeline", "RT.Pipeline\RT.Pipeline.csproj", "{0CBAA279-889D-48FB-9335-45FCB8DBDE33}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Pipeline", "Server.Pipeline\Server.Pipeline.csproj", "{0CBAA279-889D-48FB-9335-45FCB8DBDE33}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RT.Common", "RT.Common\RT.Common.csproj", "{397F7E2D-768A-44FF-839A-668BF29850CE}"
 EndProject
@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Plugins", "Server.Pl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.UniverseInformation", "Server.UniverseInformation\Server.UniverseInformation.csproj", "{EAE252A9-33FD-4212-9FDB-1324474E4A6E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.NAT", "Server.NAT\Server.NAT.csproj", "{3F9AC5FB-3512-4419-A78F-8DE396915A27}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.NAT", "Server.NAT\Server.NAT.csproj", "{3F9AC5FB-3512-4419-A78F-8DE396915A27}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

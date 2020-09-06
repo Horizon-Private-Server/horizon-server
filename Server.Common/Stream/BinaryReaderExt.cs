@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
 
 namespace Server.Common
@@ -13,6 +14,25 @@ namespace Server.Common
             var result = reader.ReadObject(typeof(T));
 
             return result == null ? default(T) : (T)result;
+        }
+
+        public static IPAddress ReadIPAddress(this BinaryReader reader)
+        {
+            return IPAddress.Parse(reader.ReadString(16));
+        }
+
+        public static string ReadString(this BinaryReader reader, int length)
+        {
+            byte[] buffer = reader.ReadBytes(length);
+            int i = 0;
+            for (i = 0; i < buffer.Length; ++i)
+                if (buffer[i] == 0)
+                    break;
+
+            if (i > 0)
+                return Encoding.UTF8.GetString(buffer, 0, i);
+            else
+                return string.Empty;
         }
 
         public static object ReadObject(this BinaryReader reader, Type type)

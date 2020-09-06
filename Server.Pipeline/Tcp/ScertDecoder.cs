@@ -12,7 +12,7 @@ using RT.Common;
 using RT.Cryptography;
 using RT.Models;
 
-namespace RT.Pipeline.Tcp
+namespace Server.Pipeline.Tcp
 {
     public class ScertDecoder : MessageToMessageDecoder<IByteBuffer>
     {

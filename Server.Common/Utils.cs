@@ -53,47 +53,6 @@ namespace Server.Common
             return buffer;
         }
 
-        #region Serialization
-
-        public static void Write(this BinaryWriter writer, IPAddress ip)
-        {
-            if (ip == null)
-                writer.Write(new byte[16]);
-            else
-                writer.Write(Encoding.UTF8.GetBytes(ip.MapToIPv4().ToString().PadRight(16, '\0')));
-        }
-
-        public static IPAddress ReadIPAddress(this BinaryReader reader)
-        {
-            return IPAddress.Parse(reader.ReadString(16));
-        }
-
-        public static void Write(this BinaryWriter writer, string str, int length)
-        {
-            if (str == null)
-                writer.Write(new byte[length]);
-            else if (str.Length >= length)
-                writer.Write(Encoding.UTF8.GetBytes(str.Substring(0, length-1) + "\0"));
-            else
-                writer.Write(Encoding.UTF8.GetBytes(str.PadRight(length, '\0')));
-        }
-
-        public static string ReadString(this BinaryReader reader, int length)
-        {
-            byte[] buffer = reader.ReadBytes(length);
-            int i = 0;
-            for (i = 0; i < buffer.Length; ++i)
-                if (buffer[i] == 0)
-                    break;
-
-            if (i > 0)
-                return Encoding.UTF8.GetString(buffer, 0, i);
-            else
-                return string.Empty;
-        }
-
-        #endregion
-
         #region LINQ
 
         /// <summary>

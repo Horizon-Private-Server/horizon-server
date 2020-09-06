@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RT.Pipeline.Tcp
+namespace Server.Pipeline.Tcp
 {
     public class ScertServerHandler : SimpleChannelInboundHandler<BaseScertMessage>
     {

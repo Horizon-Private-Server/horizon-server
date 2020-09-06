@@ -11,7 +11,7 @@ using System.Linq;
 using System.Text;
 using Server.Common;
 
-namespace RT.Pipeline.Tcp
+namespace Server.Pipeline.Tcp
 {
     public class ScertIEnumerableEncoder : MessageToMessageEncoder<IEnumerable<BaseScertMessage>>
     {
