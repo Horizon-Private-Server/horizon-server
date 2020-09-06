@@ -25,6 +25,8 @@ namespace Server.Dme
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<TcpServer>();
 
+        public bool IsRunning => _boundChannel != null && _boundChannel.Active;
+
         public int Port => Program.Settings.TCPPort;
         public PS2_RSA AuthKey => Program.GlobalAuthKey;
 

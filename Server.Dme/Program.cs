@@ -70,9 +70,7 @@ namespace Server.Dme
             TcpServer.Start();
             Logger.Info($"TCP started.");
 
-            Logger.Info($"Connecting to MAS...");
             await Manager.Start();
-            Logger.Info($"MAS connected.");
 
             // 
             Logger.Info("Started.");
@@ -129,14 +127,23 @@ namespace Server.Dme
                     //
                     tickSw.Restart();
 
-                    // Tick
-                    await TcpServer.Tick();
+                    // Check if connected
+                    if (Manager.IsConnected)
+                    {
+                        // Tick
+                        await TcpServer.Tick();
 
-                    // Tick manager
-                    await Manager.Tick();
+                        // Tick manager
+                        await Manager.Tick();
 
-                    // Send
-                    await TcpServer.SendQueue();
+                        // Send
+                        await TcpServer.SendQueue();
+                    }
+                    else if ((DateTime.UtcNow - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                    {
+                        // Try to reconnect to the proxy server
+                        await Manager.Start();
+                    }
 
                     // Reload config
                     if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)

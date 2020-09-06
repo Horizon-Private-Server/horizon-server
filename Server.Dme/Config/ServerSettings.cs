@@ -45,6 +45,11 @@ namespace Server.Dme.Config
         public int GameTimeoutSeconds { get; set; } = 30;
 
         /// <summary>
+        /// Seconds between disconnects before the client attempts to reconnect to the proxy server.
+        /// </summary>
+        public int MPSReconnectInterval { get; set; } = 15;
+
+        /// <summary>
         /// Number of seconds before the server should send an echo to the client.
         /// </summary>
         public int ServerEchoInterval { get; set; } = 10;

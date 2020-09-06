@@ -25,6 +25,8 @@ namespace Server.Dme
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<MediusManager>();
 
+        public bool IsConnected => _mpsChannel != null && _mpsChannel.Active && _mpsState > 0;
+        public DateTime? TimeLostConnection { get; set; } = null;
 
         private enum MPSConnectionState
         {
@@ -109,6 +111,8 @@ namespace Server.Dme
             _group = new MultithreadEventLoopGroup();
             _scertHandler = new ScertServerHandler();
 
+            TimeLostConnection = null;
+
             // Add client on connect
             _scertHandler.OnChannelActive += (channel) =>
             {
@@ -116,10 +120,11 @@ namespace Server.Dme
             };
 
             // Remove client on disconnect
-            _scertHandler.OnChannelInactive += (channel) =>
+            _scertHandler.OnChannelInactive += async (channel) =>
             {
-                Logger.Error($"Lost connection to MPS... Exiting..");
-                Environment.Exit(-1);
+                Logger.Error($"Lost connection to MPS");
+                TimeLostConnection = DateTime.UtcNow;
+                await Stop();
             };
 
             // Queue all incoming messages
@@ -156,6 +161,12 @@ namespace Server.Dme
         {
             await Task.WhenAll(_worlds.Select(x => x.Stop()));
             await _group.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+
+            // 
+            _worlds.Clear();
+            _removeWorldQueue.Clear();
+            _mpsRecvQueue.Clear();
+            _mpsSendQueue.Clear();
         }
 
         public async Task TickUdp()
@@ -225,7 +236,17 @@ namespace Server.Dme
         {
             _utcConnectionState = DateTime.UtcNow;
             _mpsState = MPSConnectionState.NO_CONNECTION;
-            _mpsChannel = await _bootstrap.ConnectAsync(new IPEndPoint(Utils.GetIp(Program.Settings.MPS.Ip), Program.Settings.MPS.Port));
+
+            try
+            {
+                _mpsChannel = await _bootstrap.ConnectAsync(new IPEndPoint(Utils.GetIp(Program.Settings.MPS.Ip), Program.Settings.MPS.Port));
+            }
+            catch (Exception)
+            {
+                Logger.Error($"Failed to connect to MPS");
+                TimeLostConnection = DateTime.UtcNow;
+                return;
+            }
 
             if (!_mpsChannel.Active)
                 return;
@@ -262,7 +283,7 @@ namespace Server.Dme
                         // Send public key
                         Enqueue(new RT_MSG_CLIENT_CRYPTKEY_PUBLIC()
                         {
-                            Key = Program.Settings.MPS.Key.N.ToByteArrayUnsigned().Reverse().ToArray()
+                            Key = _clientKey.N.ToByteArrayUnsigned().Reverse().ToArray()
                         });
 
                         _mpsState = MPSConnectionState.HANDSHAKE;
