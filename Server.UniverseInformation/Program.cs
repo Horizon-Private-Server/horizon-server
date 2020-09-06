@@ -6,14 +6,14 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC.Rfc7748;
 using RT.Cryptography;
 using Server.Common.Logging;
-using Server.UniverseManager.Config;
+using Server.UnivereInformation.Config;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Server.UniverseManager
+namespace Server.UnivereInformation
 {
     class Program
     {

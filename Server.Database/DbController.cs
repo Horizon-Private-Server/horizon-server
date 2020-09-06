@@ -131,6 +131,11 @@ namespace Server.Database
         {
             AccountDTO result = null;
 
+            if (id < 0)
+            {
+
+            }
+
             try
             {
                 if (_settings.SimulatedMode)
@@ -246,7 +251,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Account/postAccountSignInDate?AccountId={accountId}", time.ToUniversalTime().ToString())).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Account/postAccountSignInDate?AccountId={accountId}", $"\"{time.ToUniversalTime()}\"")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -303,7 +308,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    var response = (await PostDbAsync($"Account/postAccountStatusUpdates", JsonConvert.SerializeObject(status))).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Account/postAccountStatusUpdates", JsonConvert.SerializeObject(status))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -506,7 +511,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    var response = (await PostDbAsync($"Buddy/removeIgnored", JsonConvert.SerializeObject(removeIgnored))).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Buddy/removeIgnored", JsonConvert.SerializeObject(removeIgnored))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -625,7 +630,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    var response = (await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -659,7 +664,137 @@ namespace Server.Database
                 }
                 else
                 {
-                    var response = (await PostDbAsync($"Account/postMediusStats?AccountId={accountId}", stats)).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Account/postMediusStats?AccountId={accountId}", $"\"{stats}\""))?.IsSuccessStatusCode ?? false;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Announcements / Policy
+
+        /// <summary>
+        /// Gets the latest announcement.
+        /// </summary>
+        public async Task<DimAnnouncements> GetLatestAnnouncement()
+        {
+            DimAnnouncements result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimAnnouncements()
+                    {
+                        AnnouncementTitle = "Title",
+                        AnnouncementBody = "Body",
+                        CreateDt = DateTime.UtcNow
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimAnnouncements>($"api/Keys/getAnnouncements?fromDt={DateTime.UtcNow}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the latest announcements.
+        /// </summary>
+        public async Task<DimAnnouncements[]> GetLatestAnnouncements(int size = 10)
+        {
+            DimAnnouncements[] result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimAnnouncements[]
+                    {
+                        new DimAnnouncements()
+                        {
+                            AnnouncementTitle = "Title",
+                            AnnouncementBody = "Body",
+                            CreateDt = DateTime.UtcNow
+                        }
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimAnnouncements[]>($"api/Keys/getAnnouncementsList?Dt={DateTime.UtcNow}&TakeSize={size}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the usage policy.
+        /// </summary>
+        public async Task<DimEula> GetUsagePolicy()
+        {
+            DimEula result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimEula()
+                    {
+                        EulaTitle = "Title",
+                        EulaBody = "Body"
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimEula>($"api/Keys/getEULA?fromDt={DateTime.UtcNow}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// [TODO]
+        /// Gets the privacy policy.
+        /// </summary>
+        public async Task<DimEula> GetPrivacyPolicy()
+        {
+            DimEula result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimEula()
+                    {
+                        EulaTitle = "Title",
+                        EulaBody = "Body"
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimEula>($"api/getEULA?fromDt={DateTime.UtcNow.AddDays(-1)}");
                 }
             }
             catch (Exception e)

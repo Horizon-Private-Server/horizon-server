@@ -219,13 +219,40 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAllAnnouncementsRequest} without a session.");
 
-                        data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                        _ = Program.Database.GetLatestAnnouncements().ContinueWith((r) =>
                         {
-                            MessageID = getAllAnnouncementsRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            Announcement = Program.Settings.Announcement,
-                            AnnouncementID = 0,
-                            EndOfList = true
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null && r.Result.Length > 0)
+                            {
+                                List<MediusGetAnnouncementsResponse> responses = new List<MediusGetAnnouncementsResponse>();
+                                foreach (var result in r.Result)
+                                {
+                                    responses.Add(new MediusGetAnnouncementsResponse()
+                                    {
+                                        MessageID = getAllAnnouncementsRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        Announcement = $"{result.AnnouncementTitle}\n{result.AnnouncementBody}",
+                                        AnnouncementID = result.Id,
+                                        EndOfList = false
+                                    });
+                                }
+
+                                responses[responses.Count - 1].EndOfList = true;
+                                data.ClientObject.Queue(responses);
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                                {
+                                    MessageID = getAllAnnouncementsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    Announcement = "",
+                                    AnnouncementID = 0,
+                                    EndOfList = true
+                                });
+                            }
                         });
                         break;
                     }
@@ -236,14 +263,35 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAnnouncementsRequest} without a session.");
 
-                        data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                        _ = Program.Database.GetLatestAnnouncement().ContinueWith((r) =>
                         {
-                            MessageID = getAnnouncementsRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess,
-                            Announcement = Program.Settings.Announcement,
-                            AnnouncementID = 0,
-                            EndOfList = true
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                                {
+                                    MessageID = getAnnouncementsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    Announcement = $"{r.Result.AnnouncementTitle}\n{r.Result.AnnouncementBody}",
+                                    AnnouncementID = r.Result.Id,
+                                    EndOfList = true
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusGetAnnouncementsResponse()
+                                {
+                                    MessageID = getAnnouncementsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    Announcement = "",
+                                    AnnouncementID = 0,
+                                    EndOfList = true
+                                });
+                            }
                         });
+
                         break;
                     }
 
@@ -253,12 +301,47 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getPolicyRequest} without a session.");
 
-                        string policyText = getPolicyRequest.Policy == MediusPolicyType.Privacy ? Program.Settings.PrivacyPolicy : Program.Settings.UsagePolicy;
+                        switch (getPolicyRequest.Policy)
+                        {
+                            case MediusPolicyType.Privacy:
+                                {
+                                    _ = Program.Database.GetUsagePolicy().ContinueWith((r) =>
+                                    {
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
 
-                        if (!string.IsNullOrEmpty(policyText))
-                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, policyText));
-                        else
-                            data.ClientObject.Queue(new MediusGetPolicyResponse() { MessageID = getPolicyRequest.MessageID, StatusCode = MediusCallbackStatus.MediusSuccess, Policy = "", EndOfText = true });
+                                        if (r.IsCompletedSuccessfully && r.Result != null)
+                                        {
+                                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, $"{r.Result.EulaTitle}\n{r.Result.EulaBody}"));
+                                        }
+                                        else
+                                        {
+                                            data.ClientObject.Queue(new MediusGetPolicyResponse() { MessageID = getPolicyRequest.MessageID, StatusCode = MediusCallbackStatus.MediusSuccess, Policy = "", EndOfText = true });
+                                        }
+                                    });
+                                    break;
+                                }
+                            case MediusPolicyType.Usage:
+                                {
+                                    _ = Program.Database.GetUsagePolicy().ContinueWith((r) =>
+                                    {
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result != null)
+                                        {
+                                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, $"{r.Result.EulaTitle}\n{r.Result.EulaBody}"));
+                                        }
+                                        else
+                                        {
+                                            data.ClientObject.Queue(new MediusGetPolicyResponse() { MessageID = getPolicyRequest.MessageID, StatusCode = MediusCallbackStatus.MediusSuccess, Policy = "", EndOfText = true });
+                                        }
+                                    });
+
+                                    break;
+                                }
+                        }
+
                         break;
                     }
 
@@ -454,6 +537,8 @@ namespace Server.Medius
                                             ConnectStatus = (friendClient != null && friendClient.IsLoggedIn) ? friendClient.Status : MediusPlayerStatus.MediusPlayerDisconnected,
                                             MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                                             MediusGameWorldID = friendClient?.CurrentGame?.Id ?? -1,
+                                            GameName = friendClient?.CurrentGame?.GameName ?? "",
+                                            LobbyName = friendClient?.CurrentChannel?.Name ?? ""
                                         },
                                         EndOfList = false
                                     });

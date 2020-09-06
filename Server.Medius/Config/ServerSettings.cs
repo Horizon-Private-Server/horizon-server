@@ -30,23 +30,6 @@ namespace Server.Medius.Config
         public int[] ApplicationIds { get; set; } = null;
 
         /// <summary>
-        /// Announcement.
-        /// </summary>
-        public string Announcement { get; set; } = "";
-
-
-        /// <summary>
-        /// Usage policy.
-        /// </summary>
-        public string UsagePolicy { get; set; } = "";
-
-
-        /// <summary>
-        /// Privacy policy.
-        /// </summary>
-        public string PrivacyPolicy { get; set; } = "";
-
-        /// <summary>
         /// By default the server will grab its public ip.
         /// If this is set, it will use the ip provided here instead.
         /// </summary>

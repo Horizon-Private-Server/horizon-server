@@ -62,12 +62,12 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-    $"StatusCode:{StatusCode}" +
-    $"AccountID:{AccountID}" +
-    $"AccountType:{AccountType}" +
-    $"MediusWorldID:{MediusWorldID}" +
-    $"ConnectInfo:{ConnectInfo}";
+                    $"MessageID:{MessageID} " +
+                    $"StatusCode:{StatusCode} " +
+                    $"AccountID:{AccountID} " +
+                    $"AccountType:{AccountType} " +
+                    $"MediusWorldID:{MediusWorldID} " +
+                    $"ConnectInfo:{ConnectInfo}";
         }
     }
 }

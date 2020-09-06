@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Server.UniverseManager.Config
+namespace Server.UnivereInformation.Config
 {
     public class ServerSettings
     {

@@ -184,7 +184,7 @@ namespace Server.Dme
 #if DEBUG
             InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #else
-            if (Settings.LogToConsole)
+            if (Settings.Logging.LogToConsole)
                 InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #endif
 

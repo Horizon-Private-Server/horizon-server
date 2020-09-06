@@ -64,11 +64,11 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-    $"StatusCode:{StatusCode}" +
-    $"AccountID:{AccountID}" +
-    $"AccountName:{AccountName}" +
-    $"OnlineState:{OnlineState}" +
-    $"EndOfList:{EndOfList}";
+                $"StatusCode:{StatusCode} " +
+                $"AccountID:{AccountID} " +
+                $"AccountName:{AccountName} " +
+                $"OnlineState:{OnlineState} " +
+                $"EndOfList:{EndOfList}";
         }
     }
 }
