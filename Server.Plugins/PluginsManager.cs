@@ -16,51 +16,35 @@ namespace Server.Plugins
         private ScriptEngine _engine = null;
         private ScriptScope _scope = null;
         private ConcurrentDictionary<PluginEvent, List<object>> _pluginCallbackInstances = new ConcurrentDictionary<PluginEvent, List<object>>();
-
+        private bool _reload = false;
+        private DirectoryInfo _pluginDir = null;
+        private FileSystemWatcher _watcher = null;
 
         public PluginsManager(string pluginsDirectory)
         {
             // Ensure valid plugins directory
-            var dirInfo = new DirectoryInfo(pluginsDirectory);
-            if (!dirInfo.Exists)
+            this._pluginDir = new DirectoryInfo(pluginsDirectory);
+            if (!this._pluginDir.Exists)
                 return;
 
-            // Create python engine
-            _engine = Python.CreateEngine();
-            _scope = _engine.CreateScope();
+            // Add a watcher so we can auto reload the plugins on change
+            this._watcher = new FileSystemWatcher(this._pluginDir.FullName, "*.py");
+            this._watcher.IncludeSubdirectories = true;
+            this._watcher.Changed += (s, e) => { this._reload = true; };
+            this._watcher.Renamed += (s, e) => { this._reload = true; };
+            this._watcher.Created += (s, e) => { this._reload = true; };
+            this._watcher.Deleted += (s, e) => { this._reload = true; };
+            this._watcher.EnableRaisingEvents = true;
 
-            // Add assemblies
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                _engine.Runtime.LoadAssembly(assembly);
+            reloadPlugins();
+        }
 
-            // 
-            var searchPaths = _engine.GetSearchPaths();
-            searchPaths.Add(dirInfo.FullName);
-            _engine.SetSearchPaths(searchPaths);
-
-            // Set some global variables
-            Action<int, object> logAction = (l, m) => { log((InternalLogLevel)l, m); };
-            _scope.SetVariable("log", logAction);
-
-            Action<PluginEvent, object> registerAction = (t, c) => { registerEventHandler(t, c); };
-            _scope.SetVariable("registerEventHandler", registerAction);
-
-            // Change directory to plugins folder
-            _engine.Execute($"import os\nos.chdir(\"{dirInfo.FullName.Replace("\\", "/")}\")", _scope);
-
-            // Gather all plugins
-            foreach (var pyFile in Directory.GetFiles(dirInfo.FullName, "pluginstart.py", SearchOption.AllDirectories))
+        public void Tick()
+        {
+            if (this._reload)
             {
-                try
-                {
-                    ScriptSource source = _engine.CreateScriptSourceFromFile(pyFile);
-
-                    source.Execute(_scope);
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
-                }
+                this._reload = false;
+                reloadPlugins();
             }
         }
 
@@ -98,6 +82,60 @@ namespace Server.Plugins
         private void log(InternalLogLevel logLevel, object msg)
         {
             Logger.Log(logLevel, msg?.ToString());
+        }
+
+        private void reloadPlugins()
+        {
+            // Clear cache
+            _engine = null;
+            _scope = null;
+            _pluginCallbackInstances.Clear();
+
+            // 
+            Logger.Warn($"Reloading plugins");
+
+            // Ensure valid plugins directory
+            if (!this._pluginDir.Exists)
+                return;
+
+            // Create python engine
+            _engine = Python.CreateEngine();
+            _scope = _engine.CreateScope();
+
+            // Add assemblies
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                _engine.Runtime.LoadAssembly(assembly);
+
+
+            // 
+            var searchPaths = _engine.GetSearchPaths();
+            searchPaths.Add(this._pluginDir.FullName);
+            _engine.SetSearchPaths(searchPaths);
+
+            // Set some global variables
+            Action<int, object> logAction = (l, m) => { log((InternalLogLevel)l, m); };
+            _scope.SetVariable("log", logAction);
+
+            Action<PluginEvent, object> registerAction = (t, c) => { registerEventHandler(t, c); };
+            _scope.SetVariable("registerEventHandler", registerAction);
+
+            // Change directory to plugins folder
+            _engine.Execute($"import os\nos.chdir(\"{this._pluginDir.FullName.Replace("\\", "/")}\")", _scope);
+
+            // Gather all plugins
+            foreach (var pyFile in Directory.GetFiles(this._pluginDir.FullName, "pluginstart.py", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    ScriptSource source = _engine.CreateScriptSourceFromFile(pyFile);
+
+                    source.Execute(_scope);
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
+                }
+            }
         }
     }
 }

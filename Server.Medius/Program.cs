@@ -122,6 +122,9 @@ namespace Server.Medius
                     // Tick manager
                     Manager.Tick();
 
+                    // Tick plugins
+                    Plugins.Tick();
+
                     // Reload config
                     if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                     {
