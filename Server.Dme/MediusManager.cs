@@ -35,6 +35,7 @@ namespace Server.Dme
             CONNECTED,
             HELLO,
             HANDSHAKE,
+            CONNECT_TCP,
             SET_ATTRIBUTES,
             AUTHENTICATED
         }
@@ -294,14 +295,25 @@ namespace Server.Dme
                         if (_mpsState != MPSConnectionState.HANDSHAKE)
                             throw new Exception($"Unexpected RT_MSG_SERVER_CRYPTKEY_PEER from server. {serverCryptKeyPeer}");
 
+                        await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_CONNECT_TCP()
+                        {
+                            AppId = Program.Settings.ApplicationId
+                        });
+
+                        _mpsState = MPSConnectionState.CONNECT_TCP;
+                        break;
+                    }
+                case RT_MSG_SERVER_CONNECT_ACCEPT_TCP serverConnectAcceptTcp:
+                    {
+                        if (_mpsState != MPSConnectionState.CONNECT_TCP)
+                            throw new Exception($"Unexpected RT_MSG_SERVER_CONNECT_ACCEPT_TCP from server. {serverConnectAcceptTcp}");
+
                         // Send attributes
                         await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_APP_TOSERVER()
                         {
                             Message = new MediusServerSetAttributesRequest()
                             {
                                 MessageID = new MessageId(),
-                                // This is a hack to tell our server what app id this is compatible with
-                                Attributes = Program.Settings.ApplicationId,
                                 ListenServerAddress = new NetAddress()
                                 {
                                     Address = Program.SERVER_IP.ToString(),

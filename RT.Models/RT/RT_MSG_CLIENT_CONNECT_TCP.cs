@@ -15,7 +15,7 @@ namespace RT.Models
         // 
         public uint ARG1;
         public int AppId;
-        public byte[] UNK;
+        public RSA_KEY Key;
 
         public string SessionKey = null;
         public string AccessToken = null;
@@ -27,7 +27,7 @@ namespace RT.Models
 
             ARG1 = reader.ReadUInt32();
             AppId = reader.ReadInt32();
-            UNK = reader.ReadBytes(0x40);
+            Key = reader.Read<RSA_KEY>();
 
             if (reader.BaseStream.Position < reader.BaseStream.Length)
             {
@@ -38,12 +38,9 @@ namespace RT.Models
 
         protected override void Serialize(BinaryWriter writer)
         {
-            if (UNK == null || UNK.Length != 0x40)
-                throw new InvalidOperationException($"Unable to serialize {Id} UNK because UNK is either null or not 64 bytes long!");
-
             writer.Write(ARG1);
             writer.Write(AppId);
-            writer.Write(UNK);
+            writer.Write(Key ?? RSA_KEY.Empty);
         }
 
         public override string ToString()
@@ -51,7 +48,7 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"ARG1:{ARG1:X8} " +
                 $"ARG2:{AppId:X8} " +
-                $"UNK:{(UNK == null ? "null" : BitConverter.ToString(UNK))}";
+                $"Key:{Key}";
         }
     }
 }

@@ -62,10 +62,29 @@ namespace Server.Medius
                             break;
                         }
 
-                        data.State = ClientState.AUTHENTICATED;
+                        data.State = ClientState.CONNECT_1;
                         Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
                         break;
                     }
+                case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
+                    {
+                        if (data.State > ClientState.CONNECT_1)
+                            throw new Exception($"Unexpected RT_MSG_CLIENT_CONNECT_TCP from {clientChannel.RemoteAddress}: {clientConnectTcp}");
+
+                        data.ApplicationId = clientConnectTcp.AppId;
+                        data.State = ClientState.AUTHENTICATED;
+                        Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                        {
+                            UNK_00 = 0,
+                            UNK_02 = GenerateNewScertClientId(),
+                            UNK_04 = 0,
+                            UNK_06 = 0x0001,
+                            IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                        }, clientChannel);
+
+                        break;
+                    }
+
                 case RT_MSG_SERVER_ECHO serverEchoReply:
                     {
 
@@ -119,6 +138,7 @@ namespace Server.Medius
                     {
                         // Create DME object
                         var dme = new DMEObject(dmeSetAttributesRequest);
+                        dme.ApplicationId = data.ApplicationId;
                         dme.BeginSession();
                         Program.Manager.AddDmeClient(dme);
                         

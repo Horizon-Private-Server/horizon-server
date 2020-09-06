@@ -32,6 +32,7 @@ namespace Server.Medius
             CONNECTED,
             HELLO,
             HANDSHAKE,
+            CONNECT_1,
             AUTHENTICATED
         }
 

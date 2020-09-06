@@ -119,6 +119,7 @@ namespace Server.Medius
 
             switch (message)
             {
+#if DEBUG
                 #region Dme
 
                 case MediusServerSessionBeginRequest mgclSessionBeginRequest:
@@ -206,6 +207,7 @@ namespace Server.Medius
                     }
 
                 #endregion
+#endif
 
                 #region Session
 

@@ -35,13 +35,13 @@ namespace Server.Dme.Models
             // 
             WorldId = i;
             _idToWorld.TryAdd(i, this);
-            Logger.Error($"Registered world with id {i}");
+            Logger.Info($"Registered world with id {i}");
         }
 
         private void FreeWorld()
         {
             _idToWorld.TryRemove(WorldId, out _);
-            Logger.Error($"Unregistered world with id {WorldId}");
+            Logger.Info($"Unregistered world with id {WorldId}");
         }
 
         private int GetFreeClientIndex()
