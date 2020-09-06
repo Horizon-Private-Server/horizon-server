@@ -66,6 +66,7 @@ namespace Server.Medius
         static async Task StartServerAsync()
         {
             DateTime lastConfigRefresh = DateTime.UtcNow;
+            Stopwatch sleepSw = new Stopwatch();
 
 #if DEBUG
             Stopwatch sw = new Stopwatch();
@@ -107,12 +108,15 @@ namespace Server.Medius
                         float error = MathF.Abs(Settings.TickRate - tps) / Settings.TickRate;
 
                         if (error > 0.1f)
-                            Logger.Error($"Average TPS: {tps} is {error}% off of target {Settings.TickRate}");
+                            Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
 
                         sw.Restart();
                         ticks = 0;
                     }
 #endif
+
+                    // 
+                    sleepSw.Restart();
 
                     // Tick
                     await AuthenticationServer.Tick();
@@ -132,7 +136,7 @@ namespace Server.Medius
                         lastConfigRefresh = DateTime.UtcNow;
                     }
 
-                    await Task.Delay(sleepMS);
+                    await Task.Delay((int)Math.Max(0, sleepMS - sleepSw.ElapsedMilliseconds));
                 }
             }
             finally

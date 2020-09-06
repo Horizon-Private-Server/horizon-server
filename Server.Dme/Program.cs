@@ -118,7 +118,7 @@ namespace Server.Dme
                         float error = MathF.Abs(Settings.TickRate - tps) / Settings.TickRate;
 
                         if (error > 0.1f)
-                            Logger.Error($"Average TPS: {tps} is {error}% off of target {Settings.TickRate}");
+                            Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
 
                         sw.Restart();
                         ticks = 0;
