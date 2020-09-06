@@ -49,7 +49,7 @@ namespace Server.Plugins
             _engine.Execute($"import os\nos.chdir(\"{dirInfo.FullName.Replace("\\", "/")}\")", _scope);
 
             // Gather all plugins
-            foreach (var pyFile in Directory.GetFiles(dirInfo.FullName, "*.py", SearchOption.TopDirectoryOnly))
+            foreach (var pyFile in Directory.GetFiles(dirInfo.FullName, "pluginstart.py", SearchOption.AllDirectories))
             {
                 try
                 {
