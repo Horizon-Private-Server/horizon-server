@@ -641,7 +641,7 @@ namespace Server.Medius
                                     {
                                         MessageID = getAllAnnouncementsRequest.MessageID,
                                         StatusCode = MediusCallbackStatus.MediusSuccess,
-                                        Announcement = $"{result.AnnouncementTitle}\n{result.AnnouncementBody}",
+                                        Announcement = string.IsNullOrEmpty(result.AnnouncementTitle) ? $"{result.AnnouncementBody}" : $"{result.AnnouncementTitle}\n{result.AnnouncementBody}\n",
                                         AnnouncementID = result.Id,
                                         EndOfList = false
                                     });
@@ -685,7 +685,7 @@ namespace Server.Medius
                                 {
                                     MessageID = getAnnouncementsRequest.MessageID,
                                     StatusCode = MediusCallbackStatus.MediusSuccess,
-                                    Announcement = $"{r.Result.AnnouncementTitle}\n{r.Result.AnnouncementBody}",
+                                    Announcement = string.IsNullOrEmpty(r.Result.AnnouncementTitle) ? $"{r.Result.AnnouncementBody}" : $"{r.Result.AnnouncementTitle}\n{r.Result.AnnouncementBody}\n",
                                     AnnouncementID = r.Result.Id,
                                     EndOfList = true
                                 });
@@ -725,7 +725,10 @@ namespace Server.Medius
 
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
-                                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, $"{r.Result.EulaTitle}\n{r.Result.EulaBody}"));
+                                            string txt = r.Result.EulaBody;
+                                            if (!string.IsNullOrEmpty(r.Result.EulaTitle))
+                                                txt = r.Result.EulaTitle + "\n" + txt;
+                                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, txt));
                                         }
                                         else
                                         {
@@ -743,7 +746,10 @@ namespace Server.Medius
 
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
-                                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, $"{r.Result.EulaTitle}\n{r.Result.EulaBody}"));
+                                            string txt = r.Result.EulaBody;
+                                            if (!string.IsNullOrEmpty(r.Result.EulaTitle))
+                                                txt = r.Result.EulaTitle + "\n" + txt;
+                                            data.ClientObject.Queue(MediusGetPolicyResponse.FromText(getPolicyRequest.MessageID, txt));
                                         }
                                         else
                                         {
