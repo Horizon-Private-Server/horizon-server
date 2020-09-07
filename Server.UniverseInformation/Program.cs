@@ -81,14 +81,7 @@ namespace Server.UnivereInformation
                 {
                     Append = false,
                     FileSizeLimitBytes = LogSettings.Singleton.RollingFileSize,
-                    MaxRollingFiles = LogSettings.Singleton.RollingFileCount,
-                    FormatLogEntry = (msg) =>
-                    {
-                        if (msg.LogLevel >= LogSettings.Singleton.LogLevel)
-                            return msg.Message;
-
-                        return null;
-                    }
+                    MaxRollingFiles = LogSettings.Singleton.RollingFileCount
                 };
                 InternalLoggerFactory.DefaultFactory.AddProvider(_fileLogger = new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
