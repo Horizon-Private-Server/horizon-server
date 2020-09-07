@@ -6,6 +6,9 @@ namespace Server.Plugins
 {
     public enum PluginEvent
     {
+        TICK,
+        DME_UDP_TICK,
+
         MEDIUS_PLAYER_ON_LOGGED_IN,
         MEDIUS_PLAYER_ON_LOGGED_OUT,
         MEDIUS_PLAYER_ON_CREATE_GAME,
@@ -25,6 +28,9 @@ namespace Server.Plugins
         MEDIUS_GAME_ON_HOST_LEFT,
 
 
-        MEDIUS_TICK
+        DME_PLAYER_ON_JOINED,
+        DME_PLAYER_ON_LEFT,
+
+        DME_GAME_ON_RECV_UDP,
     }
 }

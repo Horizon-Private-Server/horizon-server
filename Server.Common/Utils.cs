@@ -57,7 +57,7 @@ namespace Server.Common
 
         /// <summary>
         /// By user Servy on
-        /// https://stackoverflow.com/questions/24630643/linq-group-by-sum-of-property.
+        /// https://stackoverflow.com/questions/24630643/linq-group-by-sum-of-property
         /// </summary>
         public static IEnumerable<IEnumerable<T>> GroupWhileAggregating<T, TAccume>(
             this IEnumerable<T> source,

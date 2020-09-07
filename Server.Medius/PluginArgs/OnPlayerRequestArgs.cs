@@ -4,19 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Server.Medius.Plugins
+namespace Server.Medius.PluginArgs
 {
-    public class OnPlayerChatMessageArgs
+    public class OnPlayerRequestArgs
     {
         /// <summary>
-        /// Source player.
+        /// Player making request.
         /// </summary>
         public ClientObject Player { get; set; }
 
         /// <summary>
-        /// Message.
+        /// Create game request.
         /// </summary>
-        public MediusGenericChatMessage Message { get; set; }
-
+        public IMediusRequest Request { get; set; }
     }
 }

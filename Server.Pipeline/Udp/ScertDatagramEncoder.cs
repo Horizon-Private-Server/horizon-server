@@ -31,13 +31,14 @@ namespace Server.Pipeline.Udp
             var msgs = message.Message.Serialize();
 
             // Condense as much as possible
-            var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < maxPacketLength).SelectMany(x => x);
+            var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < maxPacketLength);
 
             // 
-            foreach (var msg in condensedMsgs)
+            foreach (var msgGroup in condensedMsgs)
             {
-                var byteBuffer = ctx.Allocator.Buffer(msg.Length);
-                byteBuffer.WriteBytes(msg);
+                var byteBuffer = ctx.Allocator.Buffer(msgGroup.Sum(x => x.Length));
+                foreach (var msg in msgGroup)
+                    byteBuffer.WriteBytes(msg);
                 output.Add(new DatagramPacket(byteBuffer, message.Destination));
             }
         }

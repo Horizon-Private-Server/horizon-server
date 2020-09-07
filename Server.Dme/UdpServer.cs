@@ -18,6 +18,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Server.Dme.PluginArgs;
 
 namespace Server.Dme
 {
@@ -93,15 +94,17 @@ namespace Server.Dme
             // Queue all incoming messages
             _scertHandler.OnChannelMessage += (channel, message) =>
             {
-                _recvQueue.Enqueue(message);
+                var pluginArgs = new OnUdpMsg()
+                {
+                    Player = this.ClientObject,
+                    Packet = message
+                };
 
-                //ProcessMessage(message);
+                // Plugin
+                Program.Plugins.OnEvent(Plugins.PluginEvent.DME_GAME_ON_RECV_UDP, pluginArgs);
 
-                //_lastMessage = message.Message;
-
-                // Log if id is set
-                //if (Program.Settings.IsLog(message.Message.Id))
-                //    Logger.Info($"UDP RECV {ClientObject}: {message.Message}");
+                if (!pluginArgs.Ignore)
+                    _recvQueue.Enqueue(message);
             };
 
             var bootstrap = new Bootstrap();
@@ -359,7 +362,7 @@ namespace Server.Dme
                     //
                     if (responses.Count > 0)
                     {
-                        if (responses.Count > 1)
+                        if (responses.Count > 2)
                         {
 
                         }

@@ -3,7 +3,7 @@ using RT.Common;
 using RT.Models;
 using Server.Database;
 using Server.Database.Models;
-using Server.Medius.Plugins;
+using Server.Medius.PluginArgs;
 using Server.Plugins;
 using System;
 using System.Collections.Concurrent;

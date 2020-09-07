@@ -5,7 +5,7 @@ using RT.Cryptography;
 using RT.Models;
 using Server.Common;
 using Server.Medius.Models;
-using Server.Medius.Plugins;
+using Server.Medius.PluginArgs;
 using Server.Plugins;
 using System;
 using System.Collections.Concurrent;

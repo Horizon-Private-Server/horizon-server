@@ -7,6 +7,7 @@ using RT.Cryptography;
 using RT.Models;
 using Server.Common.Logging;
 using Server.Dme.Config;
+using Server.Plugins;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -22,6 +23,7 @@ namespace Server.Dme
     class Program
     {
         public const string CONFIG_FILE = "config.json";
+        public const string PLUGINS_PATH = "plugins/";
         public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
 
         public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
@@ -39,6 +41,7 @@ namespace Server.Dme
 
         public static MediusManager Manager = new MediusManager();
         public static TcpServer TcpServer = new TcpServer();
+        public static PluginsManager Plugins = null;
 
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
         public static int UdpTickMS => 1000 / (Settings?.UdpTickRate ?? 30);
@@ -86,6 +89,8 @@ namespace Server.Dme
 
                     try
                     {
+                        Plugins.OnEvent(PluginEvent.DME_UDP_TICK, null);
+
                         // 
                         await Manager.TickUdp();
                     }
@@ -136,6 +141,9 @@ namespace Server.Dme
 
                         // Tick manager
                         await Manager.Tick();
+
+                        // Tick plugins
+                        Plugins.Tick();
 
                         // Send
                         await TcpServer.SendQueue();
@@ -189,6 +197,9 @@ namespace Server.Dme
             if (Settings.Logging.LogToConsole)
                 InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #endif
+
+            // Initialize plugins
+            Plugins = new PluginsManager(PLUGINS_PATH);
 
             // 
             StartServerAsync().Wait();

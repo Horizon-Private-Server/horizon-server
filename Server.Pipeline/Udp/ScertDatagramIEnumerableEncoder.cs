@@ -26,7 +26,7 @@ namespace Server.Pipeline.Udp
 
         protected override void Encode(IChannelHandlerContext ctx, IEnumerable<ScertDatagramPacket> messages, List<object> output)
         {
-            List<byte[]> msgs;
+            List<byte[]> temp;
             Dictionary<EndPoint, List<byte[]>> msgsByEndpoint = new Dictionary<EndPoint, List<byte[]>>();
             if (messages is null)
                 return;
@@ -34,22 +34,27 @@ namespace Server.Pipeline.Udp
             // Serialize and add
             foreach (var msg in messages)
             {
-                if (!msgsByEndpoint.TryGetValue(msg.Destination, out msgs))
-                    msgsByEndpoint.Add(msg.Destination, msgs = new List<byte[]>());
+                if (!msgsByEndpoint.TryGetValue(msg.Destination, out temp))
+                    msgsByEndpoint.Add(msg.Destination, temp = new List<byte[]>());
 
-                msgs.AddRange(msg.Message.Serialize());
+                temp.AddRange(msg.Message.Serialize());
             }
 
             foreach (var kvp in msgsByEndpoint)
             {
                 // Condense as much as possible
-                var condensedMsgs = kvp.Value.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < maxPacketLength).SelectMany(x => x);
+                if (kvp.Value.Count > 1)
+                {
+
+                }
+                var condensedMsgs = kvp.Value.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < maxPacketLength);
 
                 // 
-                foreach (var msg in condensedMsgs)
+                foreach (var msgGroup in condensedMsgs)
                 {
-                    var byteBuffer = ctx.Allocator.Buffer(msg.Length);
-                    byteBuffer.WriteBytes(msg);
+                    var byteBuffer = ctx.Allocator.Buffer(msgGroup.Sum(x => x.Length));
+                    foreach (var msg in msgGroup)
+                        byteBuffer.WriteBytes(msg);
                     output.Add(new DatagramPacket(byteBuffer, kvp.Key));
                 }
             }

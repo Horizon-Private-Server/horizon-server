@@ -47,7 +47,7 @@ namespace Server.Plugins
                 reloadPlugins();
             }
 
-            OnEvent(PluginEvent.MEDIUS_TICK, null);
+            OnEvent(PluginEvent.TICK, null);
         }
 
         public void OnEvent(PluginEvent eventType, object data)
@@ -120,9 +120,6 @@ namespace Server.Plugins
 
             Action<PluginEvent, object> registerAction = (t, c) => { registerEventHandler(t, c); };
             _scope.SetVariable("registerEventHandler", registerAction);
-
-            // Change directory to plugins folder
-            _engine.Execute($"import os\nos.chdir(\"{this._pluginDir.FullName.Replace("\\", "/")}\")", _scope);
 
             // Gather all plugins
             foreach (var pyFile in Directory.GetFiles(this._pluginDir.FullName, "pluginstart.py", SearchOption.AllDirectories))

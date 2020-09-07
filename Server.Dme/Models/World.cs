@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Dme.PluginArgs;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -219,6 +220,13 @@ namespace Server.Dme.Models
 
         public void OnPlayerJoined(ClientObject player)
         {
+            // Plugin
+            Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
+            {
+                Player = player,
+                Game = this
+            });
+
             // Tell other clients
             foreach (var client in Clients)
             {
@@ -244,6 +252,13 @@ namespace Server.Dme.Models
 
         public void OnPlayerLeft(ClientObject player)
         {
+            // Plugin
+            Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
+            {
+                Player = player,
+                Game = this
+            });
+
             // Tell other clients
             foreach (var client in Clients)
             {
