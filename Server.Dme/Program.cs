@@ -43,6 +43,7 @@ namespace Server.Dme
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
         public static int UdpTickMS => 1000 / (Settings?.UdpTickRate ?? 30);
 
+        private static FileLoggerProvider _fileLogger = null;
         private static ulong _sessionKeyCounter = 0;
         private static int _sleepMS = 0;
         private static int _udpSleepMs = 0;
@@ -184,7 +185,8 @@ namespace Server.Dme
                         return null;
                     }
                 };
-                InternalLoggerFactory.DefaultFactory.AddProvider(new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
+                InternalLoggerFactory.DefaultFactory.AddProvider(_fileLogger = new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
+                _fileLogger.MinLevel = Settings.Logging.LogLevel;
             }
 
             // Optionally add console logger (always enabled when debugging)
@@ -254,6 +256,10 @@ namespace Server.Dme
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+
+            // Update file logger min level
+            if (_fileLogger != null)
+                _fileLogger.MinLevel = Settings.Logging.LogLevel;
 
             // Load tick time into sleep ms for main loop
             _sleepMS = TickMS;

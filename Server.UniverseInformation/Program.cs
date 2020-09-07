@@ -30,6 +30,7 @@ namespace Server.UnivereInformation
 
         public static MUIS[] UniverseInfoServers = null;
 
+        private static FileLoggerProvider _fileLogger = null;
 
 
         static async Task StartServerAsync()
@@ -89,7 +90,8 @@ namespace Server.UnivereInformation
                         return null;
                     }
                 };
-                InternalLoggerFactory.DefaultFactory.AddProvider(new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
+                InternalLoggerFactory.DefaultFactory.AddProvider(_fileLogger = new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
+                _fileLogger.MinLevel = Settings.Logging.LogLevel;
             }
 
             // Optionally add console logger (always enabled when debugging)
@@ -145,6 +147,10 @@ namespace Server.UnivereInformation
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+
+            // Update file logger min level
+            if (_fileLogger != null)
+                _fileLogger.MinLevel = Settings.Logging.LogLevel;
         }
     }
 }

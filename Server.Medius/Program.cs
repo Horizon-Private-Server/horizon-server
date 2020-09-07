@@ -57,6 +57,7 @@ namespace Server.Medius
 
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
 
+        private static FileLoggerProvider _fileLogger = null;
         private static ulong _sessionKeyCounter = 0;
         private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
@@ -168,7 +169,8 @@ namespace Server.Medius
                         return null;
                     }
                 };
-                InternalLoggerFactory.DefaultFactory.AddProvider(new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
+                InternalLoggerFactory.DefaultFactory.AddProvider(_fileLogger = new FileLoggerProvider(LogSettings.Singleton.LogPath, loggingOptions));
+                _fileLogger.MinLevel = Settings.Logging.LogLevel;
             }
 
             // Optionally add console logger (always enabled when debugging)
@@ -255,6 +257,10 @@ namespace Server.Medius
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+
+            // Update file logger min level
+            if (_fileLogger != null)
+                _fileLogger.MinLevel = Settings.Logging.LogLevel;
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;
