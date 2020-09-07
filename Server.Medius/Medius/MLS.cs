@@ -2493,57 +2493,12 @@ namespace Server.Medius
             if (channel == null)
                 return;
 
-            // Send to plugins
-            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CHAT_MESSAGE, new OnPlayerChatMessageArgs() { Player = clientObject, Message = chatMessage });
-
             switch (chatMessage.MessageType)
             {
                 case MediusChatMessageType.Broadcast:
                     {
                         // Relay
                         channel.BroadcastChatMessage(allButSender, clientObject, chatMessage.Message.Substring(1));
-
-                        /*
-                        // Handle commands
-                        switch (words[0].ToLower())
-                        {
-                            case "!roll":
-                                {
-                                    channel.BroadcastSystemMessage(
-                                        allPlayers,
-                                        $"{clientObject?.AccountName ?? "ERROR"} rolled {RNG.Next(0, 100)}"
-                                    );
-                                    break;
-                                }
-                            case "!gm":
-                                {
-                                    if (game != null)
-                                    {
-                                        // Get arg1 if it exists
-                                        string arg1 = words.Length > 1 ? words[1].ToLower() : null;
-
-                                        // 
-                                        var gamemode = Program.Settings.Gamemodes.FirstOrDefault(x => x.IsValid(game.ApplicationId) && x.Keys != null && x.Keys.Contains(arg1));
-
-                                        if (arg1 == null)
-                                        {
-                                            channel.SendSystemMessage(clientObject, $"Gamemode is {game.CustomGamemode?.FullName ?? "default"}");
-                                        }
-                                        else if (game.Host == clientObject && (arg1 == "reset" || arg1 == "r"))
-                                        {
-                                            channel.BroadcastSystemMessage(allPlayers, "Gamemode set to default.");
-                                            game.CustomGamemode = null;
-                                        }
-                                        else if (game.Host == clientObject && gamemode != null)
-                                        {
-                                            channel.BroadcastSystemMessage(allPlayers, $"Gamemode set to {gamemode.FullName}.");
-                                            game.CustomGamemode = gamemode;
-                                        }
-                                    }
-                                    break;
-                                }
-                        }
-                        */
                         break;
                     }
                 default:
@@ -2552,6 +2507,11 @@ namespace Server.Medius
                         break;
                     }
             }
+
+
+            // Send to plugins
+            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CHAT_MESSAGE, new OnPlayerChatMessageArgs() { Player = clientObject, Message = chatMessage });
+
         }
 
     }
