@@ -38,7 +38,7 @@ namespace Server.Medius
 
         protected abstract IInternalLogger Logger { get; }
         public abstract int Port { get; }
-
+        public IPAddress IPAddress => Program.SERVER_IP;
 
         public abstract PS2_RSA AuthKey { get; }
 

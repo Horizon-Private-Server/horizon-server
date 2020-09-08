@@ -24,6 +24,7 @@ using Server.Medius.Config;
 using NReco.Logging.File;
 using Server.Common.Logging;
 using Server.Plugins;
+using System.Net.NetworkInformation;
 
 namespace Server.Medius
 {
@@ -205,7 +206,7 @@ namespace Server.Medius
             LogSettings.Singleton = Settings.Logging;
 
             // Determine server ip
-            if (!Settings.UsePublicIp)
+            if (Settings.UsePublicIp)
             {
                 SERVER_IP = GetLocalIPAddress();
             }
@@ -227,6 +228,16 @@ namespace Server.Medius
                         Type = ChannelType.Lobby
                     });
                 }
+            }
+            else
+            {
+                Manager.AddChannel(new Channel()
+                {
+                    ApplicationId = 0,
+                    MaxPlayers = 256,
+                    Name = "Default",
+                    Type = ChannelType.Lobby
+                });
             }
 
             // Load tick time into sleep ms for main loop
@@ -285,11 +296,21 @@ namespace Server.Medius
             if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 return null;
 
-            IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+            // order interfaces by speed and filter out down and loopback
+            // take first of the remaining
+            var firstUpInterface = NetworkInterface.GetAllNetworkInterfaces()
+                .FirstOrDefault(c => c.NetworkInterfaceType != NetworkInterfaceType.Loopback && c.OperationalStatus == OperationalStatus.Up);
+            if (firstUpInterface != null)
+            {
+                var props = firstUpInterface.GetIPProperties();
+                // get first IPV4 address assigned to this interface
+                return props.UnicastAddresses
+                    .Where(c => c.Address.AddressFamily == AddressFamily.InterNetwork)
+                    .Select(c => c.Address)
+                    .FirstOrDefault();
+            }
 
-            return host
-                .AddressList
-                .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+            return null;
         }
 
         public static string GenerateSessionKey()

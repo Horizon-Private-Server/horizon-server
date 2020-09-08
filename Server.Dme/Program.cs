@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -297,11 +298,21 @@ namespace Server.Dme
             if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
                 return null;
 
-            IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+            // order interfaces by speed and filter out down and loopback
+            // take first of the remaining
+            var firstUpInterface = NetworkInterface.GetAllNetworkInterfaces()
+                .FirstOrDefault(c => c.NetworkInterfaceType != NetworkInterfaceType.Loopback && c.OperationalStatus == OperationalStatus.Up);
+            if (firstUpInterface != null)
+            {
+                var props = firstUpInterface.GetIPProperties();
+                // get first IPV4 address assigned to this interface
+                return props.UnicastAddresses
+                    .Where(c => c.Address.AddressFamily == AddressFamily.InterNetwork)
+                    .Select(c => c.Address)
+                    .FirstOrDefault();
+            }
 
-            return host
-                .AddressList
-                .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+            return null;
         }
 
         public static string GenerateSessionKey()

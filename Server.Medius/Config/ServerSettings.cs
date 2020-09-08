@@ -56,11 +56,6 @@ namespace Server.Medius.Config
         public int TickRate { get; set; } = 10;
 
         /// <summary>
-        /// Port of the MUIS server.
-        /// </summary>
-        public int MUISPort { get; set; } = 10071;
-
-        /// <summary>
         /// Port of the MAS server.
         /// </summary>
         public int MASPort { get; set; } = 10075;
@@ -74,6 +69,11 @@ namespace Server.Medius.Config
         /// Port of the MPS server.
         /// </summary>
         public int MPSPort { get; set; } = 10077;
+
+        /// <summary>
+        /// Ip address of the NAT server.
+        /// </summary>
+        public string NATIp { get; set; } = "";
 
         /// <summary>
         /// Port of the NAT server.
