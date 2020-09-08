@@ -460,7 +460,7 @@ namespace Server.Medius
                                     {
                                         data.ClientObject.Queue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
                                         {
-                                            Severity = 200,
+                                            Severity = Program.Settings.BanSystemMessageSeverity,
                                             EncodingType = 1,
                                             LanguageType = 2,
                                             EndOfMessage = true,

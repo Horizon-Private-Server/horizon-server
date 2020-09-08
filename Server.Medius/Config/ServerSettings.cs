@@ -86,6 +86,12 @@ namespace Server.Medius.Config
         public int DmeTimeoutSeconds { get; set; } = 60;
 
         /// <summary>
+        /// 'Severity' of the system message sent to notify the user has been banned.
+        ///  This is game specific.
+        /// </summary>
+        public byte BanSystemMessageSeverity { get; set; } = 200;
+
+        /// <summary>
         /// Key used to authenticate dme servers.
         /// </summary>
         public PS2_RSA MPSKey { get; set; } = new PS2_RSA(
