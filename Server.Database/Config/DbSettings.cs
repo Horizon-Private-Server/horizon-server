@@ -14,7 +14,7 @@ namespace Server.Database.Config
         /// When true, the controller will simulate a database.
         /// Data is not persistent in simulated mode.
         /// </summary>
-        public bool SimulatedMode { get; set; } = false;
+        public bool SimulatedMode { get; set; } = true;
 
         /// <summary>
         /// Database url.

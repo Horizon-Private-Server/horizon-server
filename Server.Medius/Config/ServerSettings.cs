@@ -30,10 +30,10 @@ namespace Server.Medius.Config
         public int[] ApplicationIds { get; set; } = null;
 
         /// <summary>
-        /// By default the server will grab its public ip.
-        /// If this is set, it will use the ip provided here instead.
+        /// By default the server will grab its local ip.
+        /// If this is set, it will use its public ip instead.
         /// </summary>
-        public string ServerIpOverride { get; set; } = null;
+        public bool UsePublicIp { get; set; } = false;
 
         /// <summary>
         /// Time since last echo response before timing the client out.

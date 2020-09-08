@@ -205,13 +205,13 @@ namespace Server.Medius
             LogSettings.Singleton = Settings.Logging;
 
             // Determine server ip
-            if (!String.IsNullOrEmpty(Settings.ServerIpOverride))
+            if (!Settings.UsePublicIp)
             {
-                SERVER_IP = IPAddress.Parse(Settings.ServerIpOverride);
+                SERVER_IP = GetLocalIPAddress();
             }
             else
             {
-                SERVER_IP = IPAddress.Parse(GetIPAddress());
+                SERVER_IP = IPAddress.Parse(GetPublicIPAddress());
             }
 
             // 
@@ -263,7 +263,7 @@ namespace Server.Medius
         /// From https://www.c-sharpcorner.com/blogs/how-to-get-public-ip-address-using-c-sharp1
         /// </summary>
         /// <returns></returns>
-        static string GetIPAddress()
+        static string GetPublicIPAddress()
         {
             String address;
             WebRequest request = WebRequest.Create("http://checkip.dyndns.org/");
@@ -279,6 +279,19 @@ namespace Server.Medius
 
             return address;
         }
+
+        static IPAddress GetLocalIPAddress()
+        {
+            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+                return null;
+
+            IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+
+            return host
+                .AddressList
+                .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+        }
+
         public static string GenerateSessionKey()
         {
             lock (_sessionKeyCounterLock)

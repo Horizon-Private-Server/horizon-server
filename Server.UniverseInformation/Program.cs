@@ -115,6 +115,15 @@ namespace Server.UnivereInformation
             }
             else
             {
+                // Add default localhost entry
+                Settings.Universes.Add(0, new UniverseInfo()
+                {
+                    Name = "sample universe",
+                    Endpoint = "url",
+                    Port = 10075,
+                    UniverseId = 1
+                });
+
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
