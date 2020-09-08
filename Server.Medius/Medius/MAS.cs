@@ -458,6 +458,15 @@ namespace Server.Medius
                                 {
                                     if (r.Result.IsBanned)
                                     {
+                                        data.ClientObject.Queue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
+                                        {
+                                            Severity = 200,
+                                            EncodingType = 1,
+                                            LanguageType = 2,
+                                            EndOfMessage = true,
+                                            Message = "You have been banned!"
+                                        });
+
                                         // Account is banned
                                         // Temporary solution is to tell the client the login failed
                                         data?.ClientObject?.Queue(new MediusAccountLoginResponse()
