@@ -242,7 +242,7 @@ namespace Server.Medius
                                     Message = message,
                                     Channel = clientChannel
                                 };
-                                Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_RECV, onMsg);
+                                Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_SEND, onMsg);
 
                                 // Ignore if ignored
                                 if (!onMsg.Ignore)
