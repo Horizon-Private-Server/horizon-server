@@ -21,6 +21,7 @@ namespace Server.Database
         private DbSettings _settings = new DbSettings();
 
         private int _simulatedAccountIdCounter = 0;
+        private string _dbAccessToken = null;
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
 
         #region Cache
@@ -91,6 +92,30 @@ namespace Server.Database
                 File.WriteAllText(configPath, JsonConvert.SerializeObject(_settings, Formatting.Indented));
             }
         }
+
+        /// <summary>
+        /// Authenticate with middleware.
+        /// </summary>
+        public async Task<bool> Authenticate()
+        {
+            // Succeed in simulated mode
+            if (_settings.SimulatedMode)
+                return true;
+
+            //
+            var response = await Authenticate(_settings.DatabaseUsername, _settings.DatabasePassword);
+
+            // Validate
+            if (response == null || response.Roles == null || !response.Roles.Contains("database"))
+                return false;
+
+            // 
+            _dbAccessToken = response.Token;
+
+            // 
+            return !string.IsNullOrEmpty(_dbAccessToken);
+        }
+
 
         #region Account
 
@@ -807,6 +832,35 @@ namespace Server.Database
 
         #endregion
 
+        #region Auth
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private async Task<AuthenticationResponse> Authenticate(string username, string password)
+        {
+            AuthenticationResponse result = null;
+
+            try
+            {
+                result = await PostDbAsync<AuthenticationResponse>($"Account/authenticate", new AuthenticationRequest()
+                {
+                    AccountName = username,
+                    Password = password
+                });
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region Http
 
         private async Task<HttpResponseMessage> GetDbAsync(string route)
@@ -829,6 +883,8 @@ namespace Server.Database
 
                 using (var client = new HttpClient(handler))
                 {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
                     client.DefaultRequestHeaders.Add("Accept", "application/json");
 
                     try
@@ -873,6 +929,8 @@ namespace Server.Database
 
                     try
                     {
+                        if (!string.IsNullOrEmpty(_dbAccessToken))
+                            client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
                         var response = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
 
                         // Deserialize on success
@@ -909,6 +967,8 @@ namespace Server.Database
 
                 using (var client = new HttpClient(handler))
                 {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
                     client.DefaultRequestHeaders.Add("Accept", "application/json");
 
                     try
@@ -942,6 +1002,8 @@ namespace Server.Database
 
                 using (var client = new HttpClient(handler))
                 {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
                     client.DefaultRequestHeaders.Add("Accept", "application/json");
 
                     try
@@ -952,6 +1014,48 @@ namespace Server.Database
                     {
                         Logger.Error(e);
                         result = null;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<T> PostDbAsync<T>(string route, object body)
+        {
+            // 
+            T result = default(T);
+
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        var response = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+
+                        // Deserialize on success
+                        if (response.IsSuccessStatusCode)
+                            result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+
+                        // Update cached value
+                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = default(T);
                     }
                 }
             }

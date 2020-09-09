@@ -62,6 +62,7 @@ namespace Server.Medius
         private static ulong _sessionKeyCounter = 0;
         private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
+        private static DateTime? _lastSuccessfulDbAuth = null;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -116,6 +117,22 @@ namespace Server.Medius
                         ticks = 0;
                     }
 #endif
+
+                    // Attempt to authenticate with the db middleware
+                    // We do this every 24 hours to get a fresh new token
+                    if ((_lastSuccessfulDbAuth == null || (DateTime.UtcNow - _lastSuccessfulDbAuth.Value).TotalHours > 24))
+                    {
+                        if (!await Database.Authenticate())
+                        {
+                            // Log and exit when unable to authenticate
+                            Logger.Error("Unable to authenticate with the db middleware server");
+                            return;
+                        }
+                        else
+                        {
+                            _lastSuccessfulDbAuth = DateTime.UtcNow;
+                        }
+                    }
 
                     // 
                     sleepSw.Restart();
