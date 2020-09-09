@@ -45,7 +45,7 @@ namespace RT.Models
                 $"SequenceId:{SequenceId} " +
                 $"Address:{Address:X8} " +
                 $"Length:{Length} " +
-                $"Data:{BitConverter.ToString(Data)}";
+                $"Data:{(Data == null ? "" : BitConverter.ToString(Data))}";
         }
     }
 }

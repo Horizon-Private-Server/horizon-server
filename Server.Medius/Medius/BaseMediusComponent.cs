@@ -19,6 +19,7 @@ using RT.Models;
 using RT.Common;
 using Server.Pipeline.Tcp;
 using Server.Medius.Models;
+using Server.Medius.PluginArgs;
 
 namespace Server.Medius
 {
@@ -95,14 +96,16 @@ namespace Server.Medius
             };
 
             // Remove client on disconnect
-            _scertHandler.OnChannelInactive += (channel) =>
+            _scertHandler.OnChannelInactive += async (channel) =>
             {
+                await Tick(channel);
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryRemove(key, out var data))
                 {
                     data.State = ClientState.DISCONNECTED;
                     data.ClientObject?.OnDisconnected();
                 }
+
             };
 
             // Queue all incoming messages
@@ -188,7 +191,18 @@ namespace Server.Medius
                     {
                         try
                         {
-                            await ProcessMessage(message, clientChannel, data);
+                            // Send to plugins
+                            var onMsg = new OnMessageArgs()
+                            {
+                                Player = data.ClientObject,
+                                Message = message,
+                                Channel = clientChannel
+                            };
+                            Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_RECV, onMsg);
+
+                            // Ignore if ignored
+                            if (!onMsg.Ignore)
+                                await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
                         {
@@ -201,13 +215,39 @@ namespace Server.Medius
                     {
                         // Add send queue to responses
                         while (data.SendQueue.TryDequeue(out var message))
-                            responses.Add(message);
+                        {
+                            // Send to plugins
+                            var onMsg = new OnMessageArgs()
+                            {
+                                Player = data.ClientObject,
+                                Channel = clientChannel,
+                                Message = message
+                            };
+                            Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_SEND, onMsg);
+
+                            // Ignore if ignored
+                            if (!onMsg.Ignore)
+                                responses.Add(message);
+                        }
 
                         if (data.ClientObject != null)
                         {
                             // Add client object's send queue to responses
                             while (data.ClientObject.SendMessageQueue.TryDequeue(out var message))
-                                responses.Add(message);
+                            {
+                                // Send to plugins
+                                var onMsg = new OnMessageArgs()
+                                {
+                                    Player = data.ClientObject,
+                                    Message = message,
+                                    Channel = clientChannel
+                                };
+                                Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_RECV, onMsg);
+
+                                // Ignore if ignored
+                                if (!onMsg.Ignore)
+                                    responses.Add(message);
+                            }
 
                             // Echo
                             if ((DateTime.UtcNow - data.ClientObject.UtcLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
