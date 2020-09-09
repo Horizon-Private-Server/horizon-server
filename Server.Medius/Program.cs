@@ -28,7 +28,7 @@ using System.Net.NetworkInformation;
 
 namespace Server.Medius
 {
-    class Program
+    public class Program
     {
         public const string CONFIG_FILE = "config.json";
         public const string DB_CONFIG_FILE = "db.config.json";
