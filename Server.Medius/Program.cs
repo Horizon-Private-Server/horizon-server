@@ -223,7 +223,7 @@ namespace Server.Medius
             LogSettings.Singleton = Settings.Logging;
 
             // Determine server ip
-            if (Settings.UsePublicIp)
+            if (!Settings.UsePublicIp)
             {
                 SERVER_IP = GetLocalIPAddress();
             }
