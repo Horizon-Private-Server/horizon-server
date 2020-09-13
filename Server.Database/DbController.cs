@@ -156,11 +156,6 @@ namespace Server.Database
         {
             AccountDTO result = null;
 
-            if (id < 0)
-            {
-
-            }
-
             try
             {
                 if (_settings.SimulatedMode)
@@ -392,7 +387,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", ip);
+                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", $"\"{ip}\"");
                 }
             }
             catch (Exception e)
@@ -419,7 +414,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", mac);
+                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", $"\"{mac}\"");
                 }
             }
             catch (Exception e)
@@ -431,10 +426,10 @@ namespace Server.Database
         }
 
         /// <summary>
-        /// Posts the given MAC address to the database account with the given account id.
+        /// Posts the given machine id to the database account with the given account id.
         /// </summary>
         /// <param name="accountId">Account id.</param>
-        /// <param name="machineId">MAC Address encoded as Base64 string.</param>
+        /// <param name="machineId">Machine id.</param>
         public async Task<bool> PostMachineId(int accountId, string machineId)
         {
             bool result = false;
@@ -447,7 +442,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Account/postMachineId?AccountId={accountId}", machineId)).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Account/postMachineId?AccountId={accountId}", $"\"{machineId}\"")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
