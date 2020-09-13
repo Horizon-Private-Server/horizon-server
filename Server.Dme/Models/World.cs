@@ -117,7 +117,7 @@ namespace Server.Dme.Models
                     {
                         OnPlayerLeft(client);
                         Program.Manager.RemoveClient(client);
-                        await client.Stop();
+                        _ = client.Stop();
                         Clients.TryRemove(i, out _);
                     }
                 }

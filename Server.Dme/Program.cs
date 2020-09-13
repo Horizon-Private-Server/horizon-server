@@ -139,10 +139,7 @@ namespace Server.Dme
                     if (Manager.IsConnected)
                     {
                         // Tick
-                        await TcpServer.Tick();
-
-                        // Tick manager
-                        await Manager.Tick();
+                        await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
 
                         // Tick plugins
                         Plugins.Tick();

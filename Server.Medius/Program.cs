@@ -138,9 +138,7 @@ namespace Server.Medius
                     sleepSw.Restart();
 
                     // Tick
-                    await AuthenticationServer.Tick();
-                    await LobbyServer.Tick();
-                    await ProxyServer.Tick();
+                    await Task.WhenAll(AuthenticationServer.Tick(), LobbyServer.Tick(), ProxyServer.Tick());
 
                     // Tick manager
                     Manager.Tick();
