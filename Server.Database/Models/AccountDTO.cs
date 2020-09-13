@@ -43,6 +43,11 @@ namespace Server.Database.Models
         public string MediusStats { get; set; }
 
         /// <summary>
+        /// Machine id tied to account.
+        /// </summary>
+        public string MachineId { get; set; }
+
+        /// <summary>
         /// Whether or not the player has been banned.
         /// </summary>
         public bool IsBanned { get; set; }
