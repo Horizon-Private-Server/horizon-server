@@ -114,8 +114,12 @@ namespace Server.Medius
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
-                    data.RecvQueue.Enqueue(message);
-                    data.ClientObject?.OnEcho(DateTime.UtcNow);
+                    // Don't queue message if client is ignored
+                    if (data.ClientObject == null || !data.ClientObject.Ignore)
+                    {
+                        data.RecvQueue.Enqueue(message);
+                        data.ClientObject?.OnEcho(DateTime.UtcNow);
+                    }
                 }
 
                 // Log if id is set
@@ -186,6 +190,10 @@ namespace Server.Medius
                 // 
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
+                    // Ignore
+                    if (data.ClientObject != null && data.ClientObject.Ignore)
+                        return;
+
                     // Process all messages in queue
                     while (data.RecvQueue.TryDequeue(out var message))
                     {

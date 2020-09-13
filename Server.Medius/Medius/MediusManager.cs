@@ -391,8 +391,11 @@ namespace Server.Medius
                     Logger.Info($"Destroying Client {clientKeyPair.Value}");
 
                     // Logout and end session
-                    clientKeyPair.Value?.Logout();
-                    clientKeyPair.Value?.EndSession();
+                    clientKeyPair.Value.Logout();
+                    clientKeyPair.Value.EndSession();
+
+                    // Ignore all future messages
+                    clientKeyPair.Value.Ignore = true;
 
                     clientsToRemove.Enqueue(clientKeyPair.Key);
                 }

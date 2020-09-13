@@ -115,6 +115,9 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
+                        if (data.ClientObject == null || !data.ClientObject.IsLoggedIn)
+                            break;
+
                         Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
                         break;
                     }
