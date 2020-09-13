@@ -65,6 +65,11 @@ namespace Server.Dme.Models
 
         public int MaxPlayers { get; protected set; } = 0;
 
+        /// <summary>
+        /// Time (ms) to aggregate messages before sending them out.
+        /// </summary>
+        public int AggTime { get; protected set; } = Program.Settings.DefaultWorldAggTime;
+
         public bool SelfDestructFlag { get; protected set; } = false;
 
         public bool ForceDestruct { get; protected set; } = false;
@@ -79,6 +84,7 @@ namespace Server.Dme.Models
 
         public ConcurrentDictionary<int, ClientObject> Clients = new ConcurrentDictionary<int, ClientObject>();
 
+        private DateTime _lastAggTimeUtc = DateTime.UtcNow;
 
         public World(int maxPlayers)
         {
@@ -100,14 +106,10 @@ namespace Server.Dme.Models
             Dispose();
         }
 
-        public async Task TickUdp()
-        {
-            // Process clients
-            await Task.WhenAll(Clients.Select(x => x.Value.Udp?.Tick()));
-        }
-
         public async Task Tick()
         {
+            bool isAggTick = (DateTime.UtcNow - _lastAggTimeUtc).TotalMilliseconds > AggTime;
+
             // Process clients
             for (int i = 0; i < MAX_CLIENTS_PER_WORLD; ++i)
             {
@@ -120,8 +122,16 @@ namespace Server.Dme.Models
                         _ = client.Stop();
                         Clients.TryRemove(i, out _);
                     }
+                    else if (isAggTick)
+                    {
+                        client.Udp?.Tick();
+                    }
                 }
             }
+
+            // Update last agg time
+            if (isAggTick)
+                _lastAggTimeUtc = DateTime.UtcNow;
 
             // Remove
             if (Destroy)
@@ -211,6 +221,11 @@ namespace Server.Dme.Models
         #endregion
 
         #region Message Handlers
+
+        public void OnSetAggTime(RT_MSG_CLIENT_SET_AGG_TIME setAggTime)
+        {
+            this.AggTime = setAggTime.AggTime;
+        }
 
         public void OnEndGameRequest(MediusServerEndGameRequest request)
         {

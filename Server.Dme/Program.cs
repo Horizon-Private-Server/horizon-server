@@ -45,15 +45,10 @@ namespace Server.Dme
         public static TcpServer TcpServer = new TcpServer();
         public static PluginsManager Plugins = null;
 
-        public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
-        public static int UdpTickMS => 1000 / (Settings?.UdpTickRate ?? 30);
-
         private static FileLoggerProvider _fileLogger = null;
         private static ulong _sessionKeyCounter = 0;
-        private static int _sleepMS = 0;
-        private static int _udpSleepMs = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
-        private static bool _isRunning = true;
+        private static DateTime _timeLastPluginTick = DateTime.UtcNow;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -61,13 +56,11 @@ namespace Server.Dme
 
         static async Task StartServerAsync()
         {
-            DateTime lastDMECheck = DateTime.UtcNow;
             DateTime lastConfigRefresh = DateTime.UtcNow;
-            Stopwatch tickSw = new Stopwatch();
+            ulong ticks = 0;
 
 #if DEBUG
-            Stopwatch sw = new Stopwatch();
-            int ticks = 0;
+            Stopwatch tickSw = new Stopwatch();
 #endif
 
             Logger.Info("Starting medius components...");
@@ -81,60 +74,15 @@ namespace Server.Dme
             // 
             Logger.Info("Started.");
 
-            new Thread(new ParameterizedThreadStart(async (s) =>
-            {
-                Stopwatch udpTickSw = new Stopwatch();
-                while (_isRunning)
-                {
-                    // Restart stopwatch
-                    udpTickSw.Restart();
-
-                    try
-                    {
-                        Plugins.OnEvent(PluginEvent.DME_UDP_TICK, null);
-
-                        // 
-                        await Manager.TickUdp();
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error(e);
-                    }
-
-                    // Sleep
-                    await Task.Delay((int)Math.Max(0, _udpSleepMs - udpTickSw.ElapsedMilliseconds));
-                }
-            })).Start();
-
             try
             {
+
 #if DEBUG
-                sw.Start();
+                tickSw.Restart();
 #endif
 
                 while (true)
                 {
-#if DEBUG
-                    ++ticks;
-                    if (sw.Elapsed.TotalSeconds > 5f)
-                    {
-                        // 
-                        sw.Stop();
-                        float tps = ticks / (float)sw.Elapsed.TotalSeconds;
-                        float error = MathF.Abs(Settings.TickRate - tps) / Settings.TickRate;
-
-                        if (error > 0.1f)
-                            Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
-
-                        sw.Restart();
-                        ticks = 0;
-                    }
-#endif
-
-
-                    //
-                    tickSw.Restart();
-
                     // Check if connected
                     if (Manager.IsConnected)
                     {
@@ -142,10 +90,11 @@ namespace Server.Dme
                         await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
 
                         // Tick plugins
-                        Plugins.Tick();
-
-                        // Send
-                        await TcpServer.SendQueue();
+                        if ((DateTime.UtcNow - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                        {
+                            _timeLastPluginTick = DateTime.UtcNow;
+                            Plugins.Tick();
+                        }
                     }
                     else if ((DateTime.UtcNow - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
                     {
@@ -160,12 +109,22 @@ namespace Server.Dme
                         lastConfigRefresh = DateTime.UtcNow;
                     }
 
-                    await Task.Delay((int)Math.Max(0, _sleepMS - tickSw.ElapsedMilliseconds));
+                    // 
+                    ++ticks;
+                    if ((ticks % 1000) == 0)
+                    {
+#if DEBUG
+                        Logger.Info($"TPS: {ticks / tickSw.Elapsed.TotalSeconds}");
+                        tickSw.Restart();
+#endif
+                        ticks = 0;
+                    }
+
+                    Thread.Sleep(Settings.MainLoopSleepMs);
                 }
             }
             finally
             {
-                _isRunning = false;
                 await TcpServer.Stop();
                 await Manager.Stop();
             }
@@ -236,10 +195,6 @@ namespace Server.Dme
             {
                 SERVER_IP = IPAddress.Parse(GetPublicIPAddress());
             }
-
-            // Load tick time into sleep ms for main loop
-            _sleepMS = TickMS;
-            _udpSleepMs = UdpTickMS;
         }
 
         /// <summary>
@@ -263,10 +218,6 @@ namespace Server.Dme
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
-
-            // Load tick time into sleep ms for main loop
-            _sleepMS = TickMS;
-            _udpSleepMs = UdpTickMS;
         }
 
         /// <summary>

@@ -170,14 +170,6 @@ namespace Server.Dme
             _mpsSendQueue.Clear();
         }
 
-        public async Task TickUdp()
-        {
-            if (_mpsChannel == null)
-                return;
-
-            await Task.WhenAll(_worlds.Select(x => x.TickUdp()));
-        }
-
         public async Task Tick()
         {
             if (_mpsChannel == null)

@@ -149,6 +149,7 @@ namespace Server.Dme
                 return;
 
             // 
+            List<BaseScertMessage> responses = new List<BaseScertMessage>();
             string key = clientChannel.Id.AsLongText();
 
             try
@@ -175,36 +176,7 @@ namespace Server.Dme
                             Logger.Error(e);
                         }
                     }
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e);
-            }
-        }
 
-        public async Task SendQueue()
-        {
-            if (_scertHandler == null || _scertHandler.Group == null)
-                return;
-
-            await Task.WhenAll(_scertHandler.Group.Select(c => SendQueue(c)));
-        }
-
-        private async Task SendQueue(IChannel clientChannel)
-        {
-            if (clientChannel == null)
-                return;
-
-            // 
-            List<BaseScertMessage> responses = new List<BaseScertMessage>();
-            string key = clientChannel.Id.AsLongText();
-
-            try
-            {
-                // 
-                if (_channelDatas.TryGetValue(key, out var data))
-                {
                     // Send if writeable
                     if (clientChannel.IsWritable)
                     {
@@ -310,7 +282,6 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_AUX_UDP connectReadyAuxUdp:
                     {
-
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
                         {
                             ARG1 = (ushort)data.ClientObject.DmeWorld.Clients.Count
@@ -324,7 +295,7 @@ namespace Server.Dme
                             }
                         }, clientChannel);
 
-                        data.ClientObject.DmeWorld.OnPlayerJoined(data.ClientObject);
+                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
 
                         break;
                     }
@@ -345,7 +316,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_SET_AGG_TIME setAggTime:
                     {
-
+                        data.ClientObject?.DmeWorld?.OnSetAggTime(setAggTime);
                         break;
                     }
                 case RT_MSG_CLIENT_TIMEBASE_QUERY timebaseQuery:
@@ -364,12 +335,12 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_APP_BROADCAST clientAppBroadcast:
                     {
-                        data.ClientObject.DmeWorld?.BroadcastTcp(data.ClientObject, clientAppBroadcast.Payload);
+                        data.ClientObject?.DmeWorld?.BroadcastTcp(data.ClientObject, clientAppBroadcast.Payload);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_LIST clientAppList:
                     {
-                        var world = data.ClientObject.DmeWorld;
+                        var world = data.ClientObject?.DmeWorld;
                         if (world != null && clientAppList.Targets != null)
                         {
                             foreach (var target in clientAppList.Targets)

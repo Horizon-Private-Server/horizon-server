@@ -55,14 +55,19 @@ namespace Server.Dme.Config
         public int ServerEchoInterval { get; set; } = 10;
 
         /// <summary>
-        /// Number of ticks per second.
+        /// Number of milliseconds for main loop thread to sleep.
         /// </summary>
-        public int TickRate { get; set; } = 10;
+        public int MainLoopSleepMs { get; set; } = 5;
 
         /// <summary>
-        /// Number of ticks per second for the udp server.
+        /// Milliseconds between plugin ticks.
         /// </summary>
-        public int UdpTickRate { get; set; } = 30;
+        public int PluginTickIntervalMs { get; set; } = 50;
+
+        /// <summary>
+        /// Default millisecond interval between sending aggregated messages.
+        /// </summary>
+        public int DefaultWorldAggTime { get; set; } = 20;
 
         /// <summary>
         /// Port of the TCP server.
