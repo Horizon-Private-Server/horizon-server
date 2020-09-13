@@ -458,14 +458,8 @@ namespace Server.Medius
                                 {
                                     if (r.Result.IsBanned)
                                     {
-                                        data.ClientObject.Queue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
-                                        {
-                                            Severity = Program.Settings.BanSystemMessageSeverity,
-                                            EncodingType = 1,
-                                            LanguageType = 2,
-                                            EndOfMessage = true,
-                                            Message = "You have been banned!"
-                                        });
+                                        // Send ban message
+                                        QueueBanMessage(data);
 
                                         // Account is banned
                                         // Temporary solution is to tell the client the login failed

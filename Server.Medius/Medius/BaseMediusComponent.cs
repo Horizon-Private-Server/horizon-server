@@ -58,6 +58,8 @@ namespace Server.Medius
 
             public ClientState State { get; set; } = ClientState.DISCONNECTED;
 
+            public bool? IsBanned { get; set; } = null;
+
             public DateTime LastSentEcho { get; set; } = DateTime.UnixEpoch;
         }
 
@@ -89,9 +91,18 @@ namespace Server.Medius
             _scertHandler.OnChannelActive += (channel) =>
             {
                 string key = channel.Id.AsLongText();
-                _channelDatas.TryAdd(key, new ChannelData()
+                var data = new ChannelData()
                 {
                     State = ClientState.CONNECTED
+                };
+                _channelDatas.TryAdd(key, data);
+
+                // Check if IP is banned
+                Program.Database.GetIsIpBanned((channel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString()).ContinueWith((r) =>
+                {
+                    data.IsBanned = r.IsCompletedSuccessfully && r.Result;
+                    if (data.IsBanned == true)
+                        QueueBanMessage(data);
                 });
             };
 
@@ -117,8 +128,12 @@ namespace Server.Medius
                     // Don't queue message if client is ignored
                     if (data.ClientObject == null || !data.ClientObject.Ignore)
                     {
-                        data.RecvQueue.Enqueue(message);
-                        data.ClientObject?.OnEcho(DateTime.UtcNow);
+                        // Don't queue if banned
+                        if (data.IsBanned == null || data.IsBanned == false)
+                        {
+                            data.RecvQueue.Enqueue(message);
+                            data.ClientObject?.OnEcho(DateTime.UtcNow);
+                        }
                     }
                 }
 
@@ -282,6 +297,19 @@ namespace Server.Medius
                 data.LastSentEcho = DateTime.UtcNow;
                 responses.Add(new RT_MSG_SERVER_ECHO() { });
             }
+        }
+
+        protected virtual void QueueBanMessage(ChannelData data)
+        {
+            // Send ban message
+            data.SendQueue.Enqueue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
+            {
+                Severity = Program.Settings.BanSystemMessageSeverity,
+                EncodingType = 1,
+                LanguageType = 2,
+                EndOfMessage = true,
+                Message = "You have been banned!"
+            });
         }
 
         protected abstract Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data);

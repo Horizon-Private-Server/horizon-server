@@ -377,6 +377,87 @@ namespace Server.Database
             return result;
         }
 
+        /// <summary>
+        /// Gets whether or not the ip is banned.
+        /// </summary>
+        public async Task<bool> GetIsIpBanned(string ip)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", ip);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets whether the mac address is banned.
+        /// </summary>
+        /// <param name="mac">MAC Address as a Base64 string</param>
+        public async Task<bool> GetIsMacBanned(string mac)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", mac);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Posts the given MAC address to the database account with the given account id.
+        /// </summary>
+        /// <param name="accountId">Account id.</param>
+        /// <param name="machineId">MAC Address encoded as Base64 string.</param>
+        public async Task<bool> PostMachineId(int accountId, string machineId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Account/postMachineId?AccountId={accountId}", machineId)).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
         #endregion
 
         #region Buddy / Ignored
