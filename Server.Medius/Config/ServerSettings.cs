@@ -73,7 +73,7 @@ namespace Server.Medius.Config
         /// <summary>
         /// Ip address of the NAT server.
         /// </summary>
-        public string NATIp { get; set; } = "";
+        public string NATIp { get; set; } = null;
 
         /// <summary>
         /// Port of the NAT server.

@@ -230,6 +230,10 @@ namespace Server.Medius
                 SERVER_IP = IPAddress.Parse(GetPublicIPAddress());
             }
 
+            // Update NAT Ip with server ip if null
+            if (string.IsNullOrEmpty(Settings.NATIp))
+                Settings.NATIp = SERVER_IP.ToString();
+
             // 
             if (Settings.ApplicationIds != null)
             {
@@ -276,6 +280,10 @@ namespace Server.Medius
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+
+            // Update NAT Ip with server ip if null
+            if (string.IsNullOrEmpty(Settings.NATIp))
+                Settings.NATIp = SERVER_IP.ToString();
 
             // Update file logger min level
             if (_fileLogger != null)
