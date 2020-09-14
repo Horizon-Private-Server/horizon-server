@@ -259,6 +259,9 @@ namespace Server.Medius
                 });
             }
 
+            // Clear account status table
+            Database.ClearAccountStatuses().Wait();
+
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;
         }

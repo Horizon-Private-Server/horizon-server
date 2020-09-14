@@ -339,6 +339,29 @@ namespace Server.Database
             return result;
         }
 
+        public async Task<bool> ClearAccountStatuses()
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    result = (await GetDbAsync($"Account/clearAccountStatuses")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Posts ip to account.
         /// </summary>
