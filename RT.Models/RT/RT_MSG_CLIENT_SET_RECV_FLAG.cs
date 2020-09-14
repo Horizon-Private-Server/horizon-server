@@ -12,22 +12,22 @@ namespace RT.Models
     {
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_CLIENT_SET_RECV_FLAG;
 
-        public byte[] Contents { get; set; }
+        public RT_RECV_FLAG Flag { get; set; }
 
         public override void Deserialize(BinaryReader reader)
         {
-            Contents = reader.ReadRest();
+            Flag = reader.Read<RT_RECV_FLAG>();
         }
 
         protected override void Serialize(BinaryWriter writer)
         {
-            writer.Write(Contents);
+            writer.Write(Flag);
         }
 
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Contents:{BitConverter.ToString(Contents)}";
+                $"Flag:{Flag}";
         }
     }
 }

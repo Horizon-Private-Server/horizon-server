@@ -158,7 +158,7 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source)
+                if (client.Value == source || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueTcp(msg);
@@ -175,10 +175,46 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source)
+                if (client.Value == source || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueUdp(msg);
+            }
+        }
+
+        public void SendTcpAppList(ClientObject source, IEnumerable<int> targetDmeIds, byte[] Payload)
+        {
+            foreach (var targetId in targetDmeIds)
+            {
+                if (Clients.TryGetValue(targetId, out var client))
+                {
+                    if (client == null || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                        continue;
+
+                    client.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
+                    {
+                        TargetOrSource = (short)source.DmeId,
+                        Payload = Payload
+                    });
+                }
+            }
+        }
+
+        public void SendUdpAppList(ClientObject source, IEnumerable<int> targetDmeIds, byte[] Payload)
+        {
+            foreach (var targetId in targetDmeIds)
+            {
+                if (Clients.TryGetValue(targetId, out var client))
+                {
+                    if (client == null || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                        continue;
+
+                    client.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
+                    {
+                        TargetOrSource = (short)source.DmeId,
+                        Payload = Payload
+                    });
+                }
             }
         }
 
@@ -186,7 +222,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null)
+            if (target != null && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -194,27 +230,19 @@ namespace Server.Dme.Models
                     Payload = Payload
                 });
             }
-            else
-            {
-                
-            }
         }
 
         public void SendUdpAppSingle(ClientObject source, short targetDmeId, byte[] Payload)
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null)
+            if (target != null && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
                     TargetOrSource = (short)source.DmeId,
                     Payload = Payload
                 });
-            }
-            else
-            {
-
             }
         }
 
@@ -245,7 +273,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player)
+                if (client.Value == player || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_CONNECT_NOTIFY()
@@ -277,7 +305,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player)
+                if (client.Value == player || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_DISCONNECT_NOTIFY()

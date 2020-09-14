@@ -111,7 +111,7 @@ namespace Server.Dme
 
                     // 
                     ++ticks;
-                    if ((ticks % 1000) == 0)
+                    if ((ticks % 10000) == 0)
                     {
 #if DEBUG
                         Logger.Info($"TPS: {ticks / tickSw.Elapsed.TotalSeconds}");

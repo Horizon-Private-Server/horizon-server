@@ -473,6 +473,16 @@ namespace RT.Common
         MGCL_NUM_GAME_WORLDS_PER_LOBBY_WORLD_EXCEEDED = -19,
     }
 
+    [Flags]
+    public enum RT_RECV_FLAG : byte
+    {
+        NONE = 0,
+        RECV_BROADCAST = 1,
+        RECV_LIST = 2,
+        RECV_SINGLE = 4,
+        RECV_NOTIFICATION = 8
+    }
+
     public enum NetAddressType : int
     {
         NetAddressNone = 0,

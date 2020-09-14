@@ -188,34 +188,6 @@ namespace Server.Dme
                         if (AuthenticatedEndPoint == null || !AuthenticatedEndPoint.Equals(packet.Source))
                             break;
 
-                        /*
-                        // Don't send dupes
-                        if (_lastMessage != null && _lastMessage is RT_MSG_CLIENT_APP_BROADCAST lastBroadcast && lastBroadcast.Equals(clientAppBroadcast))
-                            break;
-
-                        // Speedhack, reduce pad message in DL
-                        if (clientAppBroadcast.Payload.Length == 0x22 && clientAppBroadcast.Payload[0] == 2 && clientAppBroadcast.Payload[1] == 9)
-                        {
-                            if (_lastMessage != null && _lastMessage is RT_MSG_CLIENT_APP_BROADCAST lb && lb.Payload.Length == 0x22)
-                            {
-                                int i;
-                                for (i = 0; i < clientAppBroadcast.Payload.Length; ++i)
-                                {
-                                    if (i >= 0x14 && i <= 0x17)
-                                        continue;
-
-                                    if (clientAppBroadcast.Payload[i] != lb.Payload[i])
-                                        goto dododood;
-                                }
-
-                                break;
-                            }
-                        }
-
-                        
-                        dododood:;
-                        */
-
                         ClientObject.DmeWorld?.BroadcastUdp(ClientObject, clientAppBroadcast.Payload);
                         break;
                     }
@@ -224,14 +196,7 @@ namespace Server.Dme
                         if (AuthenticatedEndPoint == null || !AuthenticatedEndPoint.Equals(packet.Source))
                             break;
 
-                        var world = ClientObject.DmeWorld;
-                        if (world != null && clientAppList.Targets != null)
-                        {
-                            foreach (var target in clientAppList.Targets)
-                            {
-                                world.SendUdpAppSingle(ClientObject, (short)target, clientAppList.Payload);
-                            }
-                        }
+                        ClientObject.DmeWorld?.SendUdpAppList(ClientObject, clientAppList.Targets, clientAppList.Payload);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_SINGLE clientAppSingle:

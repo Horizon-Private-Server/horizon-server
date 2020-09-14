@@ -1,4 +1,5 @@
 ﻿using RT.Common;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,17 +13,26 @@ namespace RT.Models
 
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_READY_TCP;
 
-        // 
-        public ushort ARG1 = 0x010E;
+        public byte StartOpt = 0x0E;
+        public RT_RECV_FLAG RecvFlag = RT_RECV_FLAG.RECV_BROADCAST;
 
         public override void Deserialize(BinaryReader reader)
         {
-            ARG1 = reader.ReadUInt16();
+            StartOpt = reader.ReadByte();
+            RecvFlag = reader.Read<RT_RECV_FLAG>();
         }
 
         protected override void Serialize(BinaryWriter writer)
         {
-            writer.Write(ARG1);
+            writer.Write(StartOpt);
+            writer.Write(RecvFlag);
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"StartOpt:{StartOpt} " +
+                $"RecvFlag:{RecvFlag}";
         }
     }
 }

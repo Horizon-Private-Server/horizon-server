@@ -268,6 +268,9 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
+                        // Update recv flag
+                        data.ClientObject.RecvFlag = clientConnectReadyTcp.RecvFlag;
+
                         Queue(new RT_MSG_SERVER_STARTUP_INFO_NOTIFY()
                         {
                             GameHostType = (byte)MGCL_GAME_HOST_TYPE.MGCLGameHostClientServerAuxUDP,
@@ -311,7 +314,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_SET_RECV_FLAG setRecvFlag:
                     {
-
+                        data.ClientObject.RecvFlag = setRecvFlag.Flag;
                         break;
                     }
                 case RT_MSG_CLIENT_SET_AGG_TIME setAggTime:
@@ -340,14 +343,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_APP_LIST clientAppList:
                     {
-                        var world = data.ClientObject?.DmeWorld;
-                        if (world != null && clientAppList.Targets != null)
-                        {
-                            foreach (var target in clientAppList.Targets)
-                            {
-                                world.SendTcpAppSingle(data.ClientObject, (short)target, clientAppList.Payload);
-                            }
-                        }
+                        data.ClientObject?.DmeWorld?.SendTcpAppList(data.ClientObject, clientAppList.Targets, clientAppList.Payload);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_SINGLE clientAppSingle:

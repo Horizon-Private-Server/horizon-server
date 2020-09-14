@@ -2,6 +2,7 @@
 using DotNetty.Transport.Channels;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Ocsp;
+using RT.Common;
 using RT.Models;
 using Server.Pipeline.Udp;
 using System;
@@ -66,6 +67,11 @@ namespace Server.Dme.Models
         /// 
         /// </summary>
         public ushort ScertId { get; set; } = 0;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_NOTIFICATION;
 
         /// <summary>
         /// 
