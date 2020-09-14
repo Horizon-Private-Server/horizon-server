@@ -1862,6 +1862,54 @@ namespace Server.Medius
 
                 #region Channel
 
+                case MediusGetLobbyPlayerNames_ExtraInfoRequest getLobbyPlayerNames_ExtraInfoRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLobbyPlayerNames_ExtraInfoRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLobbyPlayerNames_ExtraInfoRequest} without a being logged in.");
+
+                        var channel = data.ClientObject.CurrentChannel;
+                        if (channel == null)
+                        {
+                            data.ClientObject.Queue(new MediusGetLobbyPlayerNames_ExtraInfoResponse()
+                            {
+                                MessageID = getLobbyPlayerNames_ExtraInfoRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            });
+                        }
+                        else
+                        {
+                            var results = channel.Clients.Where(x => x.IsConnected).Select(x => new MediusGetLobbyPlayerNames_ExtraInfoResponse()
+                            {
+                                MessageID = getLobbyPlayerNames_ExtraInfoRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                AccountID = x.AccountId,
+                                AccountName = x.AccountName,
+                                OnlineState = new MediusPlayerOnlineState()
+                                {
+                                    ConnectStatus = x.Status,
+                                    GameName = x.CurrentGame?.GameName,
+                                    LobbyName = x.CurrentChannel?.Name,
+                                    MediusGameWorldID = x.CurrentGame?.Id ?? -1,
+                                    MediusLobbyWorldID = x.CurrentChannel?.Id ?? -1
+                                },
+                                EndOfList = false
+                            }).ToArray();
+
+                            if (results.Length > 0)
+                                results[results.Length - 1].EndOfList = true;
+
+                            data.ClientObject.Queue(results);
+                        }
+
+                        break;
+                    }
+
                 case MediusGetLobbyPlayerNamesRequest getLobbyPlayerNamesRequest:
                     {
                         // ERROR - Need a session

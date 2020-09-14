@@ -1,4 +1,5 @@
-﻿using RT.Common;
+﻿using DotNetty.Common.Internal;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,8 @@ namespace RT.Models
 {
     public class MediusPlayerOnlineState : IStreamSerializer
     {
+        public static readonly MediusPlayerOnlineState Empty = new MediusPlayerOnlineState();
+
         public MediusPlayerStatus ConnectStatus;
         public int MediusLobbyWorldID;
         public int MediusGameWorldID;
