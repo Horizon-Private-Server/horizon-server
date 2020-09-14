@@ -81,13 +81,18 @@ namespace Server.Medius.Models
         /// </summary>
         public bool Ignore { get; set; } = false;
 
-        public bool IsLoggedIn => !_logoutTime.HasValue && IsConnected;
+        public bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
         public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         public virtual bool IsConnected => (KeepAlive || _hasActiveSession) && !Timedout;
 
         public bool KeepAlive => _keepAlive;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        protected DateTime? _loginTime = null;
 
         /// <summary>
         /// 
@@ -213,7 +218,7 @@ namespace Server.Medius.Models
 
         public void Login(AccountDTO account)
         {
-            if (AccountId >= 0)
+            if (IsLoggedIn)
                 throw new InvalidOperationException($"{this} attempting to log into {account} but is already logged in!");
 
             if (account == null)
@@ -225,6 +230,9 @@ namespace Server.Medius.Models
 
             // Raise plugin event
             Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
+
+            // Login
+            _loginTime = DateTime.UtcNow;
 
             // Update last sign in date
             _ = Program.Database.PostAccountSignInDate(AccountId, DateTime.UtcNow);
