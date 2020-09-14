@@ -339,6 +339,31 @@ namespace Server.Database
             return result;
         }
 
+        /// <summary>
+        /// Posts ip to account.
+        /// </summary>
+        public async Task<bool> PostAccountIp(int accountId, string ip)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Account/postAccountIp?AccountId={accountId}", $"\"{ip}\"")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Gets the total number of active players by app id.
@@ -896,6 +921,41 @@ namespace Server.Database
                 else
                 {
                     result = await GetDbAsync<DimEula>($"api/getEULA?fromDt={DateTime.UtcNow.AddDays(-1)}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Key
+
+        public async Task<ServerFlagsDTO> GetServerFlags()
+        {
+            ServerFlagsDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new ServerFlagsDTO()
+                    {
+                        MaintenanceMode = new MaintenanceDTO()
+                        {
+                            IsActive = false,
+                            FromDt = DateTime.UtcNow - TimeSpan.FromSeconds(10),
+                            ToDt = DateTime.UtcNow + TimeSpan.FromSeconds(1)
+                        }
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<ServerFlagsDTO>($"api/Keys/getServerFlags");
                 }
             }
             catch (Exception e)

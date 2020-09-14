@@ -484,6 +484,9 @@ namespace Server.Medius
                                         //
                                         data.ClientObject.Login(r.Result);
 
+                                        // Update db ip
+                                        _ = Program.Database.PostAccountIp(r.Result.AccountId, (clientChannel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString());
+
                                         // Add to logged in clients
                                         Program.Manager.AddClient(data.ClientObject);
 

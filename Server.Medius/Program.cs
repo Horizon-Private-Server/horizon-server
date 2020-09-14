@@ -153,7 +153,7 @@ namespace Server.Medius
                         lastConfigRefresh = DateTime.UtcNow;
                     }
 
-                    await Task.Delay((int)Math.Max(0, sleepMS - sleepSw.ElapsedMilliseconds));
+                    Thread.Sleep((int)Math.Max(0, sleepMS - sleepSw.ElapsedMilliseconds));
                 }
             }
             finally

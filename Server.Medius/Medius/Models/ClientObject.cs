@@ -226,7 +226,10 @@ namespace Server.Medius.Models
             // Raise plugin event
             Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
 
-            // Tell database
+            // Update last sign in date
+            _ = Program.Database.PostAccountSignInDate(AccountId, DateTime.UtcNow);
+
+            // Update database status
             PostStatus();
         }
 

@@ -102,7 +102,29 @@ namespace Server.Medius
                 {
                     data.IsBanned = r.IsCompletedSuccessfully && r.Result;
                     if (data.IsBanned == true)
+                    {
                         QueueBanMessage(data);
+                    }
+                    else
+                    {
+                        // Check if in maintenance mode
+                        Program.Database.GetServerFlags().ContinueWith((r) =>
+                        {
+                            if (r.IsCompletedSuccessfully && r.Result != null && r.Result.MaintenanceMode != null)
+                            {
+                                // Ensure that maintenance is active
+                                // Ensure that we're past the from date
+                                // Ensure that we're before the to date (if set)
+                                if (r.Result.MaintenanceMode.IsActive
+                                        && DateTime.UtcNow > r.Result.MaintenanceMode.FromDt
+                                        && (!r.Result.MaintenanceMode.ToDt.HasValue
+                                            || r.Result.MaintenanceMode.ToDt > DateTime.UtcNow))
+                                {
+                                    QueueBanMessage(data, "Server in maintenance.");
+                                }
+                            }
+                        });
+                    }
                 });
             };
 
@@ -299,7 +321,7 @@ namespace Server.Medius
             }
         }
 
-        protected virtual void QueueBanMessage(ChannelData data)
+        protected virtual void QueueBanMessage(ChannelData data, string msg = "You have been banned!")
         {
             // Send ban message
             data.SendQueue.Enqueue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
@@ -308,7 +330,7 @@ namespace Server.Medius
                 EncodingType = 1,
                 LanguageType = 2,
                 EndOfMessage = true,
-                Message = "You have been banned!"
+                Message = msg
             });
         }
 
