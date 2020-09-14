@@ -351,7 +351,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await GetDbAsync($"Account/clearAccountStatuses")).IsSuccessStatusCode;
+                    result = (await DeleteDbAsync($"Account/clearAccountStatuses")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1021,6 +1021,41 @@ namespace Server.Database
         #endregion
 
         #region Http
+
+        private async Task<HttpResponseMessage> DeleteDbAsync(string route)
+        {
+            // 
+            HttpResponseMessage result = null;
+
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        result = await client.DeleteAsync($"{_settings.DatabaseUrl}/{route}");
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = null;
+                    }
+                }
+            }
+
+            return result;
+        }
 
         private async Task<HttpResponseMessage> GetDbAsync(string route)
         {

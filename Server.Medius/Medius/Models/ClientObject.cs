@@ -81,7 +81,7 @@ namespace Server.Medius.Models
         /// </summary>
         public bool Ignore { get; set; } = false;
 
-        public bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
+        public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
         public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;

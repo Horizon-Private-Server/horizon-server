@@ -22,6 +22,7 @@ namespace Server.Medius.Models
 
         public override bool Timedout => false; // (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.DmeTimeoutSeconds;
         public override bool IsConnected => _hasActiveSession && !Timedout;
+        public override bool IsLoggedIn => _hasActiveSession;
 
         public DMEObject(MediusServerSetAttributesRequest request)
         {
