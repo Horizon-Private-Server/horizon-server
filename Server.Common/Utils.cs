@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -182,6 +183,50 @@ namespace Server.Common
                         return null;
                     }
             }
+        }
+
+        /// <summary>
+        /// From https://www.c-sharpcorner.com/blogs/how-to-get-public-ip-address-using-c-sharp1
+        /// </summary>
+        /// <returns></returns>
+        public static string GetPublicIPAddress()
+        {
+            String address;
+            WebRequest request = WebRequest.Create("http://checkip.dyndns.org/");
+            using (WebResponse response = request.GetResponse())
+            using (StreamReader stream = new StreamReader(response.GetResponseStream()))
+            {
+                address = stream.ReadToEnd();
+            }
+
+            int first = address.IndexOf("Address: ") + 9;
+            int last = address.LastIndexOf("</body>");
+            address = address.Substring(first, last - first);
+
+            return address;
+        }
+
+        public static IPAddress GetLocalIPAddress()
+        {
+            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+                return null;
+
+            // Get all active interfaces
+            var interfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(c => c.NetworkInterfaceType != NetworkInterfaceType.Loopback && c.OperationalStatus == OperationalStatus.Up);
+
+            // Find our local ip
+            foreach (var i in interfaces)
+            {
+                var props = i.GetIPProperties();
+                var inter = props.UnicastAddresses.Where(x => x.Address.AddressFamily == AddressFamily.InterNetwork);
+                if (props.GatewayAddresses.Count > 0 && inter.Count() > 0)
+                {
+                    return inter.FirstOrDefault().Address;
+                }
+            }
+
+            return null;
         }
 
         #endregion

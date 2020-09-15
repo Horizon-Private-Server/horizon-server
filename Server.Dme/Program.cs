@@ -5,6 +5,7 @@ using NReco.Logging.File;
 using Org.BouncyCastle.Math;
 using RT.Cryptography;
 using RT.Models;
+using Server.Common;
 using Server.Common.Logging;
 using Server.Dme.Config;
 using Server.Plugins;
@@ -189,11 +190,11 @@ namespace Server.Dme
             // Determine server ip
             if (!Settings.UsePublicIp)
             {
-                SERVER_IP = GetLocalIPAddress();
+                SERVER_IP = Utils.GetLocalIPAddress();
             }
             else
             {
-                SERVER_IP = IPAddress.Parse(GetPublicIPAddress());
+                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
             }
         }
 
@@ -218,49 +219,6 @@ namespace Server.Dme
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
-        }
-
-        /// <summary>
-        /// From https://www.c-sharpcorner.com/blogs/how-to-get-public-ip-address-using-c-sharp1
-        /// </summary>
-        /// <returns></returns>
-        static string GetPublicIPAddress()
-        {
-            String address;
-            WebRequest request = WebRequest.Create("http://checkip.dyndns.org/");
-            using (WebResponse response = request.GetResponse())
-            using (StreamReader stream = new StreamReader(response.GetResponseStream()))
-            {
-                address = stream.ReadToEnd();
-            }
-
-            int first = address.IndexOf("Address: ") + 9;
-            int last = address.LastIndexOf("</body>");
-            address = address.Substring(first, last - first);
-
-            return address;
-        }
-
-        static IPAddress GetLocalIPAddress()
-        {
-            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-                return null;
-
-            // order interfaces by speed and filter out down and loopback
-            // take first of the remaining
-            var firstUpInterface = NetworkInterface.GetAllNetworkInterfaces()
-                .FirstOrDefault(c => c.NetworkInterfaceType != NetworkInterfaceType.Loopback && c.OperationalStatus == OperationalStatus.Up);
-            if (firstUpInterface != null)
-            {
-                var props = firstUpInterface.GetIPProperties();
-                // get first IPV4 address assigned to this interface
-                return props.UnicastAddresses
-                    .Where(c => c.Address.AddressFamily == AddressFamily.InterNetwork)
-                    .Select(c => c.Address)
-                    .FirstOrDefault();
-            }
-
-            return null;
         }
 
         public static string GenerateSessionKey()
