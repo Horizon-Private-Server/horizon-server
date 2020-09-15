@@ -16,5 +16,12 @@ namespace Server.Medius.PluginArgs
         /// Game.
         /// </summary>
         public Game Game { get; set; }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"Player:{Player} " +
+                $"Game:{Game}";
+        }
     }
 }

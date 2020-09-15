@@ -210,7 +210,7 @@ namespace Server.Medius.Models
 
             // Update player object
             player.Client.LeaveGame(this);
-            player.Client.LeaveChannel(ChatChannel);
+            // player.Client.LeaveChannel(ChatChannel);
 
             // Remove from collection
             RemovePlayer(player.Client);
@@ -337,7 +337,7 @@ namespace Server.Medius.Models
                 else
                 {
                     client.LeaveGame(this);
-                    client.LeaveChannel(ChatChannel);
+                    // client.LeaveChannel(ChatChannel);
                 }
             }
 

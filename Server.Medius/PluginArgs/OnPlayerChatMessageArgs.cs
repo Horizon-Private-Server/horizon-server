@@ -18,5 +18,12 @@ namespace Server.Medius.PluginArgs
         /// </summary>
         public MediusGenericChatMessage Message { get; set; }
 
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"Player:{Player} " +
+                $"Message:{Message}";
+        }
+
     }
 }

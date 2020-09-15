@@ -1065,6 +1065,28 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusClanLadderListRequest clanLadderListRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {clanLadderListRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {clanLadderListRequest} without a being logged in.");
+
+                        // not implemented
+                        // return no result
+                        data.ClientObject.Queue(new MediusClanLadderListResponse()
+                        {
+                            MessageID = clanLadderListRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusNoResult,
+                            EndOfList = true
+                        });
+
+                        break;
+                    }
+
                 #endregion
 
                 #region Player Info
@@ -2015,6 +2037,9 @@ namespace Server.Medius
                         var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID);
                         if (channel == null)
                         {
+                            // Log
+                            Logger.Warn($"{data.ClientObject} attemping to join non-existent channel {joinChannelRequest}");
+
                             data.ClientObject.Queue(new MediusJoinChannelResponse()
                             {
                                 MessageID = joinChannelRequest.MessageID,
@@ -2031,9 +2056,6 @@ namespace Server.Medius
                         }
                         else
                         {
-                            // Leave current channel
-                            data.ClientObject.LeaveChannel(data.ClientObject.CurrentChannel);
-
                             // Join new channel
                             data.ClientObject.JoinChannel(channel);
 

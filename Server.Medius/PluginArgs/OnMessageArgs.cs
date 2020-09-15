@@ -16,5 +16,14 @@ namespace Server.Medius.PluginArgs
         public BaseScertMessage Message { get; set; } = null;
 
         public bool Ignore { get; set; } = false;
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"Player:{Player} " +
+                $"Channel:{Channel} " +
+                $"Message:{Message} " +
+                $"Ignore:{Ignore}";
+        }
     }
 }

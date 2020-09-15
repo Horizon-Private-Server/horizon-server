@@ -11,5 +11,11 @@ namespace Server.Medius.PluginArgs
         /// Player.
         /// </summary>
         public ClientObject Player { get; set; }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"Player:{Player}";
+        }
     }
 }
