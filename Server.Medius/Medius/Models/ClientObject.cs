@@ -197,7 +197,8 @@ namespace Server.Medius.Models
         /// </summary>
         public void Logout()
         {
-            if (!IsLoggedIn)
+            // Prevent logout twice
+            if (_logoutTime.HasValue || !_loginTime.HasValue)
                 return;
 
             // Raise plugin event
