@@ -769,6 +769,8 @@ namespace RT.Common
         GetLadderStatsResponse = 0xD1,
         ClanLadderList = 0xD2,
         ClanLadderListResponse = 0xD3,
+        ClanLadderPosition = 0xD4,
+        ClanLadderPositionResponse = 0xD5,
         GetBuddyList_ExtraInfo = 0xD6,
         GetBuddyList_ExtraInfoResponse = 0xD7,
         GetTotalRankings = 0xD8,
