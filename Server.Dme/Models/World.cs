@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server.Dme.Models
@@ -19,9 +20,10 @@ namespace Server.Dme.Models
         public const int MAX_WORLDS = 256;
         public const int MAX_CLIENTS_PER_WORLD = 10;
 
-        #region Id Management
+         #region Id Management
 
         private static ConcurrentDictionary<int, World> _idToWorld = new ConcurrentDictionary<int, World>();
+        private static ConcurrentDictionary<int, bool> _pIdIsUsed = new ConcurrentDictionary<int, bool>();
 
         private void RegisterWorld()
         {
@@ -45,18 +47,23 @@ namespace Server.Dme.Models
             Logger.Info($"Unregistered world with id {WorldId}");
         }
 
-        private int GetFreeClientIndex()
+        private bool TryRegisterNewClientIndex(out int index)
         {
-            bool[] usedIds = new bool[MAX_CLIENTS_PER_WORLD];
+            for (index = 0; index < _pIdIsUsed.Count; ++index)
+            {
+                if (_pIdIsUsed.TryGetValue(index, out var isUsed) && !isUsed)
+                {
+                    _pIdIsUsed[index] = true;
+                    return true;
+                }
+            }
 
-            foreach (var client in Clients)
-                usedIds[client.Value.DmeId] = true;
+            return false;
+        }
 
-            for (int i = 0; i < usedIds.Length; ++i)
-                if (!usedIds[i])
-                    return i;
-
-            throw new Exception($"Game is full");
+        public void UnregisterClientIndex(int index)
+        {
+            _pIdIsUsed[index] = false;
         }
 
         #endregion
@@ -85,9 +92,13 @@ namespace Server.Dme.Models
         public ConcurrentDictionary<int, ClientObject> Clients = new ConcurrentDictionary<int, ClientObject>();
 
         private DateTime _lastAggTimeUtc = DateTime.UtcNow;
-
+        
         public World(int maxPlayers)
         {
+            // populate collection of used player ids
+            for (int i = 0; i < MAX_CLIENTS_PER_WORLD; ++i)
+                _pIdIsUsed.TryAdd(i, false);
+
             RegisterWorld();
             this.MaxPlayers = maxPlayers;
         }
@@ -158,7 +169,7 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueTcp(msg);
@@ -175,7 +186,7 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueUdp(msg);
@@ -188,7 +199,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(targetId, out var client))
                 {
-                    if (client == null || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                    if (client == null || !client.IsAuthenticated || !client.IsConnected || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
                         continue;
 
                     client.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
@@ -206,7 +217,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(targetId, out var client))
                 {
-                    if (client == null || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                    if (client == null || !client.IsAuthenticated || !client.IsConnected || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
                         continue;
 
                     client.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
@@ -222,7 +233,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (target != null && target.IsAuthenticated && target.IsConnected && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -236,7 +247,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (target != null && target.IsAuthenticated && target.IsConnected && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -340,8 +351,23 @@ namespace Server.Dme.Models
             }
 
             // Client already added
-            var newClientIndex = GetFreeClientIndex();
-            if (!Clients.TryAdd(newClientIndex, newClient = new ClientObject(request.ConnectInfo.SessionKey, this, newClientIndex)))
+            if (TryRegisterNewClientIndex(out var newClientIndex))
+            {
+                if (!Clients.TryAdd(newClientIndex, newClient = new ClientObject(request.ConnectInfo.SessionKey, this, newClientIndex)))
+                {
+                    UnregisterClientIndex(newClientIndex);
+                    return new MediusServerJoinGameResponse()
+                    {
+                        MessageID = request.MessageID,
+                        Confirmation = MGCL_ERROR_CODE.MGCL_UNSUCCESSFUL
+                    };
+                }
+                else
+                {
+                    newClient.OnDestroyed += (client) => { UnregisterClientIndex(client.DmeId); };
+                }
+            }
+            else
             {
                 return new MediusServerJoinGameResponse()
                 {

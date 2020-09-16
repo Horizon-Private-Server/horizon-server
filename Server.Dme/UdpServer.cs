@@ -164,13 +164,19 @@ namespace Server.Dme
 
                         ClientObject.RemoteUdpEndpoint = AuthenticatedEndPoint as IPEndPoint;
                         ClientObject.OnUdpConnected();
-                        SendTo(new RT_MSG_SERVER_CONNECT_ACCEPT_AUX_UDP()
+
+                        // 
+                        var msg = new RT_MSG_SERVER_CONNECT_ACCEPT_AUX_UDP()
                         {
                             PlayerId = (ushort)ClientObject.DmeId,
                             ScertId = ClientObject.ScertId,
                             PlayerCount = (ushort)ClientObject.DmeWorld.Clients.Count,
                             EndPoint = ClientObject.RemoteUdpEndpoint
-                        }, packet.Source);
+                        };
+
+                        // Send it twice in case of packet loss
+                        _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(msg, packet.Source));
+                        _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(msg, packet.Source));
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:

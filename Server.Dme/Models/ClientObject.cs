@@ -71,7 +71,7 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_NOTIFICATION;
+        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_BROADCAST;
 
         /// <summary>
         /// 
@@ -116,8 +116,11 @@ namespace Server.Dme.Models
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (DateTime.UtcNow - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
         public virtual bool Timedout => !IsConnectingGracePeriod && Math.Min((DateTime.UtcNow - LastTcpMessageUtc).TotalSeconds, (DateTime.UtcNow - LastUdpMessageUtc).TotalSeconds) > Program.Settings.ClientTimeoutSeconds;
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
+        public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
         public virtual bool IsDestroyed { get; protected set; } = false;
+
+        public Action<ClientObject> OnDestroyed;
 
         public ClientObject(string sessionKey, World dmeWorld, int dmeId)
         {
@@ -164,6 +167,8 @@ namespace Server.Dme.Models
 
                 if (Tcp != null)
                     await Tcp.CloseAsync();
+
+                OnDestroyed?.Invoke(this);
             }
             catch (Exception)
             {

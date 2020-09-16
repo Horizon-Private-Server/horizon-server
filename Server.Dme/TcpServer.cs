@@ -86,8 +86,11 @@ namespace Server.Dme
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
-                    data.RecvQueue.Enqueue(message);
-                    data.ClientObject?.OnEcho(true, DateTime.UtcNow);
+                    if (data.ClientObject == null || !data.ClientObject.IsDestroyed)
+                    {
+                        data.RecvQueue.Enqueue(message);
+                        data.ClientObject?.OnEcho(true, DateTime.UtcNow);
+                    }
                 }
 
                 // Log if id is set
@@ -285,6 +288,8 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_AUX_UDP connectReadyAuxUdp:
                     {
+                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
+
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
                         {
                             ARG1 = (ushort)data.ClientObject.DmeWorld.Clients.Count
@@ -297,9 +302,6 @@ namespace Server.Dme
                                 Version = "2.10.0009"
                             }
                         }, clientChannel);
-
-                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
-
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -398,7 +400,7 @@ namespace Server.Dme
             }
             finally
             {
-                await channel.CloseAsync();
+                // await channel.CloseAsync();
             }
         }
 
