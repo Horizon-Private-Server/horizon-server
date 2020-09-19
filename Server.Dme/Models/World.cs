@@ -23,7 +23,7 @@ namespace Server.Dme.Models
          #region Id Management
 
         private static ConcurrentDictionary<int, World> _idToWorld = new ConcurrentDictionary<int, World>();
-        private static ConcurrentDictionary<int, bool> _pIdIsUsed = new ConcurrentDictionary<int, bool>();
+        private ConcurrentDictionary<int, bool> _pIdIsUsed = new ConcurrentDictionary<int, bool>();
 
         private void RegisterWorld()
         {
@@ -343,6 +343,7 @@ namespace Server.Dme.Models
             // If world is full then fail
             if (Clients.Count >= MAX_CLIENTS_PER_WORLD)
             {
+                Logger.Warn($"Player attempted to join world {this} but there is no room!");
                 return new MediusServerJoinGameResponse()
                 {
                     MessageID = request.MessageID,
@@ -369,6 +370,7 @@ namespace Server.Dme.Models
             }
             else
             {
+                Logger.Warn($"Player attempted to join world {this} but unable to add player!");
                 return new MediusServerJoinGameResponse()
                 {
                     MessageID = request.MessageID,

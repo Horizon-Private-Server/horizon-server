@@ -288,7 +288,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_AUX_UDP connectReadyAuxUdp:
                     {
-                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
+                        data.ClientObject?.OnConnectionCompleted();
 
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
                         {
@@ -302,6 +302,8 @@ namespace Server.Dme
                                 Version = "2.10.0009"
                             }
                         }, clientChannel);
+
+                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:

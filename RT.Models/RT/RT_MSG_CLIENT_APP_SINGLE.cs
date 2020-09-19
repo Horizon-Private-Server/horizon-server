@@ -31,7 +31,7 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"TargetOrSource:{TargetOrSource} " +
-                $"Payload:{BitConverter.ToString(Payload)}";
+                $"Payload:{(Payload == null ? "" : BitConverter.ToString(Payload)) }";
         }
     }
 }

@@ -175,7 +175,7 @@ namespace Server.Dme
                         };
 
                         // Send it twice in case of packet loss
-                        _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(msg, packet.Source));
+                        //_boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(msg, packet.Source));
                         _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(msg, packet.Source));
                         break;
                     }

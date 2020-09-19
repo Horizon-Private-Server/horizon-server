@@ -167,12 +167,14 @@ namespace Server.Dme.Models
 
                 if (Tcp != null)
                     await Tcp.CloseAsync();
-
-                OnDestroyed?.Invoke(this);
             }
             catch (Exception)
             {
                 
+            }
+            finally
+            {
+                OnDestroyed?.Invoke(this);
             }
 
             Tcp = null;
@@ -192,8 +194,12 @@ namespace Server.Dme.Models
 
         public void OnUdpConnected()
         {
-            if (Tcp != null)
-                TimeAuthenticated = DateTime.UtcNow;
+
+        }
+
+        public void OnConnectionCompleted()
+        {
+            TimeAuthenticated = DateTime.UtcNow;
         }
 
         #endregion
