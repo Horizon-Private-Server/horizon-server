@@ -246,29 +246,6 @@ namespace Server.Dme
 
         #endregion
 
-        #region Channel
-
-        /// <summary>
-        /// Closes the client channel.
-        /// </summary>
-        protected async Task DisconnectClient(IChannel channel)
-        {
-            try
-            {
-                //await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT());
-            }
-            catch (Exception)
-            {
-                // Silence exception since the client probably just closed the socket before we could write to it
-            }
-            finally
-            {
-                await channel.CloseAsync();
-            }
-        }
-
-        #endregion
-
         #region Send
 
         private void SendTo(BaseScertMessage message, EndPoint target)

@@ -39,6 +39,7 @@ namespace Server.Dme
         protected internal class ChannelData
         {
             public int ApplicationId { get; set; } = 0;
+            public bool Ignore { get; set; } = false;
             public ClientObject ClientObject { get; set; } = null;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
@@ -86,7 +87,7 @@ namespace Server.Dme
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
-                    if (data.ClientObject == null || !data.ClientObject.IsDestroyed)
+                    if (!data.Ignore && (data.ClientObject == null || !data.ClientObject.IsDestroyed))
                     {
                         data.RecvQueue.Enqueue(message);
                         data.ClientObject?.OnEcho(true, DateTime.UtcNow);
@@ -103,6 +104,7 @@ namespace Server.Dme
                 .Group(_bossGroup, _workerGroup)
                 .Channel<TcpServerSocketChannel>()
                 .Option(ChannelOption.SoBacklog, 100)
+                .Option(ChannelOption.SoTimeout, 30000)
                 .Handler(new LoggingHandler(LogLevel.INFO))
                 .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
@@ -163,7 +165,7 @@ namespace Server.Dme
                     // Disconnect on destroy
                     if (data.ClientObject != null && data.ClientObject.IsDestroyed)
                     {
-                        await DisconnectClient(clientChannel);
+                        data.Ignore = true;
                         return;
                     }
 
@@ -177,6 +179,7 @@ namespace Server.Dme
                         catch (Exception e)
                         {
                             Logger.Error(e);
+                            await ForceDisconnectClient(clientChannel);
                         }
                     }
 
@@ -363,7 +366,7 @@ namespace Server.Dme
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        await DisconnectClient(clientChannel);
+                        data.Ignore = true;
                         break;
                     }
                 default:
@@ -390,11 +393,20 @@ namespace Server.Dme
         /// <summary>
         /// Closes the client channel.
         /// </summary>
-        protected async Task DisconnectClient(IChannel channel)
+        protected async Task ForceDisconnectClient(IChannel channel)
         {
             try
             {
-                //await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT());
+                // Give it every reason just to make sure it disconnects
+                for (byte r = 0; r < 7; ++r)
+                {
+                    await channel.WriteAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
+                    {
+                        Reason = (SERVER_FORCE_DISCONNECT_REASON)r
+                    });
+                }
+
+                channel.Flush();
             }
             catch (Exception)
             {

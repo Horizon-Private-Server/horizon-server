@@ -74,7 +74,7 @@ namespace Server.Medius
                         data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
                         if (data.ClientObject == null)
                         {
-                            await DisconnectClient(clientChannel);
+                            data.Ignore = true;
                         }
                         else
                         {
@@ -129,7 +129,7 @@ namespace Server.Medius
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        await DisconnectClient(clientChannel);
+                        data.Ignore = true;
                         break;
                     }
                 default:
@@ -2496,12 +2496,9 @@ namespace Server.Medius
             var targetPlayer = channel.Clients.FirstOrDefault(x => x.AccountId == chatMessage.TargetID);
             List<BaseScertMessage> chatResponses = new List<BaseScertMessage>();
 
-            // ERROR -- Need to be logged in
+            // Need to be logged in
             if (!clientObject.IsLoggedIn)
-            {
-                await DisconnectClient(clientChannel);
                 return;
-            }
 
             // Need to be in a channel
             if (channel == null)
@@ -2557,10 +2554,7 @@ namespace Server.Medius
 
             // ERROR -- Need to be logged in
             if (!clientObject.IsLoggedIn)
-            {
-                await DisconnectClient(clientChannel);
                 return;
-            }
 
             // Need to be in a channel
             if (channel == null)

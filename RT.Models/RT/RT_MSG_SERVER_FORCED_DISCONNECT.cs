@@ -1,4 +1,5 @@
 ﻿using RT.Common;
+using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,11 +12,11 @@ namespace RT.Models
     {
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_SERVER_FORCED_DISCONNECT;
 
-        public byte Reason;
+        public SERVER_FORCE_DISCONNECT_REASON Reason;
 
         public override void Deserialize(BinaryReader reader)
         {
-            Reason = reader.ReadByte();
+            Reason = reader.Read<SERVER_FORCE_DISCONNECT_REASON>();
         }
 
         protected override void Serialize(BinaryWriter writer)

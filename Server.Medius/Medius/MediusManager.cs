@@ -394,9 +394,6 @@ namespace Server.Medius
                     clientKeyPair.Value.Logout();
                     clientKeyPair.Value.EndSession();
 
-                    // Ignore all future messages
-                    clientKeyPair.Value.Ignore = true;
-
                     clientsToRemove.Enqueue(clientKeyPair.Key);
                 }
             }

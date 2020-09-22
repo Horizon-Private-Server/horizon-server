@@ -60,6 +60,10 @@ namespace Server.Medius
 
             public bool? IsBanned { get; set; } = null;
 
+            /// <summary>
+            /// When true, all messages from this client will be ignored.
+            /// </summary>
+            public bool Ignore { get; set; } = false;
             public DateTime LastSentEcho { get; set; } = DateTime.UnixEpoch;
         }
 
@@ -148,7 +152,7 @@ namespace Server.Medius
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
                     // Don't queue message if client is ignored
-                    if (data.ClientObject == null || !data.ClientObject.Ignore)
+                    if (!data.Ignore)
                     {
                         // Don't queue if banned
                         if (data.IsBanned == null || data.IsBanned == false)
@@ -171,6 +175,7 @@ namespace Server.Medius
                     .Group(_bossGroup, _workerGroup)
                     .Channel<TcpServerSocketChannel>()
                     .Option(ChannelOption.SoBacklog, 100)
+                    .Option(ChannelOption.SoTimeout, 30000)
                     .Handler(new LoggingHandler(LogLevel.INFO))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
@@ -228,7 +233,7 @@ namespace Server.Medius
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
                     // Ignore
-                    if (data.ClientObject != null && data.ClientObject.Ignore)
+                    if (data.Ignore)
                         return;
 
                     // Process all messages in queue
@@ -252,6 +257,8 @@ namespace Server.Medius
                         catch (Exception e)
                         {
                             Logger.Error(e);
+                            await ForceDisconnectClient(clientChannel);
+                            data.Ignore = true;
                         }
                     }
 
@@ -338,11 +345,20 @@ namespace Server.Medius
 
         #region Channel
 
-        protected async Task DisconnectClient(IChannel channel)
+        protected async Task ForceDisconnectClient(IChannel channel)
         {
             try
             {
-                //await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT());
+                // Give it every reason just to make sure it disconnects
+                for (byte r = 0; r < 7; ++r)
+                {
+                    await channel.WriteAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
+                    {
+                        Reason = (SERVER_FORCE_DISCONNECT_REASON)r
+                    });
+                }
+
+                channel.Flush();
             }
             catch (Exception)
             {
@@ -350,7 +366,7 @@ namespace Server.Medius
             }
             finally
             {
-                await channel.DisconnectAsync();
+                
             }
         }
 

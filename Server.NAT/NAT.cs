@@ -45,8 +45,8 @@ namespace Server.NAT
             // Queue all incoming messages
             _scertHandler.OnChannelMessage += (channel, message) =>
             {
-                // Send ip and port back
-                if (message.Content.ReadableBytes == 4 && message.Content.GetByte(message.Content.ReaderIndex + 3) < 0x80)
+                // Send ip and port back if the last byte isn't 0xD4
+                if (message.Content.ReadableBytes == 4 && message.Content.GetByte(message.Content.ReaderIndex + 3) != 0xD4)
                 {
                     var buffer = channel.Allocator.Buffer(6);
                     buffer.WriteBytes((message.Sender as IPEndPoint).Address.MapToIPv4().GetAddressBytes());

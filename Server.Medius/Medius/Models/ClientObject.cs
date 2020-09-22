@@ -76,11 +76,6 @@ namespace Server.Medius.Models
         /// </summary>
         public DateTime UtcLastEcho { get; protected set; } = DateTime.UtcNow;
 
-        /// <summary>
-        /// When true, all messages from this client will be ignored.
-        /// </summary>
-        public bool Ignore { get; set; } = false;
-
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
