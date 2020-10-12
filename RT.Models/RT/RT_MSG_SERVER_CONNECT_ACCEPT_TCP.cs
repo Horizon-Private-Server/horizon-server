@@ -16,8 +16,7 @@ namespace RT.Models
 
         // 
         public ushort UNK_00 = 0x0000;
-        public ushort UNK_02 = 0x10EC;
-        public ushort UNK_04 = 0x0000;
+        public uint UNK_02 = 0x10EC;
 
         public ushort UNK_06 = 0x0001;
 
@@ -26,8 +25,7 @@ namespace RT.Models
         public override void Deserialize(BinaryReader reader)
         {
             UNK_00 = reader.ReadUInt16();
-            UNK_02 = reader.ReadUInt16();
-            UNK_04 = reader.ReadUInt16();
+            UNK_02 = reader.ReadUInt32();
             UNK_06 = reader.ReadUInt16();
 
             IP = reader.ReadIPAddress();
@@ -37,7 +35,6 @@ namespace RT.Models
         {
             writer.Write(UNK_00);
             writer.Write(UNK_02);
-            writer.Write(UNK_04);
             writer.Write(UNK_06);
 
             if (IP == null)
@@ -51,7 +48,6 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"UNK_00:{UNK_00} " +
                 $"UNK_02:{UNK_02} " +
-                $"UNK_04:{UNK_04} " +
                 $"UNK_06:{UNK_06} " +
                 $"Ip:{IP}";
         }

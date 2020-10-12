@@ -74,6 +74,7 @@ namespace Server.Medius
                         data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
                         if (data.ClientObject == null)
                         {
+                            Logger.Error($"IGNORING CLIENT 1 {data} || {data.ClientObject}");
                             data.Ignore = true;
                         }
                         else
@@ -96,7 +97,6 @@ namespace Server.Medius
                         {
                             UNK_00 = 0x0019,
                             UNK_02 = GenerateNewScertClientId(),
-                            UNK_04 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
@@ -129,6 +129,7 @@ namespace Server.Medius
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
+                        Logger.Error($"IGNORING CLIENT 2 {data} || {data.ClientObject}");
                         data.Ignore = true;
                         break;
                     }
@@ -1665,7 +1666,7 @@ namespace Server.Medius
                         }
                         else
                         {
-                            var playerList = game.Clients.Where(x => x != null && x.Client.IsConnected).Select(x => new MediusGameWorldPlayerListResponse()
+                            var playerList = game.Clients.Where(x => x != null && x.InGame && x.Client.IsConnected).Select(x => new MediusGameWorldPlayerListResponse()
                             {
                                 MessageID = gameWorldPlayerListRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusSuccess,

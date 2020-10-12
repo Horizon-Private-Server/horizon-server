@@ -16,6 +16,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using DotNetty.Handlers.Timeout;
 
 namespace Server.Dme
 {
@@ -43,10 +44,18 @@ namespace Server.Dme
             public ClientObject ClientObject { get; set; } = null;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+            public DateTime TimeConnected { get; set; } = DateTime.UtcNow;
+
+
+            /// <summary>
+            /// Timesout client if they authenticated after a given number of seconds.
+            /// </summary>
+            public bool ShouldDestroy => ClientObject == null && (DateTime.UtcNow - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         }
 
+        protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
         protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
-        protected ConcurrentDictionary<ushort, ClientObject> _scertIdToClient = new ConcurrentDictionary<ushort, ClientObject>();
+        protected ConcurrentDictionary<uint, ClientObject> _scertIdToClient = new ConcurrentDictionary<uint, ClientObject>();
 
         protected PS2_RC4 _sessionCipher = null;
 
@@ -104,12 +113,12 @@ namespace Server.Dme
                 .Group(_bossGroup, _workerGroup)
                 .Channel<TcpServerSocketChannel>()
                 .Option(ChannelOption.SoBacklog, 100)
-                .Option(ChannelOption.SoTimeout, 30000)
                 .Handler(new LoggingHandler(LogLevel.INFO))
                 .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
                     IChannelPipeline pipeline = channel.Pipeline;
 
+                    pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
@@ -146,6 +155,28 @@ namespace Server.Dme
                 return;
 
             await Task.WhenAll(_scertHandler.Group.Select(c => Tick(c)));
+
+            // Disconnect and remove timedout unauthenticated channels
+            while (_forceDisconnectQueue.TryDequeue(out var channel))
+            {
+                // Send disconnect message
+                await ForceDisconnectClient(channel);
+
+                // Remove
+                _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
+                Logger.Warn($"REMOVING CHANNEL {channel},{d},{d?.ClientObject}");
+
+                // close after 5 seconds
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(5000);
+                    try
+                    {
+                        await channel?.CloseAsync();
+                    }
+                    catch (Exception) { }
+                });
+            }
         }
 
         private async Task Tick(IChannel clientChannel)
@@ -162,6 +193,13 @@ namespace Server.Dme
                 // 
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
+                    // Destroy
+                    if (data.ShouldDestroy)
+                    {
+                        _forceDisconnectQueue.Enqueue(clientChannel);
+                        return;
+                    }
+
                     // Disconnect on destroy
                     if (data.ClientObject != null && data.ClientObject.IsDestroyed)
                     {
@@ -266,7 +304,6 @@ namespace Server.Dme
                         {
                             UNK_00 = (ushort)data.ClientObject.DmeId,
                             UNK_02 = data.ClientObject.ScertId,
-                            UNK_04 = 0,
                             UNK_06 = (ushort)data.ClientObject.DmeWorld.Clients.Count,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
@@ -292,6 +329,7 @@ namespace Server.Dme
                 case RT_MSG_CLIENT_CONNECT_READY_AUX_UDP connectReadyAuxUdp:
                     {
                         data.ClientObject?.OnConnectionCompleted();
+                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
 
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
                         {
@@ -306,7 +344,6 @@ namespace Server.Dme
                             }
                         }, clientChannel);
 
-                        data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:

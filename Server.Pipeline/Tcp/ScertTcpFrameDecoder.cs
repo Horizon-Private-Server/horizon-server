@@ -192,26 +192,8 @@ namespace Server.Pipeline.Tcp
 
             if (frameLength > this.maxFrameLength)
             {
-                long discard = frameLength - input.ReadableBytes;
-                this.tooLongFrameLength = frameLength;
                 int startOff = (int)Math.Min(20, input.ArrayOffset);
-                Logger.Error($"{context.Channel.RemoteAddress} Frame Length exceeds max frame length on buffer: start:{startOff} {BitConverter.ToString(input.Array, input.ArrayOffset - startOff, startOff + input.ReadableBytes)}");
-
-                if (discard < 0)
-                {
-                    // buffer contains more bytes then the frameLength so we can discard all now
-                    input.SkipBytes((int)frameLength);
-                }
-                else
-                {
-                    // Enter the discard mode and discard everything received so far.
-                    //this.discardingTooLongFrame = true;
-                    this.bytesToDiscard = discard;
-                    input.SkipBytes(input.ReadableBytes);
-                }
-
-                this.FailIfNecessary(true);
-                return null;
+                throw new CorruptedFrameException($"{context.Channel.RemoteAddress} Frame Length exceeds max frame length on buffer: start:{startOff} {BitConverter.ToString(input.Array, input.ArrayOffset - startOff, startOff + input.ReadableBytes)}");
             }
 
             // never overflows because it's less than maxFrameLength

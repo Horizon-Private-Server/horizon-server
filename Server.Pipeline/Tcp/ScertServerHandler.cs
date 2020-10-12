@@ -42,7 +42,8 @@ namespace Server.Pipeline.Tcp
             // Detect when client disconnects
             ctx.Channel.CloseCompletion.ContinueWith((x) =>
             {
-                Logger.Info("Channel Closed");
+                Logger.Warn("Channel Closed");
+                g?.Remove(ctx.Channel);
                 OnChannelInactive?.Invoke(ctx.Channel);
             });
 
@@ -58,7 +59,7 @@ namespace Server.Pipeline.Tcp
         {
             IChannelGroup g = Group;
 
-            Logger.Info("Client disconnected");
+            Logger.Warn("Client disconnected");
 
             // Remove
             g?.Remove(ctx.Channel);

@@ -68,7 +68,6 @@ namespace Server.Medius
                         {
                             UNK_00 = 0,
                             UNK_02 = GenerateNewScertClientId(),
-                            UNK_04 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
@@ -98,7 +97,6 @@ namespace Server.Medius
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        await clientChannel.DisconnectAsync();
                         break;
                     }
                 default:
@@ -581,7 +579,7 @@ namespace Server.Medius
                         {
                             case MediusTextFilterType.MediusTextFilterPassFail:
                                 {
-                                    if (textFilterRequest.Text.Any(x=> !char.IsLetterOrDigit(x)))
+                                    if (textFilterRequest.Text.Any(x=> x < 0x20 || x >= 0x7F))
                                     {
                                         // Failed due to special characters
                                         data.ClientObject.Queue(new MediusTextFilterResponse()

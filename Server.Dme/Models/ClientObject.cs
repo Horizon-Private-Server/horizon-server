@@ -66,7 +66,7 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public ushort ScertId { get; set; } = 0;
+        public uint ScertId { get; set; } = 0;
 
         /// <summary>
         /// 

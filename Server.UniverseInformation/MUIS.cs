@@ -17,6 +17,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNetty.Handlers.Timeout;
 
 namespace Server.UnivereInformation
 {
@@ -35,7 +36,7 @@ namespace Server.UnivereInformation
         protected IChannel _boundChannel = null;
         protected ScertServerHandler _scertHandler = null;
         protected byte[] _clientSessionKey = new byte[0x40];
-        private ushort _clientCounter = 0;
+        private uint _clientCounter = 0;
 
         protected internal class ChannelData
         {
@@ -104,6 +105,7 @@ namespace Server.UnivereInformation
                 {
                     IChannelPipeline pipeline = channel.Pipeline;
 
+                    pipeline.AddLast(new WriteTimeoutHandler(15));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
@@ -218,7 +220,6 @@ namespace Server.UnivereInformation
                         {
                             UNK_00 = 0,
                             UNK_02 = GenerateNewScertClientId(),
-                            UNK_04 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
@@ -359,7 +360,7 @@ namespace Server.UnivereInformation
         #endregion
 
 
-        protected ushort GenerateNewScertClientId()
+        protected uint GenerateNewScertClientId()
         {
             return _clientCounter++;
         }

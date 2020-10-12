@@ -13,7 +13,7 @@ namespace RT.Models
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_CLIENT_CONNECT_TCP;
 
         // 
-        public uint ARG1;
+        public uint TargetWorldId;
         public int AppId;
         public RSA_KEY Key;
 
@@ -25,7 +25,7 @@ namespace RT.Models
             SessionKey = null;
             AccessToken = null;
 
-            ARG1 = reader.ReadUInt32();
+            TargetWorldId = reader.ReadUInt32();
             AppId = reader.ReadInt32();
             Key = reader.Read<RSA_KEY>();
 
@@ -38,7 +38,7 @@ namespace RT.Models
 
         protected override void Serialize(BinaryWriter writer)
         {
-            writer.Write(ARG1);
+            writer.Write(TargetWorldId);
             writer.Write(AppId);
             writer.Write(Key ?? RSA_KEY.Empty);
         }
@@ -46,7 +46,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"ARG1:{ARG1:X8} " +
+                $"ARG1:{TargetWorldId:X8} " +
                 $"ARG2:{AppId:X8} " +
                 $"Key:{Key}";
         }

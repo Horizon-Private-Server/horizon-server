@@ -70,9 +70,10 @@ namespace Server.Medius
         static async Task StartServerAsync()
         {
             DateTime lastConfigRefresh = DateTime.UtcNow;
+            DateTime lastComponentLog = DateTime.UtcNow;
             Stopwatch sleepSw = new Stopwatch();
 
-#if DEBUG
+#if DEBUG || RELEASE
             Stopwatch sw = new Stopwatch();
             int ticks = 0;
 #endif
@@ -96,13 +97,13 @@ namespace Server.Medius
 
             try
             {
-#if DEBUG
+#if DEBUG || RELEASE
                 sw.Start();
 #endif
 
                 while (true)
                 {
-#if DEBUG
+#if DEBUG || RELEASE
                     ++ticks;
                     if (sw.Elapsed.TotalSeconds > 5f)
                     {
@@ -146,6 +147,15 @@ namespace Server.Medius
 
                     // Tick plugins
                     Plugins.Tick();
+
+                    // 
+                    if ((DateTime.UtcNow - lastComponentLog).TotalSeconds > 15f)
+                    {
+                        AuthenticationServer.Log();
+                        LobbyServer.Log();
+                        ProxyServer.Log();
+                        lastComponentLog = DateTime.UtcNow;
+                    }
 
                     // Reload config
                     if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -261,7 +271,7 @@ namespace Server.Medius
             }
 
             // Clear account status table
-            Database.ClearAccountStatuses().Wait();
+            //Database.ClearAccountStatuses().Wait();
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;

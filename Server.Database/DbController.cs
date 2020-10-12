@@ -4,6 +4,7 @@ using RT.Common;
 using Server.Database.Config;
 using Server.Database.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,7 +29,7 @@ namespace Server.Database
 
         private class GetDbCache
         {
-            static Dictionary<string, GetDbCache> _getCache = new Dictionary<string, GetDbCache>();
+            static ConcurrentDictionary<string, GetDbCache> _getCache = new ConcurrentDictionary<string, GetDbCache>();
 
             public DateTime LastUpdate;
 
@@ -65,7 +66,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    _getCache.Add(route, new GetDbCache(lifetime)
+                    _getCache.TryAdd(route, new GetDbCache(lifetime)
                     {
                         LastUpdate = DateTime.UtcNow,
                         Value = value

@@ -16,8 +16,7 @@ namespace RT.Models
 
         // 
         public ushort PlayerId;
-        public ushort ScertId = 0xD4;
-        public ushort UNK_04;
+        public uint ScertId = 0xD4;
         public ushort PlayerCount = 0x0001;
 
         public IPEndPoint EndPoint;
@@ -25,8 +24,7 @@ namespace RT.Models
         public override void Deserialize(BinaryReader reader)
         {
             PlayerId = reader.ReadUInt16();
-            ScertId = reader.ReadUInt16();
-            UNK_04 = reader.ReadUInt16();
+            ScertId = reader.ReadUInt32();
             PlayerCount = reader.ReadUInt16();
 
             EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
@@ -36,7 +34,6 @@ namespace RT.Models
         {
             writer.Write(PlayerId);
             writer.Write(ScertId);
-            writer.Write(UNK_04);
             writer.Write(PlayerCount);
 
             writer.Write(EndPoint.Address);

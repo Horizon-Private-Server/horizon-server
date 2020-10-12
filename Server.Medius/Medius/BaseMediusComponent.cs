@@ -20,6 +20,7 @@ using RT.Common;
 using Server.Pipeline.Tcp;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
+using DotNetty.Handlers.Timeout;
 
 namespace Server.Medius
 {
@@ -47,7 +48,7 @@ namespace Server.Medius
         protected IEventLoopGroup _workerGroup = null;
         protected IChannel _boundChannel = null;
         protected ScertServerHandler _scertHandler = null;
-        private ushort _clientCounter = 0;
+        private uint _clientCounter = 0;
 
         protected internal class ChannelData
         {
@@ -65,8 +66,16 @@ namespace Server.Medius
             /// </summary>
             public bool Ignore { get; set; } = false;
             public DateTime LastSentEcho { get; set; } = DateTime.UnixEpoch;
+            public DateTime TimeConnected { get; set; } = DateTime.UtcNow;
+
+
+            /// <summary>
+            /// Timesout client if they authenticated after a given number of seconds.
+            /// </summary>
+            public bool ShouldDestroy => ClientObject == null && (DateTime.UtcNow - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         }
 
+        protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
         protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
 
         protected PS2_RC4 _sessionCipher = null;
@@ -174,13 +183,13 @@ namespace Server.Medius
                 bootstrap
                     .Group(_bossGroup, _workerGroup)
                     .Channel<TcpServerSocketChannel>()
-                    .Option(ChannelOption.SoBacklog, 100)
-                    .Option(ChannelOption.SoTimeout, 30000)
+                    //.Option(ChannelOption.SoBacklog, 100)
                     .Handler(new LoggingHandler(LogLevel.INFO))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
 
+                        pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
                         pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
@@ -194,6 +203,11 @@ namespace Server.Medius
             {
 
             }
+        }
+
+        public void Log()
+        {
+            Logger.Warn($"Channels:<{_scertHandler?.Group?.Count ?? -1}> ChannelDatas:<{_channelDatas?.Count ?? -1}>");
         }
 
         public virtual async Task Stop()
@@ -215,7 +229,27 @@ namespace Server.Medius
             if (_scertHandler == null || _scertHandler.Group == null)
                 return;
 
+            // Tick clients
             await Task.WhenAll(_scertHandler.Group.Select(c => Tick(c)));
+
+            // Disconnect and remove timedout unauthenticated channels
+            while (_forceDisconnectQueue.TryDequeue(out var channel))
+            {
+
+                // Send disconnect message
+                await ForceDisconnectClient(channel);
+
+                // Remove
+                _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
+                Logger.Warn($"REMOVING CHANNEL {channel},{d},{d?.ClientObject}");
+
+                // close after 5 seconds
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(5000);
+                    try { await channel.CloseAsync(); } catch (Exception) { }
+                });
+            }
         }
 
         protected virtual async Task Tick(IChannel clientChannel)
@@ -232,6 +266,13 @@ namespace Server.Medius
                 // 
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
+                    // Destroy
+                    if (data.ShouldDestroy)
+                    {
+                        _forceDisconnectQueue.Enqueue(clientChannel);
+                        return;
+                    }
+
                     // Ignore
                     if (data.Ignore)
                         return;
@@ -257,6 +298,7 @@ namespace Server.Medius
                         catch (Exception e)
                         {
                             Logger.Error(e);
+                            Logger.Error($"FORCE DISCONNECTING CLIENT 1 {data} || {data.ClientObject}");
                             await ForceDisconnectClient(clientChannel);
                             data.Ignore = true;
                         }
@@ -311,10 +353,15 @@ namespace Server.Medius
                             await clientChannel.WriteAndFlushAsync(responses);
                     }
                 }
+                else
+                {
+
+                }
             }
             catch (Exception e)
             {
                 Logger.Error(e);
+                _forceDisconnectQueue.Enqueue(clientChannel);
                 //await DisconnectClient(clientChannel);
             }
         }
@@ -360,7 +407,7 @@ namespace Server.Medius
 
                 channel.Flush();
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Silence exception since the client probably just closed the socket before we could write to it
             }
@@ -403,7 +450,7 @@ namespace Server.Medius
 
         #endregion
 
-        protected ushort GenerateNewScertClientId()
+        protected uint GenerateNewScertClientId()
         {
             return _clientCounter++;
         }

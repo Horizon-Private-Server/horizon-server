@@ -3,6 +3,7 @@ using RT.Common;
 using RT.Models;
 using Server.Medius.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,8 @@ namespace Server.Medius
 
         private Dictionary<int, Channel> _channelIdToChannel = new Dictionary<int, Channel>();
         private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
+
+        private ConcurrentQueue<ClientObject> _addQueue = new ConcurrentQueue<ClientObject>();
 
         #region Clients
 
@@ -98,32 +101,7 @@ namespace Server.Medius
             if (!client.IsLoggedIn)
                 throw new InvalidOperationException($"Attempting to add {client} to MediusManager but client has not yet logged in.");
 
-            try
-            {
-                _accountIdToClient.Add(client.AccountId, client);
-                _accountNameToClient.Add(client.AccountName.ToLower(), client);
-                _accessTokenToClient.Add(client.Token, client);
-                _sessionKeyToClient.Add(client.SessionKey, client);
-            }
-            catch (Exception e)
-            {
-                // clean up
-                if (client != null)
-                {
-                    _accountIdToClient.Remove(client.AccountId);
-
-                    if (client.AccountName != null)
-                        _accountNameToClient.Remove(client.AccountName.ToLower());
-
-                    if (client.Token != null)
-                        _accessTokenToClient.Remove(client.Token);
-
-                    if (client.SessionKey != null)
-                        _sessionKeyToClient.Remove(client.SessionKey);
-                }
-
-                throw e;
-            }
+            _addQueue.Enqueue(client);
         }
 
         #endregion
@@ -384,11 +362,44 @@ namespace Server.Medius
         {
             Queue<string> clientsToRemove = new Queue<string>();
 
+            while (_addQueue.TryDequeue(out var newClient))
+            {
+                try
+                {
+                    _accountIdToClient.Add(newClient.AccountId, newClient);
+                    _accountNameToClient.Add(newClient.AccountName.ToLower(), newClient);
+                    _accessTokenToClient.Add(newClient.Token, newClient);
+                    _sessionKeyToClient.Add(newClient.SessionKey, newClient);
+                }
+                catch (Exception e)
+                {
+                    // clean up
+                    if (newClient != null)
+                    {
+                        _accountIdToClient.Remove(newClient.AccountId);
+
+                        if (newClient.AccountName != null)
+                            _accountNameToClient.Remove(newClient.AccountName.ToLower());
+
+                        if (newClient.Token != null)
+                            _accessTokenToClient.Remove(newClient.Token);
+
+                        if (newClient.SessionKey != null)
+                            _sessionKeyToClient.Remove(newClient.SessionKey);
+                    }
+
+                    throw e;
+                }
+            }
+
             foreach (var clientKeyPair in _sessionKeyToClient)
             {
                 if (!clientKeyPair.Value.IsConnected)
                 {
-                    Logger.Info($"Destroying Client {clientKeyPair.Value}");
+                    if (clientKeyPair.Value.Timedout)
+                        Logger.Warn($"Timing out client {clientKeyPair.Value}");
+                    else
+                        Logger.Info($"Destroying Client {clientKeyPair.Value}");
 
                     // Logout and end session
                     clientKeyPair.Value.Logout();

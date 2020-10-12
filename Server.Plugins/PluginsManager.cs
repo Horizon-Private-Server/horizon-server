@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Server.Plugins
 {
@@ -55,18 +56,21 @@ namespace Server.Plugins
             if (!_pluginCallbackInstances.ContainsKey(eventType))
                 return;
 
-            foreach (var callbacks in _pluginCallbackInstances[eventType])
+            Task.Run(() =>
             {
-                try
+                foreach (var callbacks in _pluginCallbackInstances[eventType])
                 {
-                    _engine.Operations.Invoke(callbacks, eventType, data);
+                    try
+                    {
+                        _engine.Operations.Invoke(callbacks, eventType, data);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error($"PLUGIN OnEvent Exception. {callbacks}({eventType}, {data})");
+                        Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
+                    }
                 }
-                catch (Exception e)
-                {
-                    Logger.Error($"PLUGIN OnEvent Exception. {callbacks}({eventType}, {data})");
-                    Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
-                }
-            }
+            });
         }
 
         private void registerEventHandler(PluginEvent eventType, object callback)

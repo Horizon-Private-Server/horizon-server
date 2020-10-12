@@ -77,7 +77,6 @@ namespace Server.Medius
                         {
                             UNK_00 = 0,
                             UNK_02 = GenerateNewScertClientId(),
-                            UNK_04 = 0,
                             UNK_06 = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
