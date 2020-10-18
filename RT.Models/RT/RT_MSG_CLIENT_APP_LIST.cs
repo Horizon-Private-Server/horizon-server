@@ -31,11 +31,18 @@ namespace RT.Models
 
         protected override void Serialize(BinaryWriter writer)
         {
-            byte[] mask = new byte[(int)Math.Ceiling((Targets.Max() + 1) / 8d)];
-            foreach (var target in Targets)
-                mask[target / 8] |= (byte)(1 << (target % 8));
+            // Determine size of bitmask in bytes
+            byte size = 1;
+            if (Targets != null && Targets.Count > 0)
+                size = (byte)Math.Ceiling((Targets.Max() + 1) / 8d);
 
-            writer.Write((byte)mask.Length);
+            // Populate bitmask
+            byte[] mask = new byte[size];
+            if (Targets != null)
+                foreach (var target in Targets)
+                    mask[target / 8] |= (byte)(1 << (target % 8));
+
+            writer.Write(size);
             writer.Write(mask);
             writer.Write(Payload);
         }
