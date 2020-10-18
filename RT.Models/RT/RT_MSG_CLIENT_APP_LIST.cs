@@ -3,6 +3,7 @@ using Server.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace RT.Models
@@ -12,29 +13,29 @@ namespace RT.Models
     {
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_CLIENT_APP_LIST;
 
-        public byte UNK { get; set; } = 2;
         public List<int> Targets { get; set; } = new List<int>();
         public byte[] Payload { get; set; }
 
         public override void Deserialize(BinaryReader reader)
         {
-            UNK = reader.ReadByte();
-            var mask = reader.ReadUInt16();
+            var size = reader.ReadByte();
+            var mask = reader.ReadBytes(size);
             Payload = reader.ReadRest();
 
             Targets = new List<int>();
-            for (int i = 0; i < sizeof(short) * 8; ++i)
-                if ((mask & (1 << i)) != 0)
-                    Targets.Add(i);
+            for (int b = 0; b < size; ++b)
+                for (int i = 0; i < 8; ++i)
+                    if ((mask[b] & (1 << i)) != 0)
+                        Targets.Add(i + (b * 8));
         }
 
         protected override void Serialize(BinaryWriter writer)
         {
-            ushort mask = 0;
+            byte[] mask = new byte[(int)Math.Ceiling(Math.Log(Targets.Max(), 2))];
             foreach (var target in Targets)
-                mask |= (ushort)(1 << target);
+                mask[target / 8] |= (byte)(1 << (target % 8));
 
-            writer.Write(UNK);
+            writer.Write(mask.Length);
             writer.Write(mask);
             writer.Write(Payload);
         }
