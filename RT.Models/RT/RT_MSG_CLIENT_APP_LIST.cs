@@ -31,11 +31,11 @@ namespace RT.Models
 
         protected override void Serialize(BinaryWriter writer)
         {
-            byte[] mask = new byte[(int)Math.Ceiling(Targets.Max() / 8d)];
+            byte[] mask = new byte[(int)Math.Ceiling((Targets.Max() + 1) / 8d)];
             foreach (var target in Targets)
                 mask[target / 8] |= (byte)(1 << (target % 8));
 
-            writer.Write(mask.Length);
+            writer.Write((byte)mask.Length);
             writer.Write(mask);
             writer.Write(Payload);
         }
