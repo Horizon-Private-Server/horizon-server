@@ -31,7 +31,7 @@ namespace RT.Models
 
         protected override void Serialize(BinaryWriter writer)
         {
-            byte[] mask = new byte[(int)Math.Ceiling(Math.Log(Targets.Max(), 2))];
+            byte[] mask = new byte[(int)Math.Ceiling(Math.Log(Targets.Max(), 8))];
             foreach (var target in Targets)
                 mask[target / 8] |= (byte)(1 << (target % 8));
 
