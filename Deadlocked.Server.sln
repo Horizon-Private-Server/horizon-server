@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.UniverseInformation"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.NAT", "Server.NAT\Server.NAT.csproj", "{3F9AC5FB-3512-4419-A78F-8DE396915A27}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Test", "Server.Test\Server.Test.csproj", "{B9AE5BCF-F739-421B-B101-488009F5B3A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3F9AC5FB-3512-4419-A78F-8DE396915A27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9AE5BCF-F739-421B-B101-488009F5B3A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9AE5BCF-F739-421B-B101-488009F5B3A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9AE5BCF-F739-421B-B101-488009F5B3A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9AE5BCF-F739-421B-B101-488009F5B3A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

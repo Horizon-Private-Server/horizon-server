@@ -175,7 +175,7 @@ namespace Server.Medius
             }
         }
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // 
             Initialize();
@@ -205,7 +205,7 @@ namespace Server.Medius
             Plugins = new PluginsManager(PLUGINS_PATH);
 
             // 
-            StartServerAsync().Wait();
+            await StartServerAsync();
         }
 
         static void Initialize()

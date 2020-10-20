@@ -160,7 +160,7 @@ namespace Server.Dme
             while (_forceDisconnectQueue.TryDequeue(out var channel))
             {
                 // Send disconnect message
-                await ForceDisconnectClient(channel);
+                _ = ForceDisconnectClient(channel);
 
                 // Remove
                 _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
@@ -217,7 +217,7 @@ namespace Server.Dme
                         catch (Exception e)
                         {
                             Logger.Error(e);
-                            await ForceDisconnectClient(clientChannel);
+                            _ = ForceDisconnectClient(clientChannel);
                         }
                     }
 

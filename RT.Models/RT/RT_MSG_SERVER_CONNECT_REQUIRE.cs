@@ -24,5 +24,11 @@ namespace RT.Models
         {
             writer.Write(Contents);
         }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"Contents:{BitConverter.ToString(Contents)}";
+        }
     }
 }

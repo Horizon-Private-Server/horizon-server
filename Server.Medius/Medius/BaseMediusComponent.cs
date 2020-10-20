@@ -237,7 +237,7 @@ namespace Server.Medius
             {
 
                 // Send disconnect message
-                await ForceDisconnectClient(channel);
+                _ = ForceDisconnectClient(channel);
 
                 // Remove
                 _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
@@ -299,7 +299,7 @@ namespace Server.Medius
                         {
                             Logger.Error(e);
                             Logger.Error($"FORCE DISCONNECTING CLIENT 1 {data} || {data.ClientObject}");
-                            await ForceDisconnectClient(clientChannel);
+                            _ = ForceDisconnectClient(clientChannel);
                             data.Ignore = true;
                         }
                     }
@@ -350,7 +350,7 @@ namespace Server.Medius
 
                         //
                         if (responses.Count > 0)
-                            await clientChannel.WriteAndFlushAsync(responses);
+                            _ = clientChannel.WriteAndFlushAsync(responses);
                     }
                 }
                 else
