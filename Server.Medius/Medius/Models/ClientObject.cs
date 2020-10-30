@@ -1,4 +1,5 @@
 ﻿using DotNetty.Common.Internal.Logging;
+using Microsoft.Scripting.Ast;
 using RT.Common;
 using RT.Models;
 using Server.Database;
@@ -9,6 +10,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using Server.Common;
 using System.Net.Sockets;
 using System.Text;
 
@@ -74,12 +76,17 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastEcho { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoSent { get; protected set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
 
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => (DateTime.UtcNow - UtcLastEcho).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool Timedout => (UtcLastServerEchoSent - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         public virtual bool IsConnected => (KeepAlive || _hasActiveSession) && !Timedout;
 
         public bool KeepAlive => _keepAlive;
@@ -122,14 +129,17 @@ namespace Server.Medius.Models
             Token = Convert.ToBase64String(tokenBuf);
         }
 
-        /// <summary>
-        /// Update last echo time.
-        /// </summary>
-        /// <param name="utcTime"></param>
-        public void OnEcho(DateTime utcTime)
+        public void QueueServerEcho()
         {
-            if (utcTime > UtcLastEcho)
-                UtcLastEcho = utcTime;
+            SendMessageQueue.Enqueue(new RT_MSG_SERVER_ECHO());
+            UtcLastServerEchoSent = DateTime.UtcNow;
+        }
+
+        public void OnRecvServerEcho(RT_MSG_SERVER_ECHO echo)
+        {
+            var echoTime = echo.UnixTimestamp.ToUtcDateTime();
+            if (echoTime > UtcLastServerEchoReply)
+                UtcLastServerEchoReply = echoTime;
         }
 
         #region Connection / Disconnection

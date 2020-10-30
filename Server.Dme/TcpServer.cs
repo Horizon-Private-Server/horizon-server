@@ -99,7 +99,9 @@ namespace Server.Dme
                     if (!data.Ignore && (data.ClientObject == null || !data.ClientObject.IsDestroyed))
                     {
                         data.RecvQueue.Enqueue(message);
-                        data.ClientObject?.OnEcho(true, DateTime.UtcNow);
+
+                        if (message is RT_MSG_SERVER_ECHO serverEcho)
+                            data.ClientObject?.OnRecvServerEcho(serverEcho);
                     }
                 }
 
@@ -230,13 +232,13 @@ namespace Server.Dme
 
                         if (data.ClientObject != null)
                         {
+                            // Echo
+                            if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
+                                data.ClientObject.QueueServerEcho();
+
                             // Add client object's send queue to responses
                             while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
                                 responses.Add(message);
-
-                            // Echo
-                            if ((DateTime.UtcNow - data.ClientObject.LastTcpMessageUtc).TotalSeconds > Program.Settings.ServerEchoInterval)
-                                Echo(ref responses);
                         }
 
                         //
@@ -249,15 +251,6 @@ namespace Server.Dme
             {
                 Logger.Error(e);
             }
-        }
-
-        /// <summary>
-        /// Adds a server echo message to the collection of messages.
-        /// </summary>
-        /// <param name="responses"></param>
-        protected void Echo(ref List<BaseScertMessage> responses)
-        {
-            responses.Add(new RT_MSG_SERVER_ECHO() { });
         }
 
         #region Message Processing

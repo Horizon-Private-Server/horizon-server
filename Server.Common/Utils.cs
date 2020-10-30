@@ -144,6 +144,11 @@ namespace Server.Common
             return (uint)(time.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
 
+        public static DateTime ToUtcDateTime(this uint unixTime)
+        {
+            return new DateTime(1970, 1, 1) + TimeSpan.FromSeconds(unixTime);
+        }
+
         #endregion
 
         #region SHA-256

@@ -2,6 +2,7 @@
 using DotNetty.Transport.Channels;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Ocsp;
+using Server.Common;
 using RT.Common;
 using RT.Models;
 using Server.Pipeline.Udp;
@@ -86,12 +87,12 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime LastTcpMessageUtc { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoSent { get; protected set; } = DateTime.UtcNow;
 
         /// <summary>
         /// 
         /// </summary>
-        public DateTime LastUdpMessageUtc { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
 
         /// <summary>
         /// 
@@ -114,7 +115,7 @@ namespace Server.Dme.Models
         public IPEndPoint RemoteUdpEndpoint { get; set; } = null;
 
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (DateTime.UtcNow - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && Math.Min((DateTime.UtcNow - LastTcpMessageUtc).TotalSeconds, (DateTime.UtcNow - LastUdpMessageUtc).TotalSeconds) > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool Timedout => !IsConnectingGracePeriod && ((UtcLastServerEchoSent - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
@@ -141,16 +142,17 @@ namespace Server.Dme.Models
             Token = Convert.ToBase64String(tokenBuf);
         }
 
-        /// <summary>
-        /// Update last echo time.
-        /// </summary>
-        /// <param name="utcTime"></param>
-        public void OnEcho(bool isTcp, DateTime utcTime)
+        public void QueueServerEcho()
         {
-            if (isTcp && utcTime > LastTcpMessageUtc)
-                LastTcpMessageUtc = utcTime;
-            else if (!isTcp && utcTime > LastUdpMessageUtc)
-                LastUdpMessageUtc = utcTime;
+            TcpSendMessageQueue.Enqueue(new RT_MSG_SERVER_ECHO());
+            UtcLastServerEchoSent = DateTime.UtcNow;
+        }
+
+        public void OnRecvServerEcho(RT_MSG_SERVER_ECHO echo)
+        {
+            var echoTime = echo.UnixTimestamp.ToUtcDateTime();
+            if (echoTime > UtcLastServerEchoReply)
+                UtcLastServerEchoReply = echoTime;
         }
 
         #region Connection / Disconnection

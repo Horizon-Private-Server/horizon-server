@@ -65,7 +65,6 @@ namespace Server.Medius
             /// When true, all messages from this client will be ignored.
             /// </summary>
             public bool Ignore { get; set; } = false;
-            public DateTime LastSentEcho { get; set; } = DateTime.UnixEpoch;
             public DateTime TimeConnected { get; set; } = DateTime.UtcNow;
 
 
@@ -167,7 +166,9 @@ namespace Server.Medius
                         if (data.IsBanned == null || data.IsBanned == false)
                         {
                             data.RecvQueue.Enqueue(message);
-                            data.ClientObject?.OnEcho(DateTime.UtcNow);
+
+                            if (message is RT_MSG_SERVER_ECHO serverEcho)
+                                data.ClientObject?.OnRecvServerEcho(serverEcho);
                         }
                     }
                 }
@@ -326,6 +327,10 @@ namespace Server.Medius
 
                         if (data.ClientObject != null)
                         {
+                            // Echo
+                            if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoReply).TotalSeconds > Program.Settings.ServerEchoInterval)
+                                data.ClientObject.QueueServerEcho();
+
                             // Add client object's send queue to responses
                             while (data.ClientObject.SendMessageQueue.TryDequeue(out var message))
                             {
@@ -342,10 +347,6 @@ namespace Server.Medius
                                 if (!onMsg.Ignore)
                                     responses.Add(message);
                             }
-
-                            // Echo
-                            if ((DateTime.UtcNow - data.ClientObject.UtcLastEcho).TotalSeconds > Program.Settings.ServerEchoInterval)
-                                Echo(data, ref responses);
                         }
 
                         //
@@ -363,15 +364,6 @@ namespace Server.Medius
                 Logger.Error(e);
                 _forceDisconnectQueue.Enqueue(clientChannel);
                 //await DisconnectClient(clientChannel);
-            }
-        }
-
-        protected virtual void Echo(ChannelData data, ref List<BaseScertMessage> responses)
-        {
-            if ((DateTime.UtcNow - data.LastSentEcho).TotalSeconds > 2f)
-            {
-                data.LastSentEcho = DateTime.UtcNow;
-                responses.Add(new RT_MSG_SERVER_ECHO() { });
             }
         }
 

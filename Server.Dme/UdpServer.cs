@@ -309,13 +309,7 @@ namespace Server.Dme
 
                     //
                     if (responses.Count > 0)
-                    {
-                        if (responses.Count > 2)
-                        {
-
-                        }
                         await _boundChannel.WriteAndFlushAsync(responses);
-                    }
                 }
             }
             catch (Exception e)
