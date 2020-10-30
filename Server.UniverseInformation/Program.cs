@@ -69,7 +69,7 @@ namespace Server.UnivereInformation
             }
         }
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // 
             Initialize();
@@ -96,7 +96,7 @@ namespace Server.UnivereInformation
 #endif
 
             // 
-            StartServerAsync().Wait();
+            await StartServerAsync();
         }
 
         static void Initialize()

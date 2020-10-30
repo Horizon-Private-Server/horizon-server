@@ -131,7 +131,7 @@ namespace Server.Dme
             }
         }
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // 
             Initialize();
@@ -161,7 +161,7 @@ namespace Server.Dme
             Plugins = new PluginsManager(PLUGINS_PATH);
 
             // 
-            StartServerAsync().Wait();
+            await StartServerAsync();
         }
 
         static void Initialize()
