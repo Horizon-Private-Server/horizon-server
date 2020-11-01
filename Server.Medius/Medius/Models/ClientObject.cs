@@ -83,6 +83,11 @@ namespace Server.Medius.Models
         /// </summary>
         public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
 
+        /// <summary>
+        /// RTT (ms)
+        /// </summary>
+        public uint LatencyMs { get; protected set; }
+
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
@@ -116,6 +121,11 @@ namespace Server.Medius.Models
         /// </summary>
         protected bool _keepAlive = false;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        private DateTime _lastServerEchoValue = DateTime.UnixEpoch;
+
 
 
         public ClientObject()
@@ -138,8 +148,12 @@ namespace Server.Medius.Models
         public void OnRecvServerEcho(RT_MSG_SERVER_ECHO echo)
         {
             var echoTime = echo.UnixTimestamp.ToUtcDateTime();
-            if (echoTime > UtcLastServerEchoReply)
-                UtcLastServerEchoReply = echoTime;
+            if (echoTime > _lastServerEchoValue)
+            {
+                _lastServerEchoValue = echoTime;
+                UtcLastServerEchoReply = DateTime.UtcNow;
+                LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
+            }
         }
 
         #region Connection / Disconnection

@@ -129,8 +129,8 @@ namespace Server.Medius
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        Logger.Error($"IGNORING CLIENT 2 {data} || {data.ClientObject}");
-                        data.Ignore = true;
+                        data.State = ClientState.DISCONNECTED;
+                        _ = clientChannel.CloseAsync();
                         break;
                     }
                 default:

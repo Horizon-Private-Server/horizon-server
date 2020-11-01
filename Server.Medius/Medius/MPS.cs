@@ -109,7 +109,7 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
                         data.State = ClientState.DISCONNECTED;
-                        await clientChannel.CloseAsync();
+                        _ = clientChannel.CloseAsync();
                         break;
                     }
                 default:

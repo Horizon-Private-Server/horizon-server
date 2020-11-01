@@ -243,7 +243,7 @@ namespace Server.Dme
 
                         //
                         if (responses.Count > 0)
-                            await clientChannel.WriteAndFlushAsync(responses);
+                            _ = clientChannel.WriteAndFlushAsync(responses);
                     }
                 }
             }
@@ -396,7 +396,7 @@ namespace Server.Dme
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        data.Ignore = true;
+                        _ = clientChannel.CloseAsync();
                         break;
                     }
                 default:

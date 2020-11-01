@@ -95,6 +95,11 @@ namespace Server.Dme.Models
         public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
 
         /// <summary>
+        /// RTT (ms)
+        /// </summary>
+        public uint LatencyMs { get; protected set; }
+
+        /// <summary>
         /// 
         /// </summary>
         public DateTime TimeCreated { get; protected set; } = DateTime.UtcNow;
@@ -122,6 +127,9 @@ namespace Server.Dme.Models
         public virtual bool IsDestroyed { get; protected set; } = false;
 
         public Action<ClientObject> OnDestroyed;
+
+
+        private DateTime _lastServerEchoValue = DateTime.UnixEpoch;
 
         public ClientObject(string sessionKey, World dmeWorld, int dmeId)
         {
@@ -151,8 +159,12 @@ namespace Server.Dme.Models
         public void OnRecvServerEcho(RT_MSG_SERVER_ECHO echo)
         {
             var echoTime = echo.UnixTimestamp.ToUtcDateTime();
-            if (echoTime > UtcLastServerEchoReply)
-                UtcLastServerEchoReply = echoTime;
+            if (echoTime > _lastServerEchoValue)
+            {
+                _lastServerEchoValue = echoTime;
+                UtcLastServerEchoReply = DateTime.UtcNow;
+                LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
+            }
         }
 
         #region Connection / Disconnection
