@@ -248,7 +248,7 @@ namespace Server.UnivereInformation
 
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        await clientChannel.DisconnectAsync();
+                        _ = clientChannel.CloseAsync();
                         break;
                     }
                 default:
