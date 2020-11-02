@@ -328,7 +328,7 @@ namespace Server.Medius
                         if (data.ClientObject != null)
                         {
                             // Echo
-                            if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoReply).TotalSeconds > Program.Settings.ServerEchoInterval)
+                            if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
                                 data.ClientObject.QueueServerEcho();
 
                             // Add client object's send queue to responses
