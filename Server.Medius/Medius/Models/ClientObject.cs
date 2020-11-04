@@ -91,10 +91,10 @@ namespace Server.Medius.Models
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => (UtcLastServerEchoSent - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
-        public virtual bool IsConnected => (KeepAlive || _hasActiveSession) && !Timedout;
+        public virtual bool Timedout => (DateTime.UtcNow - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !Timedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
-        public bool KeepAlive => _keepAlive;
+        public bool KeepAlive => _keepAliveTime.HasValue && (DateTime.UtcNow - _keepAliveTime).Value.TotalSeconds < 5;
 
         /// <summary>
         /// 
@@ -119,7 +119,12 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        protected bool _keepAlive = false;
+        private bool _hasSocket = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        protected DateTime? _keepAliveTime = null;
 
         /// <summary>
         /// 
@@ -160,17 +165,18 @@ namespace Server.Medius.Models
 
         public void KeepAliveUntilNextConnection()
         {
-            _keepAlive = true;
+            _keepAliveTime = DateTime.UtcNow;
         }
 
         public void OnConnected()
         {
-            _keepAlive = false;
+            _keepAliveTime = null;
+            _hasSocket = true;
         }
 
         public void OnDisconnected()
         {
-
+            _hasSocket = false;
         }
 
         #endregion

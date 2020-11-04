@@ -120,7 +120,7 @@ namespace Server.Dme.Models
         public IPEndPoint RemoteUdpEndpoint { get; set; } = null;
 
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (DateTime.UtcNow - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && ((UtcLastServerEchoSent - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
+        public virtual bool Timedout => !IsConnectingGracePeriod && ((DateTime.UtcNow - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);

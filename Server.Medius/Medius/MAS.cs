@@ -217,6 +217,7 @@ namespace Server.Medius
                         // Create client object
                         data.ClientObject = Program.LobbyServer.ReserveClient(extendedSessionBeginRequest);
                         data.ClientObject.ApplicationId = data.ApplicationId;
+                        data.ClientObject.OnConnected();
 
                         // Reply
                         data.ClientObject.Queue(new MediusSessionBeginResponse()
@@ -232,6 +233,7 @@ namespace Server.Medius
                         // Create client object
                         data.ClientObject = Program.LobbyServer.ReserveClient(sessionBeginRequest);
                         data.ClientObject.ApplicationId = data.ApplicationId;
+                        data.ClientObject.OnConnected();
 
                         // Reply
                         data.ClientObject.Queue(new MediusSessionBeginResponse()
@@ -521,6 +523,9 @@ namespace Server.Medius
                                             MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                                             StatusCode = MediusCallbackStatus.MediusSuccess
                                         });
+
+                                        // Prepare for transition to lobby server
+                                        data.ClientObject.KeepAliveUntilNextConnection();
                                     }
                                     else
                                     {

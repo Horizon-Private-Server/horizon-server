@@ -242,6 +242,11 @@ namespace Server.Medius
 
                 // Remove
                 _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
+
+                // Logout
+                d?.ClientObject?.Logout();
+
+                // 
                 Logger.Warn($"REMOVING CHANNEL {channel},{d},{d?.ClientObject}");
 
                 // close after 5 seconds
