@@ -51,6 +51,11 @@ namespace Server.Medius.Config
         public int ServerEchoInterval { get; set; } = 10;
 
         /// <summary>
+        /// Period of time when a client is moving between medius server components where the client object will be kept alive.
+        /// </summary>
+        public int KeepAliveGracePeriod { get; set; } = 8;
+
+        /// <summary>
         /// Number of ticks per second.
         /// </summary>
         public int TickRate { get; set; } = 10;

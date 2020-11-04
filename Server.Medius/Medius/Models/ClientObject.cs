@@ -94,7 +94,7 @@ namespace Server.Medius.Models
         public virtual bool Timedout => (DateTime.UtcNow - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !Timedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
-        public bool KeepAlive => _keepAliveTime.HasValue && (DateTime.UtcNow - _keepAliveTime).Value.TotalSeconds < 5;
+        public bool KeepAlive => _keepAliveTime.HasValue && (DateTime.UtcNow - _keepAliveTime).Value.TotalSeconds < Program.Settings.KeepAliveGracePeriod;
 
         /// <summary>
         /// 
