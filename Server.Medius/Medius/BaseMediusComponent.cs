@@ -208,7 +208,7 @@ namespace Server.Medius
 
         public void Log()
         {
-            Logger.Warn($"Channels:<{_scertHandler?.Group?.Count ?? -1}> ChannelDatas:<{_channelDatas?.Count ?? -1}>");
+            
         }
 
         public virtual async Task Stop()

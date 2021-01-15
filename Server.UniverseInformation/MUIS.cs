@@ -276,13 +276,15 @@ namespace Server.UnivereInformation
                             Message = new MediusUniverseVariableSvoURLResponse()
                             {
                                 MessageID = new MessageId(),
-                                Result = 1
+                                Result = 2
                             }
                         }, clientChannel);
 
 
                         if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var info))
                         {
+                            string sv = "http://ratchetdl-prod.pdonline.scea.com:10001";
+
                             // 
                             Queue(new RT_MSG_SERVER_APP()
                             {
@@ -292,9 +294,10 @@ namespace Server.UnivereInformation
                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                     InfoFilter = getUniverseInfo.InfoType,
                                     UniverseID = info.UniverseId,
-                                    ExtendedInfo = "",
+                                    ExtendedInfo = $"",
                                     UniverseName = info.Name,
                                     UniverseDescription = info.Description,
+                                    SvoURL = sv,
                                     DNS = info.Endpoint,
                                     Port = info.Port,
                                     EndOfList = true
