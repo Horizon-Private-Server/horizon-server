@@ -348,11 +348,11 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = false;
+                    result = true;
                 }
                 else
                 {
-                    result = (await DeleteDbAsync($"Account/clearAccountStatuses")).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Account/clearAccountStatuses", null)).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1168,7 +1168,7 @@ namespace Server.Database
 
                     try
                     {
-                        result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(body, Encoding.UTF8, "application/json"));
+                        result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", String.IsNullOrEmpty(body) ? null : new StringContent(body, Encoding.UTF8, "application/json"));
                     }
                     catch (Exception e)
                     {

@@ -64,6 +64,7 @@ namespace Server.Medius
         private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
         private static DateTime? _lastSuccessfulDbAuth = null;
+        private static bool _hasPurgedAccountStatuses = false;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -133,6 +134,9 @@ namespace Server.Medius
                         else
                         {
                             _lastSuccessfulDbAuth = DateTime.UtcNow;
+
+                            if (!_hasPurgedAccountStatuses)
+                                _hasPurgedAccountStatuses = await Database.ClearAccountStatuses();
                         }
                     }
 

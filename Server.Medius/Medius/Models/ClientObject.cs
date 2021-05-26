@@ -207,9 +207,10 @@ namespace Server.Medius.Models
             {
                 AccountId = AccountId,
                 LoggedIn = IsLoggedIn,
-                ChannelId = CurrentChannel?.Id ?? -1,
-                GameId = CurrentGame?.Id ?? -1,
-                WorldId = CurrentGame?.Id ?? CurrentChannel?.Id ?? -1
+                ChannelId = CurrentChannel?.Id,
+                GameId = CurrentGame?.Id,
+                GameName = CurrentGame?.GameName,
+                WorldId = CurrentGame?.Id ?? CurrentChannel?.Id
             });
         }
 
