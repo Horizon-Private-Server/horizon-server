@@ -234,11 +234,16 @@ namespace Server.Dme
                         {
                             // Echo
                             if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
-                                data.ClientObject.QueueServerEcho();
+                            {
+                                responses.Add(new RT_MSG_SERVER_ECHO());
+                                data.ClientObject.UtcLastServerEchoSent = DateTime.UtcNow;
+                            }
 
                             // Add client object's send queue to responses
-                            while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
-                                responses.Add(message);
+                            // But only if not in a world
+                            if (data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.Destroyed)
+                                while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
+                                    responses.Add(message);
                         }
 
                         //
@@ -356,7 +361,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_SET_AGG_TIME setAggTime:
                     {
-                        data.ClientObject?.DmeWorld?.OnSetAggTime(setAggTime);
+                        data.ClientObject.AggTimeMs = setAggTime.AggTime;
                         break;
                     }
                 case RT_MSG_CLIENT_TIMEBASE_QUERY timebaseQuery:

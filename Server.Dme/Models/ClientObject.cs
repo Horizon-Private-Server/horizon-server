@@ -87,7 +87,7 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoSent { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoSent { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// 
@@ -119,12 +119,23 @@ namespace Server.Dme.Models
         /// </summary>
         public IPEndPoint RemoteUdpEndpoint { get; set; } = null;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public int AggTimeMs { get; set; } = Program.Settings.DefaultWorldAggTime;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime? LastAggTime { get; set; } = null;
+
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (DateTime.UtcNow - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
         public virtual bool Timedout => !IsConnectingGracePeriod && ((DateTime.UtcNow - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
         public virtual bool IsDestroyed { get; protected set; } = false;
+        public virtual bool IsAggTime => !LastAggTime.HasValue || (DateTime.UtcNow - LastAggTime.Value).TotalMilliseconds >= AggTimeMs;
 
         public Action<ClientObject> OnDestroyed;
 
@@ -165,6 +176,23 @@ namespace Server.Dme.Models
                 UtcLastServerEchoReply = DateTime.UtcNow;
                 LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
             }
+        }
+
+        public void Tick()
+        {
+            List<BaseScertMessage> responses = new List<BaseScertMessage>();
+            LastAggTime = DateTime.UtcNow;
+
+            // tcp
+            while (TcpSendMessageQueue.TryDequeue(out var message))
+                responses.Add(message);
+
+            // send
+            if (responses.Count > 0)
+                _ = Tcp.WriteAndFlushAsync(responses);
+
+            // udp
+            Udp?.Tick();
         }
 
         #region Connection / Disconnection
