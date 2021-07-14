@@ -124,6 +124,10 @@ namespace Server.Dme
                     Thread.Sleep(Settings.MainLoopSleepMs);
                 }
             }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
             finally
             {
                 await TcpServer.Stop();

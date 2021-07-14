@@ -63,6 +63,10 @@ namespace Server.UnivereInformation
                     await Task.Delay(100);
                 }
             }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
             finally
             {
                 await Task.WhenAll(UniverseInfoServers.Select(x => x.Stop()));

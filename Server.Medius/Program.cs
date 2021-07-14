@@ -171,6 +171,10 @@ namespace Server.Medius
                     Thread.Sleep((int)Math.Max(0, sleepMS - sleepSw.ElapsedMilliseconds));
                 }
             }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
             finally
             {
                 await AuthenticationServer.Stop();
