@@ -119,11 +119,13 @@ namespace Server.Plugins
             _engine.SetSearchPaths(searchPaths);
 
             // Set some global variables
+            var module = _engine.GetBuiltinModule();
+
             Action<int, object> logAction = (l, m) => { log((InternalLogLevel)l, m); };
-            _scope.SetVariable("log", logAction);
+            module.SetVariable("log", logAction);
 
             Action<PluginEvent, object> registerAction = (t, c) => { registerEventHandler(t, c); };
-            _scope.SetVariable("registerEventHandler", registerAction);
+            module.SetVariable("registerEventHandler", registerAction);
 
             // Gather all plugins
             foreach (var pyFile in Directory.GetFiles(this._pluginDir.FullName, "pluginstart.py", SearchOption.AllDirectories))
