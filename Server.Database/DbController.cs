@@ -1030,7 +1030,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PutDbAsync($"api/Game/updateMetaData/{gameId}", metadata)).IsSuccessStatusCode;
+                    result = (await PutDbAsync($"api/Game/updateMetaData/{gameId}", JsonConvert.SerializeObject(metadata))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1059,6 +1059,33 @@ namespace Server.Database
                 else
                 {
                     result = (await DeleteDbAsync($"api/Game/delete/{gameId}")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Clear the active games table.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> ClearActiveGames()
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await DeleteDbAsync($"api/Game/clear")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)

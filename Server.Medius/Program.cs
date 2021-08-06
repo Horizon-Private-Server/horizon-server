@@ -136,7 +136,10 @@ namespace Server.Medius
                             _lastSuccessfulDbAuth = DateTime.UtcNow;
 
                             if (!_hasPurgedAccountStatuses)
+                            {
                                 _hasPurgedAccountStatuses = await Database.ClearAccountStatuses();
+                                await Database.ClearActiveGames();
+                            }
                         }
                     }
 
