@@ -124,7 +124,7 @@ namespace Server.Medius
         public void AddGame(Game game)
         {
             _gameIdToGame.Add(game.Id, game);
-            Program.Database.CreateGame(game.ToGameDTO()).Wait();
+            _ = Program.Database.CreateGame(game.ToGameDTO());
         }
 
         public IEnumerable<Game> GetGameList(int appId, int pageIndex, int pageSize, IEnumerable<GameListFilter> filters)

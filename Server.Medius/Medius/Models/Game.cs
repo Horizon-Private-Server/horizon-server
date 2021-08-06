@@ -318,9 +318,15 @@ namespace Server.Medius.Models
             // but the existing clients tell the server the world is still active.
             // This gives the host a "Game Name Already Exists" when they try to remake with the same name.
             // This just fixes that. At the cost of the game not showing after a host leaves a game.
-            if (WorldStatus != MediusWorldStatus.WorldClosed)
+            if (WorldStatus != MediusWorldStatus.WorldClosed && WorldStatus != report.WorldStatus)
             {
                 SetWorldStatus(report.WorldStatus);
+            }
+            else
+            {
+                // Update db
+                if (!utcTimeEnded.HasValue)
+                    _ = Program.Database.UpdateGame(this.ToGameDTO());
             }
         }
 
