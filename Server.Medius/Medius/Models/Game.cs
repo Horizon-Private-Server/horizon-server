@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Database.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
 
@@ -45,15 +47,19 @@ namespace Server.Medius.Models
         public int GenericField6;
         public int GenericField7;
         public int GenericField8;
-        public MediusWorldStatus WorldStatus = MediusWorldStatus.WorldPendingCreation;
+        public MediusWorldStatus WorldStatus => _worldStatus;
         public MediusWorldAttributesType Attributes;
         public DMEObject DMEServer;
         public Channel ChatChannel;
         public ClientObject Host;
         public bool AcceptStats = true;
 
+        private MediusWorldStatus _worldStatus = MediusWorldStatus.WorldPendingCreation;
         private bool hasHostJoined = false;
+        private string accountIdsAtStart;
         private DateTime utcTimeCreated;
+        private DateTime? utcTimeStarted;
+        private DateTime? utcTimeEnded;
         private DateTime? utcTimeEmpty;
 
         public uint Time => (uint)(DateTime.UtcNow - utcTimeCreated).TotalMilliseconds;
@@ -70,8 +76,8 @@ namespace Server.Medius.Models
                 FromCreateGameRequest1(r1);
 
             Id = IdCounter++;
-            
-            WorldStatus = MediusWorldStatus.WorldPendingCreation;
+
+            SetWorldStatus(MediusWorldStatus.WorldPendingCreation);
             utcTimeCreated = DateTime.UtcNow;
             utcTimeEmpty = null;
             DMEServer = dmeServer;
@@ -80,6 +86,38 @@ namespace Server.Medius.Models
             Host = client;
 
             Logger.Info($"Game {Id}:{GameName}: Created by {client}");
+        }
+
+        public GameDTO ToGameDTO()
+        {
+            return new GameDTO()
+            {
+                AppId = this.ApplicationId,
+                GameCreateDt = this.utcTimeCreated,
+                GameEndDt = this.utcTimeEnded,
+                GameStartDt = this.utcTimeStarted,
+                GameHostType = this.GameHostType.ToString(),
+                GameId = this.Id,
+                GameLevel = this.GameLevel,
+                GameName = this.GameName,
+                GameStats = this.GameStats,
+                GenericField1 = this.GenericField1,
+                GenericField2 = this.GenericField2,
+                GenericField3 = this.GenericField3,
+                GenericField4 = this.GenericField4,
+                GenericField5 = this.GenericField5,
+                GenericField6 = this.GenericField6,
+                GenericField7 = this.GenericField7,
+                GenericField8 = this.GenericField8,
+                MaxPlayers = this.MaxPlayers,
+                MinPlayers = this.MinPlayers,
+                PlayerCount = this.PlayerCount,
+                PlayerSkillLevel = this.PlayerSkillLevel,
+                RuleSet = this.RulesSet,
+                WorldStatus = this.WorldStatus.ToString(),
+                PlayerListCurrent = GetActivePlayerList(),
+                PlayerListStart = accountIdsAtStart,
+            };
         }
 
         private void FromCreateGameRequest(MediusCreateGameRequest createGame)
@@ -128,6 +166,11 @@ namespace Server.Medius.Models
             Attributes = createGame.Attributes;
         }
 
+        private string GetActivePlayerList()
+        {
+            return String.Join(",", this.Clients?.Select(x => x.Client.AccountId.ToString()).Where(x => x != null));
+        }
+
         public void Tick()
         {
             // Remove timedout clients
@@ -146,7 +189,7 @@ namespace Server.Medius.Models
             if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (hasHostJoined || (DateTime.UtcNow - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds))
             {
                 utcTimeEmpty = DateTime.UtcNow;
-                WorldStatus = MediusWorldStatus.WorldClosed;
+                SetWorldStatus(MediusWorldStatus.WorldClosed);
             }
         }
 
@@ -239,12 +282,8 @@ namespace Server.Medius.Models
 
         public void OnEndGameReport(MediusEndGameReport report)
         {
-            WorldStatus = MediusWorldStatus.WorldClosed;
-
-            // Send to plugins
-            Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_ENDED, new OnGameArgs() { Game = this });
+            SetWorldStatus(MediusWorldStatus.WorldClosed);
         }
-
 
         public void OnPlayerReport(MediusPlayerReport report)
         {
@@ -252,6 +291,7 @@ namespace Server.Medius.Models
             if (report.MediusWorldID != Id)
                 return;
         }
+
         public void OnWorldReport(MediusWorldReport report)
         {
             // Ensure report is for correct game world
@@ -280,41 +320,7 @@ namespace Server.Medius.Models
             // This just fixes that. At the cost of the game not showing after a host leaves a game.
             if (WorldStatus != MediusWorldStatus.WorldClosed)
             {
-                // When game starts, send custom gamemode payload
-                if (report.WorldStatus == MediusWorldStatus.WorldActive && WorldStatus != MediusWorldStatus.WorldActive)
-                {
-                    // Send to plugins
-                    Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_STARTED, new OnGameArgs() { Game = this });
-
-                    /*
-                    var payloads = new List<BaseScertMessage>();
-
-                    // Add payloads and set payload defs
-                    int count = CustomGamemode == null ? 0 : 1;
-                    byte[] moduleDefinitions = new byte[16 * (count + 1)];
-                    for (int i = 0; i < count; ++i)
-                    {
-                        if (i == 0 && CustomGamemode != null)
-                        {
-                            payloads.AddRange(CustomGamemode.GetPayload());
-                            CustomGamemode.SetModuleEntry(moduleDefinitions, i * 16, true);
-                        }
-                    }
-
-                    // Add module definitions payload
-                    payloads.Add(new RT_MSG_SERVER_MEMORY_POKE()
-                    {
-                        Address = 0x000CF000,
-                        Payload = moduleDefinitions
-                    });
-
-                    // Send
-                    foreach (var client in Clients.Select(x => x.Client))
-                        client.Queue(payloads);
-                    */
-                }
-
-                WorldStatus = report.WorldStatus;
+                SetWorldStatus(report.WorldStatus);
             }
         }
 
@@ -354,6 +360,51 @@ namespace Server.Medius.Models
                     BrutalFlag = false
                 });
             }
+        }
+
+        public void SetWorldStatus(MediusWorldStatus status)
+        {
+            if (WorldStatus == status)
+                return;
+
+            _worldStatus = status;
+
+            switch (status)
+            {
+                case MediusWorldStatus.WorldActive:
+                    {
+                        utcTimeStarted = DateTime.UtcNow;
+                        accountIdsAtStart = GetActivePlayerList();
+
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_STARTED, new OnGameArgs() { Game = this });
+                        break;
+                    }
+                case MediusWorldStatus.WorldClosed:
+                    {
+                        utcTimeEnded = DateTime.UtcNow;
+
+                        // Send to plugins
+                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_ENDED, new OnGameArgs() { Game = this });
+
+                        // Delete db entry if game hasn't started
+                        // Otherwise do a final update
+                        if (!utcTimeStarted.HasValue)
+                        {
+                            _ = Program.Database.DeleteGame(this.Id);
+                        }
+                        else
+                        {
+                            _ = Program.Database.UpdateGame(this.ToGameDTO());
+                        }
+
+                        return;
+                    }
+            }
+
+            // Update db
+            if (!utcTimeEnded.HasValue)
+                _ = Program.Database.UpdateGame(this.ToGameDTO());
         }
     }
 }

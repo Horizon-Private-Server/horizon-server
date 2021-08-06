@@ -957,6 +957,120 @@ namespace Server.Database
 
         #endregion
 
+        #region Game
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="game"></param>
+        /// <returns></returns>
+        public async Task<bool> CreateGame(GameDTO game)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"api/Game/create", JsonConvert.SerializeObject(game))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="game"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdateGame(GameDTO game)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PutDbAsync($"api/Game/update/{game.GameId}", JsonConvert.SerializeObject(game))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="gameId"></param>
+        /// <param name="metadata"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdateGameMetadata(int gameId, string metadata)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PutDbAsync($"api/Game/updateMetaData/{gameId}", metadata)).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Delete game by game id.
+        /// </summary>
+        /// <param name="gameId">Game id.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> DeleteGame(int gameId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await DeleteDbAsync($"api/Game/delete/{gameId}")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region Key
 
         public async Task<ServerFlagsDTO> GetServerFlags()
@@ -1257,6 +1371,119 @@ namespace Server.Database
 
             return result;
         }
+
+        private async Task<HttpResponseMessage> PutDbAsync(string route, string body)
+        {
+            // 
+            HttpResponseMessage result = null;
+
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        result = await client.PutAsync($"{_settings.DatabaseUrl}/{route}", String.IsNullOrEmpty(body) ? null : new StringContent(body, Encoding.UTF8, "application/json"));
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = null;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<HttpResponseMessage> PutDbAsync(string route, object body)
+        {
+            // 
+            HttpResponseMessage result = null;
+
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        result = await client.PutAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = null;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<T> PutDbAsync<T>(string route, object body)
+        {
+            // 
+            T result = default(T);
+
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    };
+
+                using (var client = new HttpClient(handler))
+                {
+                    if (!string.IsNullOrEmpty(_dbAccessToken))
+                        client.DefaultRequestHeaders.Add("Authorization", _dbAccessToken);
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    try
+                    {
+                        var response = await client.PutAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+
+                        // Deserialize on success
+                        if (response.IsSuccessStatusCode)
+                            result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+
+                        // Update cached value
+                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e);
+                        result = default(T);
+                    }
+                }
+            }
+
+            return result;
+        }
+
 
         #endregion
 
