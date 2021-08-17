@@ -52,6 +52,15 @@ namespace Server.Database.Models
         /// </summary>
         public bool IsBanned { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public int? AppId { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Metadata { get; set; }
     }
 
     public class CreateAccountDTO

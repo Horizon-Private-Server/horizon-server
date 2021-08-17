@@ -84,6 +84,11 @@ namespace Server.Medius.Models
         public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string Metadata { get; set; } = null;
+
+        /// <summary>
         /// RTT (ms)
         /// </summary>
         public uint LatencyMs { get; protected set; }
@@ -254,6 +259,7 @@ namespace Server.Medius.Models
             // 
             AccountId = account.AccountId;
             AccountName = account.AccountName;
+            Metadata = account.Metadata;
 
             // Raise plugin event
             Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });

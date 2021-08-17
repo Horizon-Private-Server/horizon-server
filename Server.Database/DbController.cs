@@ -311,7 +311,6 @@ namespace Server.Database
             return result;
         }
 
-
         /// <summary>
         /// Posts the current account status.
         /// </summary>
@@ -353,6 +352,63 @@ namespace Server.Database
                 else
                 {
                     result = (await PostDbAsync($"Account/clearAccountStatuses", null)).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get account metadata by account id.
+        /// </summary>
+        /// <param name="accountId">Unique id of account.</param>
+        /// <returns>Account metadata.</returns>
+        public async Task<string> GetAccountMetadata(int accountId)
+        {
+            string result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = null;
+                }
+                else
+                {
+                    result = await GetDbAsync<string>($"Account/getAccountMetadata?accountId={accountId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Posts the given metadata to the given account.
+        /// </summary>
+        /// <param name="accountId">Id of account.</param>
+        /// <param name="metadata">Metadata to post.</param>
+        /// <returns>True on success.</returns>
+        public async Task<bool> PostAccountMetadata(int accountId, string metadata)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Account/postAccountMetadata?accountId={accountId}", JsonConvert.SerializeObject(metadata))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
