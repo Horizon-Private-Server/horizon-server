@@ -33,6 +33,8 @@ namespace Server.UnivereInformation.Config
         public string Name { get; set; }
         public string Description { get; set; }
         public string Endpoint { get; set; }
+        public string SvoURL { get; set; }
+        public string ExtendedInfo { get; set; }
         public int Port { get; set; }
         public uint UniverseId { get; set; }
     }

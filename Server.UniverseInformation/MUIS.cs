@@ -270,22 +270,21 @@ namespace Server.UnivereInformation
             {
                 case MediusGetUniverseInformationRequest getUniverseInfo:
                     {
-                        // 
-                        Queue(new RT_MSG_SERVER_APP()
-                        {
-                            Message = new MediusUniverseVariableSvoURLResponse()
-                            {
-                                MessageID = new MessageId(),
-                                Result = 2
-                            }
-                        }, clientChannel);
-
-
                         if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var info))
                         {
-                            string sv = null; // "http://ratchetdl-prod.pdonline.scea.com:10001";
-
                             // 
+                            if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                            {
+                                Queue(new RT_MSG_SERVER_APP()
+                                {
+                                    Message = new MediusUniverseVariableSvoURLResponse()
+                                    {
+                                        MessageID = new MessageId(),
+                                        URL = info.SvoURL
+                                    }
+                                }, clientChannel);
+                            }
+
                             Queue(new RT_MSG_SERVER_APP()
                             {
                                 Message = new MediusUniverseVariableInformationResponse()
@@ -294,10 +293,10 @@ namespace Server.UnivereInformation
                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                     InfoFilter = getUniverseInfo.InfoType,
                                     UniverseID = info.UniverseId,
-                                    ExtendedInfo = null,
+                                    ExtendedInfo = info.ExtendedInfo,
                                     UniverseName = info.Name,
                                     UniverseDescription = info.Description,
-                                    SvoURL = sv,
+                                    SvoURL = info.SvoURL,
                                     DNS = info.Endpoint,
                                     Port = info.Port,
                                     EndOfList = true

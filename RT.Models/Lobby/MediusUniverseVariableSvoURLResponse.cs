@@ -16,7 +16,7 @@ namespace RT.Models
 
         public MessageId MessageID { get; set; }
 
-        public ushort Result;
+        public string URL { get; set; }
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -27,7 +27,7 @@ namespace RT.Models
             MessageID = reader.Read<MessageId>();
 
             // 
-            Result = reader.ReadUInt16();
+            URL = reader.ReadString(128);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -39,7 +39,7 @@ namespace RT.Models
             writer.Write(MessageID ?? MessageId.Empty);
 
             // 
-            writer.Write(Result);
+            writer.Write(URL, 128);
         }
 
     }

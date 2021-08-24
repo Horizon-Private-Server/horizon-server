@@ -36,6 +36,14 @@ namespace Server.Medius.Config
         public bool UsePublicIp { get; set; } = false;
 
         /// <summary>
+        /// When a client attempts to log into a non-existent account,
+        /// instead of returning account not found,
+        /// create the account and log them in.
+        /// Necessary for Central Station support.
+        /// </summary>
+        public bool CreateAccountOnNotFound { get; set; } = false;
+
+        /// <summary>
         /// Time since last echo response before timing the client out.
         /// </summary>
         public int ClientTimeoutSeconds { get; set; } = 30;
