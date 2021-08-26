@@ -982,4 +982,20 @@ namespace RT.Common
 
     }
 
+    public enum MediusClanChallengeStatus : int
+    {
+        ClanChallengeRequest,
+        ClanChallengeAccepted,
+        ClanChallengeRevoked,
+        ClanChallengeRefused,
+        ClanChallengeConfirmed,
+    }
+
+    public enum MediusClanMessageStatus : int
+    {
+        ClanMessageUnread,
+        ClanMessageModified,
+        ClanMessageDeleted,
+        ClanMessageRead,
+    }
 }

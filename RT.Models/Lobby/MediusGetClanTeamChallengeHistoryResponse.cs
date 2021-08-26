@@ -1,0 +1,60 @@
+﻿using RT.Common;
+using Server.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+
+namespace RT.Models.Lobby
+{
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetClanTeamChallengeHistoryResponse)]
+    public class MediusGetClanTeamChallengeHistoryResponse : BaseLobbyMessage, IMediusResponse
+    {
+        public override byte PacketType => (byte)MediusLobbyMessageIds.GetClanTeamChallengeHistoryResponse;
+
+        public bool IsSuccess => StatusCode >= 0;
+
+        public MessageId MessageID { get; set; }
+        public MediusCallbackStatus StatusCode;
+        public int AgainstClanID;
+        public MediusClanChallengeStatus Status;
+        public char EndOfList;
+
+        public override void Deserialize(BinaryReader reader)
+        {
+            // 
+            base.Deserialize(reader);
+
+            // 
+            MessageID = reader.Read<MessageId>();
+            StatusCode = reader.Read<MediusCallbackStatus>();
+            AgainstClanID = reader.ReadInt32();
+            Status = reader.Read<MediusClanChallengeStatus>();
+            EndOfList = reader.ReadChar();
+        }
+
+        public override void Serialize(BinaryWriter writer)
+        {
+            // 
+            base.Serialize(writer);
+
+            // 
+            writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(StatusCode);
+            writer.Write(AgainstClanID);
+            writer.Write(Status);
+            writer.Write(EndOfList);
+        }
+
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"MessageID:{MessageID}" + " " +
+                $"StatusCode:{StatusCode}" + " " +
+                $"AgainstClanID:{AgainstClanID}" + " " +
+                $"Status:{Status}" + " " +
+                $"EndOfList:{EndOfList}";
+        }
+    }
+}

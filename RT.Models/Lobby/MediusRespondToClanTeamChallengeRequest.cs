@@ -1,0 +1,60 @@
+﻿using RT.Common;
+using Server.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+
+namespace RT.Models.Lobby
+{
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.RespondToClanTeamChallenge)]
+    public class MediusRespondToClanTeamChallengeRequest : BaseLobbyMessage, IMediusRequest
+    {
+        public override byte PacketType => (byte)MediusLobbyMessageIds.RespondToClanTeamChallenge;
+
+
+
+        public MessageId MessageID { get; set; }
+        public string SessionKey; // SESSIONKEY_MAXLEN
+        public int ClanChallengeID;
+        public MediusClanChallengeStatus ChallengeStatus;
+        public string Message; // CLANMSG_MAXLEN
+
+        public override void Deserialize(BinaryReader reader)
+        {
+            // 
+            base.Deserialize(reader);
+
+            // 
+            MessageID = reader.Read<MessageId>();
+            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
+            ClanChallengeID = reader.ReadInt32();
+            ChallengeStatus = reader.Read<MediusClanChallengeStatus>();
+            Message = reader.ReadString(Constants.CLANMSG_MAXLEN);
+        }
+
+        public override void Serialize(BinaryWriter writer)
+        {
+            // 
+            base.Serialize(writer);
+
+            // 
+            writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
+            writer.Write(ClanChallengeID);
+            writer.Write(ChallengeStatus);
+            writer.Write(Message, Constants.CLANMSG_MAXLEN);
+        }
+
+
+        public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"MessageID:{MessageID}" + " " +
+                $"SessionKey:{SessionKey}" + " " +
+                $"ClanChallengeID:{ClanChallengeID}" + " " +
+                $"ChallengeStatus:{ChallengeStatus}" + " " +
+                $"Message:{Message}";
+        }
+    }
+}
