@@ -124,35 +124,40 @@ namespace Server.Common.Logging
             if (RtLogFilter != null)
             {
                 foreach (var filter in RtLogFilter)
-                    _rtLogFilters.Add((RT_MSG_TYPE)Enum.Parse(typeof(RT_MSG_TYPE), filter), true);
+                    if (Enum.TryParse<RT_MSG_TYPE>(filter, out var value))
+                        _rtLogFilters.Add(value, true);
             }
 
             _dmeLogFilters.Clear();
             if (MediusDMEExtLogFilter != null)
             {
                 foreach (var filter in MediusDMEExtLogFilter)
-                    _dmeLogFilters.Add((MediusDmeMessageIds)Enum.Parse(typeof(MediusDmeMessageIds), filter), true);
+                    if (Enum.TryParse<MediusDmeMessageIds>(filter, out var value))
+                        _dmeLogFilters.Add(value, true);
             }
 
             _lobbyLogFilters.Clear();
             if (MediusLobbyLogFilter != null)
             {
                 foreach (var filter in MediusLobbyLogFilter)
-                    _lobbyLogFilters.Add((MediusLobbyMessageIds)Enum.Parse(typeof(MediusLobbyMessageIds), filter), true);
+                    if (Enum.TryParse<MediusLobbyMessageIds>(filter, out var value))
+                        _lobbyLogFilters.Add(value, true);
             }
 
             _mgclLogFilters.Clear();
             if (MediusMGCLLogFilter != null)
             {
                 foreach (var filter in MediusMGCLLogFilter)
-                    _mgclLogFilters.Add((MediusMGCLMessageIds)Enum.Parse(typeof(MediusMGCLMessageIds), filter), true);
+                    if (Enum.TryParse<MediusMGCLMessageIds>(filter, out var value))
+                        _mgclLogFilters.Add(value, true);
             }
 
             _lobbyExtLogFilters.Clear();
             if (MediusLobbyExtLogFilter != null)
             {
                 foreach (var filter in MediusLobbyExtLogFilter)
-                    _lobbyExtLogFilters.Add((MediusLobbyExtMessageIds)Enum.Parse(typeof(MediusLobbyExtMessageIds), filter), true);
+                    if (Enum.TryParse<MediusLobbyExtMessageIds>(filter, out var value))
+                        _lobbyExtLogFilters.Add(value, true);
             }
         }
     }

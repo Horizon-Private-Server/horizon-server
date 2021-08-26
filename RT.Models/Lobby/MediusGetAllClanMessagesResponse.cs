@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace RT.Models.Lobby
+namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetAllClanMessagesResponse)]
     public class MediusGetAllClanMessagesResponse : BaseLobbyMessage, IMediusResponse
@@ -28,6 +28,7 @@ namespace RT.Models.Lobby
 
             // 
             MessageID = reader.Read<MessageId>();
+            reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             ClanMessageID = reader.ReadInt32();
             Message = reader.ReadString(Constants.CLANMSG_MAXLEN);
@@ -42,6 +43,7 @@ namespace RT.Models.Lobby
 
             // 
             writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(ClanMessageID);
             writer.Write(Message, Constants.CLANMSG_MAXLEN);

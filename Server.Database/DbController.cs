@@ -22,8 +22,10 @@ namespace Server.Database
         private DbSettings _settings = new DbSettings();
 
         private int _simulatedAccountIdCounter = 0;
+        private int _simulatedClanIdCounter = 0;
         private string _dbAccessToken = null;
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
+        private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
 
         #region Cache
 
@@ -478,6 +480,38 @@ namespace Server.Database
         }
 
         /// <summary>
+        /// Gets the total number of active clans by app id.
+        /// </summary>
+        /// <param name="appId">App Id to filter total active clans by.</param>
+        /// <returns>Number of active clans or null.</returns>
+        public async Task<int?> GetActiveClanCountByAppId(int appId)
+        {
+            int? result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedClans.Count(x=>!x.IsDisbanded);
+                }
+                else
+                {
+                    var response = await GetDbAsync($"Account/getActiveClanCountByAppId?AppId={appId}");
+
+                    // Deserialize on success
+                    if (response.IsSuccessStatusCode && int.TryParse(await response.Content.ReadAsStringAsync(), out int r))
+                        result = r;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Gets whether or not the ip is banned.
         /// </summary>
         public async Task<bool> GetIsIpBanned(string ip)
@@ -757,7 +791,7 @@ namespace Server.Database
                         AccountName = account.AccountName,
                         Index = 1,
                         MediusStats = account.MediusStats,
-                        StatValue = account.AccountWideStats[statId],
+                        StatValue = account.AccountWideStats[statId-1],
                         TotalRankedAccounts = 1
                     };
                 }
@@ -774,6 +808,46 @@ namespace Server.Database
             return result;
         }
 
+        /// <summary>
+        /// Get clan ranking in a given leaderboard.
+        /// </summary>
+        /// <param name="clanId">Clan id of clan.</param>
+        /// <param name="statId">Index of stat. Starts at 1.</param>
+        /// <returns>Leaderboard result for clan.</returns>
+        public async Task<LeaderboardDTO> GetClanLeaderboardIndex(int clanId, int statId)
+        {
+            LeaderboardDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var clan = await GetClanById(clanId);
+                    if (clan == null)
+                        return null;
+
+                    return new LeaderboardDTO()
+                    {
+                        AccountId = clan.ClanId,
+                        AccountName = clan.ClanName,
+                        Index = 1,
+                        MediusStats = clan.ClanMediusStats,
+                        StatValue = clan.ClanWideStats[statId-1],
+                        TotalRankedAccounts = 1
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<LeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Get leaderboard for a given stat by page and size.
@@ -819,7 +893,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="statPost">Model containing account id and ladder stats collection.</param>
         /// <returns>Success or failure.</returns>
-        public async Task<bool> PostLadderStats(StatPostDTO statPost)
+        public async Task<bool> PostAccountLadderStats(StatPostDTO statPost)
         {
             bool result = false;
 
@@ -837,6 +911,43 @@ namespace Server.Database
                 else
                 {
                     result = (await PostDbAsync($"Stats/postStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Posts ladder stats to clan id.
+        /// </summary>
+        /// <param name="statPost">Model containing clan id and ladder stats collection.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> PostClanLadderStats(StatPostDTO statPost)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(statPost.AccountId);
+                    if (!account.ClanId.HasValue)
+                        return false;
+
+                    var clan = await GetClanById(account.ClanId.Value);
+                    if (clan == null)
+                        return false;
+
+                    clan.ClanWideStats = statPost.Stats;
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Stats/postClanStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -880,6 +991,181 @@ namespace Server.Database
 
             return result;
         }
+
+        /// <summary>
+        /// Post medius stats to clan.
+        /// </summary>
+        /// <param name="clanId">Clan id to post stats to.</param>
+        /// <param name="stats">Stats to post encoded as a Base64 string.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> PostClanMediusStatus(int clanId, string stats)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var clan = await GetClanById(clanId);
+                    if (clan == null)
+                        return false;
+
+                    clan.ClanMediusStats = stats;
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Account/postClanMediusStats?ClanId={clanId}", $"\"{stats}\""))?.IsSuccessStatusCode ?? false;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Clan
+
+
+        /// <summary>
+        /// Get clan by name.
+        /// </summary>
+        /// <param name="name">Case insensitive name of clan.</param>
+        /// <returns>Returns clan.</returns>
+        public async Task<ClanDTO> GetClanByName(string name)
+        {
+            ClanDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedClans.FirstOrDefault(x => x.ClanName.ToLower() == name.ToLower());
+                }
+                else
+                {
+                    result = await GetDbAsync<ClanDTO>($"Clan/searchClanByName?ClanName={name}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get clan by id.
+        /// </summary>
+        /// <param name="id">Id of clan.</param>
+        /// <returns>Returns clan.</returns>
+        public async Task<ClanDTO> GetClanById(int id)
+        {
+            ClanDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedClans.FirstOrDefault(x => x.ClanId == id);
+                }
+                else
+                {
+                    result = await GetDbAsync<ClanDTO>($"Account/getClan?ClanId={id}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a clan.
+        /// </summary>
+        /// <param name="createClan">Clan creation parameters.</param>
+        /// <returns>Returns created clan.</returns>
+        public async Task<ClanDTO> CreateClan(CreateClanDTO createClan)
+        {
+            ClanDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var checkExisting = await GetClanByName(createClan.ClanName);
+                    if (checkExisting == null)
+                    {
+                        var creatorAccount = await GetAccountById(createClan.AccountId);
+                        _simulatedClans.Add(result = new ClanDTO()
+                        {
+                            ClanId = _simulatedClanIdCounter++,
+                            ClanName = createClan.ClanName,
+                            ClanLeaderAccount = creatorAccount,
+                            ClanMemberAccounts = new List<AccountDTO>(new AccountDTO[] { creatorAccount }),
+                            ClanMediusStats = Convert.ToBase64String(new byte[Constants.CLANSTATS_MAXLEN]),
+                            ClanWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
+                            AppId = createClan.AppId
+                        });
+                        creatorAccount.ClanId = result.ClanId;
+                    }
+                    else
+                    {
+                        throw new Exception($"Clan creation failed clan name already exists!");
+                    }
+                }
+                else
+                {
+                    var response = await PostDbAsync($"Clan/createClan", JsonConvert.SerializeObject(createClan));
+
+                    // Deserialize on success
+                    if (response.IsSuccessStatusCode)
+                        result = JsonConvert.DeserializeObject<ClanDTO>(await response.Content.ReadAsStringAsync());
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Delete clan by name.
+        /// </summary>
+        /// <param name="clanName">Case insensitive name of clan.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> DeleteClan(string clanName)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedClans.RemoveAll(x => x.ClanName.ToLower() == clanName.ToLower()) > 0;
+                }
+                else
+                {
+                    result = (await GetDbAsync($"Clan/deleteClan?ClanName={clanName}")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
 
         #endregion
 

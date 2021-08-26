@@ -35,7 +35,17 @@ namespace Server.Database.Models
         /// Collection of ladder stats.
         /// </summary>
         public int[] AccountWideStats { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int? ClanId { get; set; }
         
+        /// <summary>
+        /// 
+        /// </summary>
+        public ClanInvitationDTO[] ClanInvitations { get; set; }
+
         /// <summary>
         /// Application specific user data as a Base64 encoded string.
         /// Convert back to byte array for use with Medius application.

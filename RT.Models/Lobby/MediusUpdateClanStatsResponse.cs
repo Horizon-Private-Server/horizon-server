@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace RT.Models.Lobby
+namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.UpdateClanStatsResponse)]
     public class MediusUpdateClanStatsResponse : BaseLobbyMessage, IMediusResponse
@@ -24,6 +24,7 @@ namespace RT.Models.Lobby
 
             // 
             MessageID = reader.Read<MessageId>();
+            reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
         }
 
@@ -34,6 +35,7 @@ namespace RT.Models.Lobby
 
             // 
             writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(new byte[3]);
             writer.Write(StatusCode);
         }
 

@@ -25,6 +25,9 @@ namespace Server.Medius
         private Dictionary<int, Channel> _channelIdToChannel = new Dictionary<int, Channel>();
         private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
 
+        private Dictionary<int, Clan> _clanIdToClan = new Dictionary<int, Clan>();
+        private Dictionary<string, Clan> _clanNameToClan = new Dictionary<string, Clan>();
+
         private ConcurrentQueue<ClientObject> _addQueue = new ConcurrentQueue<ClientObject>();
 
         #region Clients
@@ -297,6 +300,33 @@ namespace Server.Medius
                 .Where(x => x.ApplicationId == appId && x.Type == type)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize);
+        }
+
+        #endregion
+
+        #region Clans
+
+        public Clan GetClanByAccountId(int clanId)
+        {
+            if (_clanIdToClan.TryGetValue(clanId, out var result))
+                return result;
+
+            return null;
+        }
+
+        public Clan GetClanByAccountName(string clanName)
+        {
+            clanName = clanName.ToLower();
+            if (_clanNameToClan.TryGetValue(clanName, out var result))
+                return result;
+
+            return null;
+        }
+
+        public void AddClan(Clan clan)
+        {
+            _clanNameToClan.Add(clan.Name.ToLower(), clan);
+            _clanIdToClan.Add(clan.Id, clan);
         }
 
         #endregion

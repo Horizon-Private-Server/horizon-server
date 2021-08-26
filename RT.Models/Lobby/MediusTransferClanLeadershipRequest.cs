@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace RT.Models.Lobby
+namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.TransferClanLeadership)]
     public class MediusTransferClanLeadershipRequest : BaseLobbyMessage, IMediusRequest
@@ -27,6 +27,7 @@ namespace RT.Models.Lobby
             // 
             MessageID = reader.Read<MessageId>();
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
+            reader.ReadBytes(2);
             NewLeaderAccountID = reader.ReadInt32();
             NewLeaderAccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
         }
@@ -39,6 +40,7 @@ namespace RT.Models.Lobby
             // 
             writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
+            writer.Write(new byte[2]);
             writer.Write(NewLeaderAccountID);
             writer.Write(NewLeaderAccountName, Constants.ACCOUNTNAME_MAXLEN);
         }

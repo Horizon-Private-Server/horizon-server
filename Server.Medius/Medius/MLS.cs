@@ -480,7 +480,7 @@ namespace Server.Medius
                                     StatusCode = MediusCallbackStatus.MediusSuccess
                                 });
 
-                                _ = data.ClientObject.RefreshFriendsList();
+                                _ = data.ClientObject.RefreshAccount();
                             }
                             else
                             {
@@ -522,7 +522,7 @@ namespace Server.Medius
                                     StatusCode = MediusCallbackStatus.MediusSuccess
                                 });
 
-                                _ = data.ClientObject.RefreshFriendsList();
+                                _ = data.ClientObject.RefreshAccount();
                             }
                             else
                             {
@@ -842,7 +842,7 @@ namespace Server.Medius
                             case MediusLadderType.MediusLadderTypePlayer:
                                 {
 
-                                    _ = Program.Database.PostLadderStats(new StatPostDTO()
+                                    _ = Program.Database.PostAccountLadderStats(new StatPostDTO()
                                     {
                                         AccountId = data.ClientObject.AccountId,
                                         Stats = updateLadderStatsWideRequest.Stats
@@ -874,10 +874,31 @@ namespace Server.Medius
                                 }
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-                                    data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                                    _ = Program.Database.PostClanLadderStats(new StatPostDTO()
                                     {
-                                        MessageID = updateLadderStatsWideRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusSuccess
+                                        AccountId = data.ClientObject.AccountId,
+                                        Stats = updateLadderStatsWideRequest.Stats
+                                    }).ContinueWith((r) =>
+                                    {
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result)
+                                        {
+                                            data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                                            {
+                                                MessageID = updateLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                            });
+                                        }
+                                        else
+                                        {
+                                            data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
+                                            {
+                                                MessageID = updateLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusDBError
+                                            });
+                                        }
                                     });
                                     break;
                                 }
@@ -933,10 +954,29 @@ namespace Server.Medius
                                 }
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-                                    data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
+                                    _ = Program.Database.GetClanById(getLadderStatsWideRequest.AccountID_or_ClanID).ContinueWith((r) =>
                                     {
-                                        MessageID = getLadderStatsWideRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusFail
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result != null)
+                                        {
+                                            data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
+                                            {
+                                                MessageID = getLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                AccountID_or_ClanID = r.Result.ClanId,
+                                                Stats = r.Result.ClanWideStats
+                                            });
+                                        }
+                                        else
+                                        {
+                                            data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
+                                            {
+                                                MessageID = getLadderStatsWideRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusDBError
+                                            });
+                                        }
                                     });
                                     break;
                                 }
@@ -1035,11 +1075,31 @@ namespace Server.Medius
                         {
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-                                    // Not implemented
-                                    data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
+                                    // 
+                                    _ = Program.Database.GetActiveClanCountByAppId(data.ClientObject.ApplicationId).ContinueWith((r) =>
                                     {
-                                        MessageID = getTotalRankingsRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusFail
+                                        if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                            return;
+
+                                        if (r.IsCompletedSuccessfully && r.Result.HasValue)
+                                        {
+                                            //
+                                            data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
+                                            {
+                                                MessageID = getTotalRankingsRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                TotalRankings = (uint)r.Result.Value
+                                            });
+                                        }
+                                        else
+                                        {
+                                            //
+                                            data.ClientObject.Queue(new MediusGetTotalRankingsResponse()
+                                            {
+                                                MessageID = getTotalRankingsRequest.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusDBError
+                                            });
+                                        }
                                     });
                                     break;
                                 }
@@ -1274,11 +1334,36 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createClanRequest} without a being logged in.");
 
-                        // Disable for now
-                        data.ClientObject.Queue(new MediusCreateClanResponse()
+
+                        _ = Program.Database.CreateClan(new Database.Models.CreateClanDTO()
                         {
-                            MessageID = createClanRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusSuccess
+                            AccountId = data.ClientObject.AccountId,
+                            ClanName = createClanRequest.ClanName,
+                            AppId = data.ClientObject.ApplicationId
+                        }).ContinueWith((r) =>
+                        {
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                // Reply with account id
+                                data.ClientObject.Queue(new MediusCreateClanResponse()
+                                {
+                                    MessageID = createClanRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    ClanID = r.Result.ClanId
+                                });
+
+                                // store
+                                _ = data.ClientObject.RefreshAccount();
+                            }
+                            else
+                            {
+                                // Reply error
+                                data.ClientObject.Queue(new MediusCreateClanResponse()
+                                {
+                                    MessageID = createClanRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusClanNameInUse
+                                });
+                            }
                         });
 
                         break;
@@ -1304,6 +1389,27 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusGetMyClanMessagesRequest getMyClanMessagesRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyClanMessagesRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyClanMessagesRequest} without a being logged in.");
+
+                        data.ClientObject.Queue(new MediusGetMyClanMessagesResponse()
+                        {
+                            MessageID = getMyClanMessagesRequest.MessageID,
+                            ClanID = getMyClanMessagesRequest.ClanID,
+                            StatusCode = MediusCallbackStatus.MediusNoResult,
+                            EndOfList = true
+                        });
+
+                        break;
+                    }
+
                 case MediusGetMyClansRequest getMyClansRequest:
                     {
                         // ERROR - Need a session
@@ -1314,19 +1420,49 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyClansRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusGetMyClansResponse()
+                        if (!data.ClientObject.ClanId.HasValue)
                         {
-                            MessageID = getMyClansRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusNoResult,
-                            ClanID = -1,
-                            ApplicationID = data.ApplicationId,
-                            ClanName = null,
-                            LeaderAccountID = data.ClientObject.AccountId,
-                            LeaderAccountName = data.ClientObject.AccountName,
-                            Stats = "000000000000000000000000",
-                            Status = MediusClanStatus.ClanDisbanded,
-                            EndOfList = true
-                        });
+                            data.ClientObject.Queue(new MediusGetMyClansResponse()
+                            {
+                                MessageID = getMyClansRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            });
+                        }
+                        else
+                        {
+                            _ = Program.Database.GetClanById(data.ClientObject.ClanId.Value).ContinueWith(r =>
+                            {
+                                if (r.IsCompletedSuccessfully && r.Result != null)
+                                {
+                                    data.ClientObject.Queue(new MediusGetMyClansResponse()
+                                    {
+                                        MessageID = getMyClansRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        ClanID = r.Result.ClanId,
+                                        ApplicationID = r.Result.AppId,
+                                        ClanName = r.Result.ClanName,
+                                        LeaderAccountID = r.Result.ClanLeaderAccount.AccountId,
+                                        LeaderAccountName = r.Result.ClanLeaderAccount.AccountName,
+                                        Stats = Convert.FromBase64String(r.Result.ClanMediusStats),
+                                        Status = r.Result.IsDisbanded ? MediusClanStatus.ClanDisbanded : MediusClanStatus.ClanActive,
+                                        EndOfList = true
+                                    });
+                                }
+                                else
+                                {
+                                    data.ClientObject.Queue(new MediusGetMyClansResponse()
+                                    {
+                                        MessageID = getMyClansRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusNoResult,
+                                        ClanID = -1,
+                                        ApplicationID = data.ApplicationId,
+                                        EndOfList = true
+                                    });
+                                }
+                            });
+                        }
+
                         break;
                     }
 
@@ -1340,45 +1476,52 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanMemberList_ExtraInfoRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusGetClanMemberList_ExtraInfoResponse()
+                        _ = Program.Database.GetClanById(getClanMemberList_ExtraInfoRequest.ClanID).ContinueWith(r =>
                         {
-                            MessageID = getClanMemberList_ExtraInfoRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusClanNotFound,
-                            /*
-                            AccountID = x.AccountId,
-                            AccountName = x.Username,
-                            OnlineState = new MediusPlayerOnlineState()
+                            List<MediusGetClanMemberList_ExtraInfoResponse> responses = new List<MediusGetClanMemberList_ExtraInfoResponse>();
+                            if (r.IsCompletedSuccessfully && r.Result != null)
                             {
-                                ConnectStatus = MediusPlayerStatus.MediusPlayerInChatWorld,
-                                GameName = "ABC",
-                                LobbyName = "123",
-                                MediusGameWorldID = 2,
-                                MediusLobbyWorldID = 2
-                            }
-                            */
-                        });
-
-                        /*
-                        responses.Add(new RT_MSG_SERVER_APP()
-                        {
-                            data.ClientObject.Queue(new MediusGetClanMemberList_ExtraInfoResponse()
-                            {
-                                MessageID = getClanMemberListExtra.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusSuccess,
-                                AccountID = 2,
-                                AccountName = "URMOM",
-                                OnlineState = new MediusPlayerOnlineState()
+                                responses.AddRange(r.Result.ClanMemberAccounts.Select(x =>
                                 {
-                                    ConnectStatus = MediusPlayerStatus.MediusPlayerInChatWorld,
-                                    GameName = "ABC",
-                                    LobbyName = "123",
-                                    MediusGameWorldID = 2,
-                                    MediusLobbyWorldID = 2
-                                },
-                                EndOfList = true
+                                    var account = Program.Manager.GetClientByAccountId(x.AccountId);
+                                    return new MediusGetClanMemberList_ExtraInfoResponse()
+                                    {
+                                        MessageID = getClanMemberList_ExtraInfoRequest.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        AccountID = x.AccountId,
+                                        AccountName = x.AccountName,
+                                        LadderPosition = 0,
+                                        LadderStat = getClanMemberList_ExtraInfoRequest.LadderStatIndex,
+                                        OnlineState = new MediusPlayerOnlineState()
+                                        {
+                                            ConnectStatus = account?.Status ?? MediusPlayerStatus.MediusPlayerDisconnected,
+                                            GameName = account?.CurrentGame?.GameName ?? "",
+                                            LobbyName = account?.CurrentChannel?.Name ?? "",
+                                            MediusGameWorldID = account?.CurrentGame?.Id ?? -1,
+                                            MediusLobbyWorldID = account?.CurrentChannel?.Id ?? -1
+                                        },
+                                        Stats = Convert.FromBase64String(r.Result.ClanMediusStats),
+                                        TotalRankings = 0,
+                                        EndOfList = false
+                                    };
+                                }));
+                            }
+                            else
+                            {
+                                responses.Add(new MediusGetClanMemberList_ExtraInfoResponse()
+                                {
+                                    MessageID = getClanMemberList_ExtraInfoRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusClanNotFound,
+                                    EndOfList = true
+                                });
+                            }
+
+                            if (responses.Count > 0)
+                            {
+                                responses[responses.Count - 1].EndOfList = true;
+                                data.ClientObject.Queue(responses);
                             }
                         });
-                        */
 
                         break;
                     }
@@ -1412,18 +1555,104 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanByIdRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusGetClanByIDResponse()
+                        _ = Program.Database.GetClanById(getClanByIdRequest.ClanID).ContinueWith(r =>
                         {
-                            MessageID = getClanByIdRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusNoResult,
-                            /*
-                            ApplicationID = Program.Settings.ApplicationId,
-                            ClanName = "DEV",
-                            LeaderAccountID = 1,
-                            LeaderAccountName = "Badger41",
-                            Status = MediusClanStatus.ClanActive
-                            */
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                data.ClientObject.Queue(new MediusGetClanByIDResponse()
+                                {
+                                    MessageID = getClanByIdRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    ApplicationID = r.Result.AppId,
+                                    ClanName = r.Result.ClanName,
+                                    LeaderAccountID = r.Result.ClanLeaderAccount.AccountId,
+                                    LeaderAccountName = r.Result.ClanLeaderAccount.AccountName,
+                                    Stats = Convert.FromBase64String(r.Result.ClanMediusStats),
+                                    Status = r.Result.IsDisbanded ? MediusClanStatus.ClanDisbanded : MediusClanStatus.ClanActive
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusGetClanByIDResponse()
+                                {
+                                    MessageID = getClanByIdRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusClanNotFound
+                                });
+                            }
                         });
+                        break;
+                    }
+
+                case MediusClanLadderPositionRequest getClanLadderPositionRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanLadderPositionRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanLadderPositionRequest} without a being logged in.");
+
+                        _ = Program.Database.GetClanLeaderboardIndex(getClanLadderPositionRequest.ClanID, getClanLadderPositionRequest.ClanLadderStatIndex + 1).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null)
+                            {
+                                data.ClientObject.Queue(new MediusClanLadderPositionResponse()
+                                {
+                                    MessageID = getClanLadderPositionRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    LadderPosition = (uint)r.Result.Index + 1,
+                                    TotalRankings = (uint)r.Result.TotalRankedAccounts
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusClanLadderPositionResponse()
+                                {
+                                    MessageID = getClanLadderPositionRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusClanNotFound
+                                });
+                            }
+                        });
+                        break;
+                    }
+
+                case MediusUpdateClanStatsRequest updateClanStatsRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateClanStatsRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateClanStatsRequest} without a being logged in.");
+
+                        _ = Program.Database.PostClanMediusStatus(updateClanStatsRequest.ClanID, Convert.ToBase64String(updateClanStatsRequest.Stats)).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result)
+                            {
+                                data.ClientObject.Queue(new MediusUpdateClanStatsResponse()
+                                {
+                                    MessageID = updateClanStatsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusUpdateClanStatsResponse()
+                                {
+                                    MessageID = updateClanStatsRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusClanNotFound
+                                });
+                            }
+                        });
+
                         break;
                     }
 
@@ -2469,6 +2698,26 @@ namespace Server.Medius
                 #endregion
 
                 #region Misc
+
+                case MediusTokenRequest tokenRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {tokenRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {tokenRequest} without a being logged in.");
+
+                        data.ClientObject.Queue(new MediusStatusResponse()
+                        {
+                            Class = tokenRequest.PacketClass,
+                            Type = tokenRequest.PacketType,
+                            MessageID = tokenRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess
+                        });
+                        break;
+                    }
 
                 case MediusTextFilterRequest textFilterRequest:
                     {

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace RT.Models.Lobby
+namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetClanByNameResponse)]
     public class MediusGetClanByNameResponse : BaseLobbyMessage, IMediusResponse
@@ -19,7 +19,7 @@ namespace RT.Models.Lobby
         public int ClanID;
         public int LeaderAccountID;
         public string LeaderAccountName; // ACCOUNTNAME_MAXLEN
-        public string Stats; // CLANSTATS_MAXLEN
+        public byte[] Stats; // CLANSTATS_MAXLEN
         public MediusClanStatus Status;
 
         public override void Deserialize(BinaryReader reader)
@@ -29,11 +29,12 @@ namespace RT.Models.Lobby
 
             // 
             MessageID = reader.Read<MessageId>();
+            reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             ClanID = reader.ReadInt32();
             LeaderAccountID = reader.ReadInt32();
             LeaderAccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
-            Stats = reader.ReadString(Constants.CLANSTATS_MAXLEN);
+            Stats = reader.ReadBytes(Constants.CLANSTATS_MAXLEN);
             Status = reader.Read<MediusClanStatus>();
         }
 
@@ -44,6 +45,7 @@ namespace RT.Models.Lobby
 
             // 
             writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(ClanID);
             writer.Write(LeaderAccountID);

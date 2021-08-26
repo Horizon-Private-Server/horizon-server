@@ -998,4 +998,22 @@ namespace RT.Common
         ClanMessageDeleted,
         ClanMessageRead,
     }
+
+    public enum MediusTokenActionType : int
+    {
+        MediusInvalidTokenAction = 0,
+        MediusAddToken = 1,
+        MediusUpdateToken = 2,
+        MediusRemoveToken = 3,
+    }
+
+    public enum MediusTokenCategoryType : int
+    {
+        MediusInvalidToken = 0,
+        MediusGenericToken1 = 1,
+        MediusGenericToken2 = 2,
+        MediusGenericToken3 = 3,
+        MediusAccountToken = 4,
+        MediusClanToken = 5,
+    }
 }

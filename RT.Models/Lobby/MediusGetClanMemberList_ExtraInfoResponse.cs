@@ -19,7 +19,7 @@ namespace RT.Models
         public MediusCallbackStatus StatusCode;
         public int AccountID;
         public string AccountName; // ACCOUNTNAME_MAXLEN
-        public string Stats; // ACCOUNTSTATS_MAXLEN
+        public byte[] Stats; // ACCOUNTSTATS_MAXLEN
         public MediusPlayerOnlineState OnlineState;
         public int LadderStat;
         public uint LadderPosition;
@@ -39,7 +39,7 @@ namespace RT.Models
             StatusCode = reader.Read<MediusCallbackStatus>();
             AccountID = reader.ReadInt32();
             AccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
-            Stats = reader.ReadString(Constants.ACCOUNTSTATS_MAXLEN);
+            Stats = reader.ReadBytes(Constants.ACCOUNTSTATS_MAXLEN);
             OnlineState = reader.Read<MediusPlayerOnlineState>();
             LadderStat = reader.ReadInt32();
             LadderPosition = reader.ReadUInt32();

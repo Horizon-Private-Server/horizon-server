@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace RT.Models.Lobby
+namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.ClanLadderPosition)]
     public class MediusClanLadderPositionRequest : BaseLobbyMessage, IMediusRequest
@@ -26,6 +26,7 @@ namespace RT.Models.Lobby
 
             // 
             MessageID = reader.Read<MessageId>();
+            reader.ReadBytes(3);
             ClanID = reader.ReadInt32();
             ClanLadderStatIndex = reader.ReadInt32();
             SortOrder = reader.Read<MediusSortOrder>();
@@ -38,6 +39,7 @@ namespace RT.Models.Lobby
 
             // 
             writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(new byte[3]);
             writer.Write(ClanID);
             writer.Write(ClanLadderStatIndex);
             writer.Write(SortOrder);

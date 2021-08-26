@@ -33,6 +33,7 @@ namespace RT.Common
         public const int CHATMESSAGE_MAXLEN = 64;
         public const int BINARYMESSAGE_MAXLEN = 400;
         public const int IP_MAXLEN = 20;
+        public const int MEDIUS_TOKEN_MAXSIZE = 8;
 
         public const int UNIVERSENAME_MAXLEN = 128;
         public const int UNIVERSEDNS_MAXLEN = 128;

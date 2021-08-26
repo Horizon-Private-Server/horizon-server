@@ -57,6 +57,11 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
+        public int? ClanId { get; protected set; } = null;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public List<GameListFilter> GameListFilters = new List<GameListFilter>();
 
         /// <summary>
@@ -266,6 +271,7 @@ namespace Server.Medius.Models
             AccountId = account.AccountId;
             AccountName = account.AccountName;
             Metadata = account.Metadata;
+            ClanId = account.ClanId;
 
             //
             FriendsList = account.Friends?.ToDictionary(x => x.AccountId, x => x.AccountName) ?? new Dictionary<int, string>();
@@ -283,12 +289,13 @@ namespace Server.Medius.Models
             PostStatus();
         }
 
-        public async Task RefreshFriendsList()
+        public async Task RefreshAccount()
         {
             var accountDto = await Program.Database.GetAccountById(this.AccountId);
             if (accountDto != null)
             {
                 FriendsList = accountDto.Friends.ToDictionary(x => x.AccountId, x => x.AccountName);
+                ClanId = accountDto.ClanId;
             }
         }
 
