@@ -13,6 +13,7 @@ using System.Linq;
 using Server.Common;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Server.Medius.Models
 {
@@ -92,6 +93,11 @@ namespace Server.Medius.Models
         /// RTT (ms)
         /// </summary>
         public uint LatencyMs { get; protected set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Dictionary<int, string> FriendsList { get; protected set; }
 
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
@@ -261,6 +267,9 @@ namespace Server.Medius.Models
             AccountName = account.AccountName;
             Metadata = account.Metadata;
 
+            //
+            FriendsList = account.Friends?.ToDictionary(x => x.AccountId, x => x.AccountName) ?? new Dictionary<int, string>();
+
             // Raise plugin event
             Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
 
@@ -272,6 +281,15 @@ namespace Server.Medius.Models
 
             // Update database status
             PostStatus();
+        }
+
+        public async Task RefreshFriendsList()
+        {
+            var accountDto = await Program.Database.GetAccountById(this.AccountId);
+            if (accountDto != null)
+            {
+                FriendsList = accountDto.Friends.ToDictionary(x => x.AccountId, x => x.AccountName);
+            }
         }
 
         #endregion

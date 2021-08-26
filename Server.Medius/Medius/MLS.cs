@@ -479,6 +479,8 @@ namespace Server.Medius
                                     MessageID = addToBuddyListRequest.MessageID,
                                     StatusCode = MediusCallbackStatus.MediusSuccess
                                 });
+
+                                _ = data.ClientObject.RefreshFriendsList();
                             }
                             else
                             {
@@ -519,6 +521,8 @@ namespace Server.Medius
                                     MessageID = removeFromBuddyListRequest.MessageID,
                                     StatusCode = MediusCallbackStatus.MediusSuccess
                                 });
+
+                                _ = data.ClientObject.RefreshFriendsList();
                             }
                             else
                             {
@@ -542,7 +546,52 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel},{data.ClientObject} sent {getBuddyList_ExtraInfoRequest} without a being logged in.");
 
-                        // 
+                        // Responses
+                        List<MediusGetBuddyList_ExtraInfoResponse> friendListResponses = new List<MediusGetBuddyList_ExtraInfoResponse>();
+
+                        // Iterate through friends and build a response for each
+                        foreach (var friend in data.ClientObject.FriendsList)
+                        {
+                            var friendClient = Program.Manager.GetClientByAccountId(friend.Key);
+                            friendListResponses.Add(new MediusGetBuddyList_ExtraInfoResponse()
+                            {
+                                MessageID = getBuddyList_ExtraInfoRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                AccountID = friend.Key,
+                                AccountName = friend.Value,
+                                OnlineState = new MediusPlayerOnlineState()
+                                {
+                                    ConnectStatus = (friendClient != null && friendClient.IsLoggedIn) ? friendClient.Status : MediusPlayerStatus.MediusPlayerDisconnected,
+                                    MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                                    MediusGameWorldID = friendClient?.CurrentGame?.Id ?? -1,
+                                    GameName = friendClient?.CurrentGame?.GameName ?? "",
+                                    LobbyName = friendClient?.CurrentChannel?.Name ?? ""
+                                },
+                                EndOfList = false
+                            });
+                        }
+
+                        // If we have any responses then send them
+                        if (friendListResponses.Count > 0)
+                        {
+                            // Ensure the last response is tagged as EndOfList
+                            friendListResponses[friendListResponses.Count - 1].EndOfList = true;
+
+                            // Send friends
+                            data.ClientObject.Queue(friendListResponses);
+                        }
+                        else
+                        {
+                            // No friends
+                            data.ClientObject.Queue(new MediusGetBuddyList_ExtraInfoResponse()
+                            {
+                                MessageID = getBuddyList_ExtraInfoRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            });
+                        }
+
+                        /*
                         _ = Program.Database.GetAccountById(data.ClientObject.AccountId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -606,6 +655,7 @@ namespace Server.Medius
                                 });
                             }
                         });
+                        */
                         break;
                     }
 
