@@ -41,6 +41,7 @@ namespace Server.UnivereInformation
         protected internal class ChannelData
         {
             public int ApplicationId { get; set; } = 0;
+            public int MediusVersion { get; set; } = 18;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
         }
@@ -199,6 +200,7 @@ namespace Server.UnivereInformation
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
+                        data.MediusVersion = 19;
                         Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
                         break;
                     }
@@ -210,7 +212,17 @@ namespace Server.UnivereInformation
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
                         data.ApplicationId = clientConnectTcp.AppId;
-                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
+                        if(data.MediusVersion == 19){
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
+                        }
+                        else{
+                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                            {
+                            IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
+                            OldMedius = true
+                            }, clientChannel);
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
+                        }
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
@@ -302,6 +314,20 @@ namespace Server.UnivereInformation
                                     EndOfList = true
                                 }
                             }, clientChannel);
+
+                            if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_NEWS))
+                            {
+                                Queue(new RT_MSG_SERVER_APP()
+                                {
+                                    Message = new MediusUniverseNewsResponse()
+                                    {
+                                        MessageID = getUniverseInfo.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        Text = "News!",
+                                        EndOfList = 1
+                                    }
+                                }, clientChannel);
+                            }
                         }
                         else
                         {
