@@ -16,9 +16,9 @@ namespace RT.Models
 
         public MessageId MessageID { get; set; }
 
-        public string Text; // CHATMESSAGE_MAXLEN
+        public string News; // NEWS_MAXLEN
         public MediusCallbackStatus StatusCode;
-        public int EndOfList;
+        public bool EndOfList;
 
         public override void Deserialize(BinaryReader reader)
         {
@@ -27,11 +27,13 @@ namespace RT.Models
 
             //
             MessageID = reader.Read<MessageId>();
+            StatusCode = reader.Read<MediusCallbackStatus>();
 
             // 
-            Text = reader.ReadString(Constants.CHATMESSAGE_MAXLEN);
-            //reader.ReadBytes(3);
-            //StatusCode = reader.Read<MediusCallbackStatus>();
+            reader.ReadBytes(3);
+            News = reader.ReadString(Constants.NEWS_MAXLEN);
+            EndOfList = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(BinaryWriter writer)
@@ -45,8 +47,9 @@ namespace RT.Models
 
             // 
             writer.Write(new byte[3]);
-            writer.Write(Text, 256);
+            writer.Write(News, Constants.NEWS_MAXLEN);
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
             
         }
 
@@ -55,7 +58,9 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-             $"Text:{Text} ";
+                $"StatusCode:{StatusCode} " +
+                $"News:{News} " +
+             $"EndOfList:{EndOfList} ";
         }
     }
 }

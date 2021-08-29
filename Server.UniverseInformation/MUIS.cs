@@ -323,8 +323,8 @@ namespace Server.UnivereInformation
                                     {
                                         MessageID = getUniverseInfo.MessageID,
                                         StatusCode = MediusCallbackStatus.MediusSuccess,
-                                        Text = "News!",
-                                        EndOfList = 1
+                                        News = "News!",
+                                        EndOfList = true
                                     }
                                 }, clientChannel);
                             }
