@@ -27,10 +27,10 @@ namespace RT.Models
 
             //
             MessageID = reader.Read<MessageId>();
+            reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
 
             // 
-            reader.ReadBytes(3);
             News = reader.ReadString(Constants.NEWS_MAXLEN);
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
@@ -43,10 +43,10 @@ namespace RT.Models
 
             //
             writer.Write(MessageID ?? MessageId.Empty);
+            writer.Write(new byte[3]);
             writer.Write(StatusCode);
 
             // 
-            writer.Write(new byte[3]);
             writer.Write(News, Constants.NEWS_MAXLEN);
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
