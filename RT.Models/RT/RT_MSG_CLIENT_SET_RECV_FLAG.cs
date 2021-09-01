@@ -14,12 +14,12 @@ namespace RT.Models
 
         public RT_RECV_FLAG Flag { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Flag = reader.Read<RT_RECV_FLAG>();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Flag);
         }

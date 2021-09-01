@@ -15,12 +15,12 @@ namespace RT.Models
 
         public BaseMediusMessage Message { get; set; } = null;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Message = BaseMediusMessage.Instantiate(reader);
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (Message != null)
             {

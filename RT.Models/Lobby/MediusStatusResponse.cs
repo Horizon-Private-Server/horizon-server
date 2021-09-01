@@ -21,7 +21,7 @@ namespace RT.Models
 
         public MediusCallbackStatus StatusCode;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -34,7 +34,7 @@ namespace RT.Models
             StatusCode = reader.Read<MediusCallbackStatus>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

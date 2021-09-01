@@ -16,7 +16,7 @@ namespace RT.Models
         public MessageId MessageID { get; set; }
         public NetConnectionInfo ConnectInfo;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -27,7 +27,7 @@ namespace RT.Models
             ConnectInfo = reader.Read<NetConnectionInfo>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

@@ -18,7 +18,7 @@ namespace RT.Models
         public int MediusWorldID;
         public string LobbyChannelPassword; // LOBBYPASSWORD_MAXLEN
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -33,7 +33,7 @@ namespace RT.Models
             LobbyChannelPassword = reader.ReadString(Constants.LOBBYPASSWORD_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

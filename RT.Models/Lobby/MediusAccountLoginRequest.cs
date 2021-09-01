@@ -18,7 +18,7 @@ namespace RT.Models
         public string Username;
         public string Password;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -32,7 +32,7 @@ namespace RT.Models
             Password = reader.ReadString(Constants.PASSWORD_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

@@ -17,7 +17,7 @@ namespace RT.Models
         public int AccountID_or_ClanID;
         public MediusLadderType LadderType;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -31,7 +31,7 @@ namespace RT.Models
             LadderType = reader.Read<MediusLadderType>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

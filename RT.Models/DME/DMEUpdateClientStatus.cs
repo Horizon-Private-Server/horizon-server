@@ -25,7 +25,7 @@ namespace RT.Models
         public ushort UNK_10 = 0x00;
 
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -42,7 +42,7 @@ namespace RT.Models
             UNK_10 = reader.ReadUInt16();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

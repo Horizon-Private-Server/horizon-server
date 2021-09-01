@@ -21,7 +21,7 @@ namespace RT.Models
         public byte[] TokenToReplace = new byte[Constants.MEDIUS_TOKEN_MAXSIZE];
         public byte[] Token = new byte[Constants.MEDIUS_TOKEN_MAXSIZE];
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -37,7 +37,7 @@ namespace RT.Models
             reader.ReadBytes(3); // padding
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

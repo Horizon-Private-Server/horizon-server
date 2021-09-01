@@ -17,7 +17,7 @@ namespace RT.Models
         public int WorldID;
         public bool BrutalFlag;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -30,7 +30,7 @@ namespace RT.Models
             reader.ReadBytes(3);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

@@ -13,12 +13,12 @@ namespace RT.Models
 
         public uint Timestamp { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Timestamp = reader.ReadUInt32();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Timestamp);
         }

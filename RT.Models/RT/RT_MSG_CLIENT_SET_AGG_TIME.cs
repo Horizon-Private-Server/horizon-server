@@ -13,12 +13,12 @@ namespace RT.Models
 
         public short AggTime { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             AggTime = reader.ReadInt16();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(AggTime);
         }

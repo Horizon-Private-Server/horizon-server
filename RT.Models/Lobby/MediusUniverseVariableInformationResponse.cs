@@ -32,7 +32,7 @@ namespace RT.Models
         public string SvoURL; // UNIVERSE_SVO_URL_MAXLEN
         public bool EndOfList;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -84,7 +84,7 @@ namespace RT.Models
             EndOfList = reader.ReadBoolean();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

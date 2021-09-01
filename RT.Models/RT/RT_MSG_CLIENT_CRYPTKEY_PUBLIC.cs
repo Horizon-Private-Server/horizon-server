@@ -14,12 +14,12 @@ namespace RT.Models
         // 
         public byte[] Key = null;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Key = reader.ReadBytes(0x40);
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (Key == null || Key.Length != 0x40)
                 throw new InvalidOperationException("Unable to serialize CLIENT_GET_KEY key because key is either null or not 64 bytes long!");

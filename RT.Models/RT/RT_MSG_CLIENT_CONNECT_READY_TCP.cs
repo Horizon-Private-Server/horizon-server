@@ -16,13 +16,13 @@ namespace RT.Models
         public byte StartOpt = 0x0E;
         public RT_RECV_FLAG RecvFlag = RT_RECV_FLAG.RECV_BROADCAST;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             StartOpt = reader.ReadByte();
             RecvFlag = reader.Read<RT_RECV_FLAG>();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(StartOpt);
             writer.Write(RecvFlag);

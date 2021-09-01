@@ -20,7 +20,7 @@ namespace RT.Models
         public int TargetAccountID;
         public byte[] Message = new byte[Constants.BINARYMESSAGE_MAXLEN];
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -36,7 +36,7 @@ namespace RT.Models
             Message = reader.ReadBytes(Constants.BINARYMESSAGE_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

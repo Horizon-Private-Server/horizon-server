@@ -14,12 +14,12 @@ namespace RT.Models
 
         public byte[] Contents;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Contents = reader.ReadRest();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Contents);
         }

@@ -18,13 +18,13 @@ namespace RT.Models
         public IPAddress Ip = IPAddress.Any;
         public ushort Port;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Ip = IPAddress.Parse(reader.ReadString(16));
             Port = reader.ReadUInt16();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Ip?.MapToIPv4()?.ToString(), 16);
             writer.Write(Port);

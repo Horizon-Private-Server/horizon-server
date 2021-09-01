@@ -7,6 +7,7 @@ using System.IO;
 using System.Text;
 using RT.Common;
 using Server.Common.Logging;
+using Server.Common.Stream;
 
 namespace RT.Models
 {
@@ -33,7 +34,7 @@ namespace RT.Models
         /// Deserializes the message from plaintext.
         /// </summary>
         /// <param name="reader"></param>
-        public abstract void Deserialize(BinaryReader reader);
+        public abstract void Deserialize(MessageReader reader);
 
         /// <summary>
         /// Serializes the message.
@@ -47,9 +48,9 @@ namespace RT.Models
             int totalHeaderSize = HEADER_SIZE;
 
             // Serialize message
-            using (MemoryStream stream = new MemoryStream(buffer, true))
+            using (var stream = new MemoryStream(buffer, true))
             {
-                using (BinaryWriter writer = new BinaryWriter(stream))
+                using (var writer = new MessageWriter(stream))
                 {
                     Serialize(writer);
                     length = (int)writer.BaseStream.Position;
@@ -66,9 +67,9 @@ namespace RT.Models
                 foreach (var frag in fragments)
                 {
                     // Serialize message
-                    using (MemoryStream stream = new MemoryStream(buffer, true))
+                    using (var stream = new MemoryStream(buffer, true))
                     {
-                        using (BinaryWriter writer = new BinaryWriter(stream))
+                        using (var writer = new MessageWriter(stream))
                         {
                             // Serialize header
                             writer.Write((byte)this.Id);
@@ -108,7 +109,7 @@ namespace RT.Models
         /// <summary>
         /// Serialize contents of the message.
         /// </summary>
-        protected abstract void Serialize(BinaryWriter writer);
+        protected abstract void Serialize(MessageWriter writer);
 
         #endregion
 
@@ -161,7 +162,7 @@ namespace RT.Models
                 _messageClassById[id] = type;
         }
 
-        public static BaseScertMessage Instantiate(RT_MSG_TYPE id, byte[] hash, byte[] messageBuffer, Func<RT_MSG_TYPE, CipherContext, ICipher> getCipherCallback = null)
+        public static BaseScertMessage Instantiate(RT_MSG_TYPE id, byte[] hash, byte[] messageBuffer, int mediusVersion, Func<RT_MSG_TYPE, CipherContext, ICipher> getCipherCallback = null)
         {
             // Init first
             Initialize();
@@ -182,14 +183,14 @@ namespace RT.Models
 
                 if (cipher.Decrypt(messageBuffer, hash, out var plain))
                 {
-                    msg = Instantiate(classType, id, plain);
+                    msg = Instantiate(classType, id, plain, mediusVersion);
                 }
 
                 // This is a hack to make the dme server connect
                 // We don't really care what their key is since we're not encrypting our response
                 else if (id == RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC)
                 {
-                    msg = Instantiate(classType, id, plain);
+                    msg = Instantiate(classType, id, plain, mediusVersion);
                 }
                 else
                 {
@@ -198,20 +199,20 @@ namespace RT.Models
             }
             else
             {
-                msg = Instantiate(classType, id, messageBuffer);
+                msg = Instantiate(classType, id, messageBuffer, mediusVersion);
             }
 
             return msg;
         }
 
-        private static BaseScertMessage Instantiate(Type classType, RT_MSG_TYPE id, byte[] plain)
+        private static BaseScertMessage Instantiate(Type classType, RT_MSG_TYPE id, byte[] plain, int mediusVersion)
         {
             BaseScertMessage msg = null;
 
             // 
-            using (MemoryStream stream = new MemoryStream(plain))
+            using (var stream = new MemoryStream(plain))
             {
-                using (BinaryReader reader = new BinaryReader(stream))
+                using (var reader = new MessageReader(stream) { MediusVersion = mediusVersion })
                 {
                     if (classType == null)
                         msg = new RawScertMessage(id);

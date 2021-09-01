@@ -19,13 +19,13 @@ namespace RT.Models
 
         }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             ARG1 = reader.ReadUInt16();
             ARG2 = reader.ReadUInt16();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(ARG1);
             writer.Write(ARG2);

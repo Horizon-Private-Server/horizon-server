@@ -20,7 +20,7 @@ namespace RT.Models
         public short UNK_04 = 0;
         public IPAddress IP = IPAddress.Any;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             PlayerIndex = reader.ReadInt16();
             ScertId = reader.ReadInt16();
@@ -28,7 +28,7 @@ namespace RT.Models
             IP = reader.Read<IPAddress>();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(PlayerIndex);
             writer.Write(ScertId);

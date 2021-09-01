@@ -16,7 +16,7 @@ namespace RT.Models
         public ushort[] Parameters = null;
 
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             long len = reader.BaseStream.Length - reader.BaseStream.Position;
             Parameters = new ushort[len / 2];
@@ -24,7 +24,7 @@ namespace RT.Models
                 Parameters[i] = reader.ReadUInt16();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             for (int i = 0; i < 5; ++i)
                 writer.Write((Parameters == null || i >= Parameters.Length) ? ushort.MinValue : Parameters[i]);

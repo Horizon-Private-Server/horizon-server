@@ -19,7 +19,7 @@ namespace RT.Models
         public int PlayerAccountID;
         public int ClanID;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -32,7 +32,7 @@ namespace RT.Models
             ClanID = reader.ReadInt32();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

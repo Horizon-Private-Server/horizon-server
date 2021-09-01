@@ -21,7 +21,7 @@ namespace RT.Models
         public string SessionKey = null;
         public string AccessToken = null;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             SessionKey = null;
             AccessToken = null;
@@ -37,7 +37,7 @@ namespace RT.Models
             }
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(ARG1);
             writer.Write(AppId);

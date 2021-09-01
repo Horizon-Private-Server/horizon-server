@@ -23,7 +23,7 @@ namespace RT.Models
         public MediusConnectionType ConnectionClass;
         public byte[] Stats = new byte[Constants.ACCOUNTSTATS_MAXLEN];
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -41,7 +41,7 @@ namespace RT.Models
             Stats = reader.ReadBytes(Constants.ACCOUNTSTATS_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

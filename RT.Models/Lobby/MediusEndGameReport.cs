@@ -20,7 +20,7 @@ namespace RT.Models
         public string WinningPlayer; // ACCOUNTNAME_MAXLEN
         public int FinalScore;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -34,7 +34,7 @@ namespace RT.Models
             FinalScore = reader.ReadInt32();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

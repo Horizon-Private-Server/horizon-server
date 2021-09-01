@@ -20,7 +20,7 @@ namespace RT.Models
         public ushort UNK_06 = 0;
         public RSA_KEY Key;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -33,7 +33,7 @@ namespace RT.Models
             Key = reader.Read<RSA_KEY>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

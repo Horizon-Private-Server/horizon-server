@@ -21,7 +21,7 @@ namespace RT.Models
 
         public IPEndPoint EndPoint;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             PlayerId = reader.ReadUInt16();
             ScertId = reader.ReadUInt32();
@@ -30,7 +30,7 @@ namespace RT.Models
             EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(PlayerId);
             writer.Write(ScertId);

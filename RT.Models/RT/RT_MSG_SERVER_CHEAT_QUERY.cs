@@ -19,7 +19,7 @@ namespace RT.Models
         public int Length;
         public byte[] Data;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             QueryType = reader.Read<CheatQueryType>();
             SequenceId = reader.ReadInt32();
@@ -28,7 +28,7 @@ namespace RT.Models
             Data = reader.ReadRest();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(QueryType);
             writer.Write(SequenceId);

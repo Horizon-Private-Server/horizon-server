@@ -18,7 +18,7 @@ namespace RT.Models
         public string AccountName; // ACCOUNTNAME_MAXLEN
         public string InviteMessage; // CLANMSG_MAXLEN
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -29,7 +29,7 @@ namespace RT.Models
             InviteMessage = reader.ReadString(Constants.CLANMSG_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

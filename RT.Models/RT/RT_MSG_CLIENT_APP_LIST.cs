@@ -1,5 +1,6 @@
 ﻿using RT.Common;
 using Server.Common;
+using Server.Common.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +17,7 @@ namespace RT.Models
         public List<int> Targets { get; set; } = new List<int>();
         public byte[] Payload { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(MessageReader reader)
         {
             var size = reader.ReadByte();
             var mask = reader.ReadBytes(size);
@@ -29,7 +30,7 @@ namespace RT.Models
                         Targets.Add(i + (b * 8));
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // Determine size of bitmask in bytes
             byte size = 1;

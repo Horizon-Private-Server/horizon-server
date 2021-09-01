@@ -20,7 +20,7 @@ namespace RT.Models
         public uint GMT_time = Utils.GetUnixTime();
         public MediusTimeZone Local_server_timezone;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -35,7 +35,7 @@ namespace RT.Models
             Local_server_timezone = reader.Read<MediusTimeZone>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

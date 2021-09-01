@@ -15,12 +15,12 @@ namespace RT.Models
         //
         public byte Value = 0xA5;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Value = reader.ReadByte();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Value);
         }

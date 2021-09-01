@@ -1,6 +1,7 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Groups;
+using RT.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -46,6 +47,11 @@ namespace Server.Pipeline.Udp
 
         protected override void ChannelRead0(IChannelHandlerContext ctx, ScertDatagramPacket message)
         {
+            // Handle medius version
+            var scertClient = ctx.GetAttribute(Constants.SCERT_CLIENT).Get();
+            if (scertClient != null && scertClient.OnMessage(message.Message))
+                ctx.GetAttribute(Constants.SCERT_CLIENT).Set(scertClient);
+
             // Send upstream
             OnChannelMessage?.Invoke(ctx.Channel, message);
         }

@@ -21,7 +21,7 @@ namespace RT.Models
         public IPAddress IP = IPAddress.Any;
         public RSA_KEY Key = new RSA_KEY();
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             PlayerIndex = reader.ReadInt16();
             ScertId = reader.ReadInt16();
@@ -30,7 +30,7 @@ namespace RT.Models
             Key = reader.Read<RSA_KEY>();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(PlayerIndex);
             writer.Write(ScertId);

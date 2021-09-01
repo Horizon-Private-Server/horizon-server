@@ -33,7 +33,7 @@ namespace RT.Models
         public int GenericField8;
         public MediusWorldStatus WorldStatus;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -59,7 +59,7 @@ namespace RT.Models
             WorldStatus = reader.Read<MediusWorldStatus>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

@@ -17,7 +17,7 @@ namespace RT.Models
         public MediusLadderType LadderType;
         public int[] Stats = new int[Constants.LADDERSTATSWIDE_MAXLEN];
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -31,7 +31,7 @@ namespace RT.Models
             for (int i = 0; i < Constants.LADDERSTATSWIDE_MAXLEN; ++i) { Stats[i] = reader.ReadInt32(); }
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

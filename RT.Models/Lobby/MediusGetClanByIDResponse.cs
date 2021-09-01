@@ -24,7 +24,7 @@ namespace RT.Models
         public byte[] Stats; // CLANSTATS_MAXLEN
         public MediusClanStatus Status;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -43,7 +43,7 @@ namespace RT.Models
             Status = reader.Read<MediusClanStatus>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

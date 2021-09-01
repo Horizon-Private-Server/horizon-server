@@ -19,7 +19,7 @@ namespace RT.Models
         public MediusChatMessageType MessageType;
         public string Message;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -35,7 +35,7 @@ namespace RT.Models
             Message = reader.ReadString(Constants.CHATMESSAGE_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

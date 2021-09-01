@@ -14,12 +14,12 @@ namespace RT.Models
 
         public SERVER_FORCE_DISCONNECT_REASON Reason;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Reason = reader.Read<SERVER_FORCE_DISCONNECT_REASON>();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Reason);
         }

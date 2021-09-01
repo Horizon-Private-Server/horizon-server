@@ -20,7 +20,7 @@ namespace RT.Models
         public string ServerVersion; // MGCL_SERVERVERSION_MAXLEN
         public int Port;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -35,7 +35,7 @@ namespace RT.Models
             Port = reader.ReadInt32();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

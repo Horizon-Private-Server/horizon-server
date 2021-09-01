@@ -15,13 +15,13 @@ namespace RT.Models
         public byte GameHostType { get; set; } = (byte)MGCL_GAME_HOST_TYPE.MGCLGameHostClientServerAuxUDP;
         public uint Timestamp { get; set; } = Utils.GetUnixTime();
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             GameHostType = reader.ReadByte();
             Timestamp = reader.ReadUInt32();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(GameHostType);
             writer.Write(Timestamp);

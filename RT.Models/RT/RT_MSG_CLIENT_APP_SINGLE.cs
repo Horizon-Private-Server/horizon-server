@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Server.Common;
+using Server.Common.Stream;
 
 namespace RT.Models
 {
@@ -15,13 +16,13 @@ namespace RT.Models
         public short TargetOrSource = 0;
         public byte[] Payload;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(MessageReader reader)
         {
             TargetOrSource = reader.ReadInt16();
             Payload = reader.ReadRest();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(TargetOrSource);
             writer.Write(Payload);

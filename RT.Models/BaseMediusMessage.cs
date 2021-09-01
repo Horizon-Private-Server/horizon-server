@@ -64,7 +64,7 @@ namespace RT.Models
         /// Deserializes the message from plaintext.
         /// </summary>
         /// <param name="reader"></param>
-        public virtual void Deserialize(BinaryReader reader)
+        public virtual void Deserialize(Server.Common.Stream.MessageReader reader)
         {
 
         }
@@ -72,7 +72,7 @@ namespace RT.Models
         /// <summary>
         /// Serialize contents of the message.
         /// </summary>
-        public virtual void Serialize(BinaryWriter writer)
+        public virtual void Serialize(Server.Common.Stream.MessageWriter writer)
         {
 
         }
@@ -153,7 +153,7 @@ namespace RT.Models
             }
         }
 
-        public static BaseMediusMessage Instantiate(BinaryReader reader)
+        public static BaseMediusMessage Instantiate(Server.Common.Stream.MessageReader reader)
         {
             BaseMediusMessage msg;
             Type classType = null;

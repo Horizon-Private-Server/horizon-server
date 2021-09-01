@@ -15,14 +15,14 @@ namespace RT.Models
         public uint Address = 0;
         public byte[] Payload;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Address = reader.ReadUInt32();
             int len = reader.ReadInt32();
             Payload = reader.ReadBytes(len);
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Address);
             writer.Write(Payload?.Length ?? 0);

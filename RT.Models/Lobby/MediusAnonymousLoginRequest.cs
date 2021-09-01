@@ -19,7 +19,7 @@ namespace RT.Models
         public string SessionDisplayName; // ACCOUNTNAME_MAXLEN
         public string SessionDisplayStats; // ACCOUNTSTATS_MAXLEN
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -33,7 +33,7 @@ namespace RT.Models
             SessionDisplayStats = reader.ReadString(Constants.ACCOUNTSTATS_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

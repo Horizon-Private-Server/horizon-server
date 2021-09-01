@@ -23,7 +23,7 @@ namespace RT.Models
         public int PacketBufferOffset;
         public byte[] Payload;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -41,7 +41,7 @@ namespace RT.Models
             Payload = reader.ReadBytes(SubPacketSize);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

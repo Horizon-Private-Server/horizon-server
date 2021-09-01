@@ -1,5 +1,6 @@
 ﻿using RT.Common;
 using Server.Common;
+using Server.Common.Stream;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,12 +16,12 @@ namespace RT.Models
 
         public byte[] Payload { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(MessageReader reader)
         {
             Payload = reader.ReadRest();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Payload);
         }

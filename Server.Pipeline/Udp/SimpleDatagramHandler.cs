@@ -2,6 +2,7 @@
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Groups;
 using DotNetty.Transport.Channels.Sockets;
+using RT.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

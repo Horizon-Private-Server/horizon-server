@@ -16,13 +16,13 @@ namespace RT.Models
         public uint UnixTimestamp = Utils.GetUnixTime();
         public uint UNK_04 = 0x00000000;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             UnixTimestamp = reader.ReadUInt32();
             UNK_04 = reader.ReadUInt32();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(UnixTimestamp);
             writer.Write(UNK_04);

@@ -20,10 +20,9 @@ namespace RT.Models
         public ushort UNK_06 = 0x0001;
 
         public byte[] UNK_07 = {0x01, 0x08, 0x10, 0x00, 0x00};
-        public bool OldMedius = false;
         public IPAddress IP;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {            
             
             UNK_00 = reader.ReadUInt16();
@@ -33,9 +32,10 @@ namespace RT.Models
             IP = reader.ReadIPAddress();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            if (OldMedius == false){
+            if (writer.MediusVersion >= 0x6D)
+            {
                 writer.Write(UNK_00);
                 writer.Write(UNK_02);
                 writer.Write(UNK_06);
@@ -45,7 +45,8 @@ namespace RT.Models
                 else
                     writer.Write(IP);
             }
-            else{
+            else
+            {
                 writer.Write(UNK_07);
                 writer.Write(UNK_06);
 

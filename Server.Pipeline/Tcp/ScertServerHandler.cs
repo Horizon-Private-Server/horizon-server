@@ -71,6 +71,11 @@ namespace Server.Pipeline.Tcp
 
         protected override void ChannelRead0(IChannelHandlerContext ctx, BaseScertMessage message)
         {
+            // Handle medius version
+            var scertClient = ctx.GetAttribute(Constants.SCERT_CLIENT).Get();
+            if (scertClient != null && scertClient.OnMessage(message))
+                ctx.GetAttribute(Constants.SCERT_CLIENT).Set(scertClient);
+
             // Send upstream
             OnChannelMessage?.Invoke(ctx.Channel, message);
         }

@@ -31,12 +31,12 @@ namespace RT.Models
             _messageType = messageType;
         }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Contents = reader.ReadRest();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (Contents != null)
                 writer.Write(Contents);

@@ -19,7 +19,7 @@ namespace RT.Models
         public string AccountName; // ACCOUNTNAME_MAXLEN
         public string Password; // PASSWORD_MAXLEN
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -35,7 +35,7 @@ namespace RT.Models
             Password = reader.ReadString(Constants.PASSWORD_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

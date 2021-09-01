@@ -41,7 +41,6 @@ namespace Server.UnivereInformation
         protected internal class ChannelData
         {
             public int ApplicationId { get; set; } = 0;
-            public int MediusVersion { get; set; } = 18;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
         }
@@ -195,12 +194,14 @@ namespace Server.UnivereInformation
 
         protected async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
+            // Get ScertClient data
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+
             // 
             switch (message)
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        data.MediusVersion = 19;
                         Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
                         break;
                     }
@@ -212,16 +213,18 @@ namespace Server.UnivereInformation
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
                         data.ApplicationId = clientConnectTcp.AppId;
-                        if(data.MediusVersion == 19){
+
+                        if (scertClient.MediusVersion >= 0x6D)
+                        {
                             Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
                         }
-                        else{
+                        else
+                        {
                             Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                             {
-                            IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
-                            OldMedius = true
+                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
                             }, clientChannel);
-                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
                         }
                         break;
                     }

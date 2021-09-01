@@ -20,7 +20,7 @@ namespace RT.Models
         public short TotalActivePlayers;
         public MGCL_ALERT_LEVEL AlertLevel;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -36,7 +36,7 @@ namespace RT.Models
             AlertLevel = reader.Read<MGCL_ALERT_LEVEL>();
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

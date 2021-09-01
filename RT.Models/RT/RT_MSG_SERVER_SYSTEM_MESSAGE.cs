@@ -18,7 +18,7 @@ namespace RT.Models
         public bool EndOfMessage;
         public string Message;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Severity = reader.ReadByte();
             EncodingType = reader.ReadByte();
@@ -27,7 +27,7 @@ namespace RT.Models
             Message = reader.ReadRestAsString();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Severity);
             writer.Write(EncodingType);

@@ -17,7 +17,7 @@ namespace RT.Models
 
         public string SessionKey; // SESSIONKEY_MAXLEN
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
@@ -29,7 +29,7 @@ namespace RT.Models
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             base.Serialize(writer);

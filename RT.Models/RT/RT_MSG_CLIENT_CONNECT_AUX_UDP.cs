@@ -21,7 +21,7 @@ namespace RT.Models
         public ushort ScertId;
         public ushort UNK_26;
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             WorldId = reader.ReadUInt32();
             ApplicationId = reader.ReadInt32();
@@ -31,7 +31,7 @@ namespace RT.Models
             UNK_26 = reader.ReadUInt16();
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(WorldId);
             writer.Write(ApplicationId);

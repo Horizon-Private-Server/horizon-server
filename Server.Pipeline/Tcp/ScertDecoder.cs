@@ -65,8 +65,13 @@ namespace Server.Pipeline.Tcp
             long frameLength = input.GetShortLE(input.ReaderIndex + 1);
             int totalLength = 3;
 
+            //
+            if (!context.HasAttribute(Constants.SCERT_CLIENT))
+                context.GetAttribute(Constants.SCERT_CLIENT).Set(new Attribute.ScertClientAttribute());
+            var scertClient = context.GetAttribute(Constants.SCERT_CLIENT).Get();
+
             if (frameLength <= 0)
-                return BaseScertMessage.Instantiate((RT_MSG_TYPE)(id & 0x7F), null, new byte[0], _getCipher);
+                return BaseScertMessage.Instantiate((RT_MSG_TYPE)(id & 0x7F), null, new byte[0], scertClient.MediusVersion, _getCipher);
 
             if (id >= 0x80)
             {
@@ -95,7 +100,7 @@ namespace Server.Pipeline.Tcp
 
             // 
             input.SetReaderIndex(input.ReaderIndex + totalLength + frameLengthInt);
-            return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, _getCipher);
+            return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, scertClient.MediusVersion, _getCipher);
         }
 
     }

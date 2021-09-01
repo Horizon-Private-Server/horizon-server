@@ -15,12 +15,12 @@ namespace RT.Models
         // 
         public byte[] Contents = new byte[] { 0x02, 0x48, 0x02 };
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Contents = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
         }
 
-        protected override void Serialize(BinaryWriter writer)
+        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Contents);
         }
