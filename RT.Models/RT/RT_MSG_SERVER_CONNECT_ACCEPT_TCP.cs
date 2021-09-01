@@ -17,13 +17,15 @@ namespace RT.Models
         // 
         public ushort UNK_00 = 0x0000;
         public uint UNK_02 = 0x10EC;
-
         public ushort UNK_06 = 0x0001;
 
+        public byte[] UNK_07 = {0x01, 0x08, 0x10, 0x00, 0x00};
+        public bool OldMedius = false;
         public IPAddress IP;
 
         public override void Deserialize(BinaryReader reader)
-        {
+        {            
+            
             UNK_00 = reader.ReadUInt16();
             UNK_02 = reader.ReadUInt32();
             UNK_06 = reader.ReadUInt16();
@@ -33,14 +35,25 @@ namespace RT.Models
 
         protected override void Serialize(BinaryWriter writer)
         {
-            writer.Write(UNK_00);
-            writer.Write(UNK_02);
-            writer.Write(UNK_06);
+            if (OldMedius == false){
+                writer.Write(UNK_00);
+                writer.Write(UNK_02);
+                writer.Write(UNK_06);
 
-            if (IP == null)
-                writer.Write(IPAddress.Any);
-            else
-                writer.Write(IP);
+                if (IP == null)
+                    writer.Write(IPAddress.Any);
+                else
+                    writer.Write(IP);
+            }
+            else{
+                writer.Write(UNK_07);
+                writer.Write(UNK_06);
+
+                if (IP == null)
+                    writer.Write(IPAddress.Any);
+                else
+                    writer.Write(IP);
+            }
         }
 
         public override string ToString()
