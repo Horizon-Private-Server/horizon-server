@@ -27,8 +27,13 @@ namespace Server.Pipeline.Udp
             if (message is null)
                 return;
 
+            //
+            if (!ctx.HasAttribute(Constants.SCERT_CLIENT))
+                ctx.GetAttribute(Constants.SCERT_CLIENT).Set(new Attribute.ScertClientAttribute());
+            var scertClient = ctx.GetAttribute(Constants.SCERT_CLIENT).Get();
+
             // Serialize
-            var msgs = message.Message.Serialize();
+            var msgs = message.Message.Serialize(scertClient.MediusVersion);
 
             // Condense as much as possible
             var condensedMsgs = msgs.GroupWhileAggregating(0, (sum, item) => sum + item.Length, (sum, item) => sum < maxPacketLength);

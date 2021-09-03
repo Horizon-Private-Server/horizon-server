@@ -31,13 +31,18 @@ namespace Server.Pipeline.Udp
             if (messages is null)
                 return;
 
+            //
+            if (!ctx.HasAttribute(Constants.SCERT_CLIENT))
+                ctx.GetAttribute(Constants.SCERT_CLIENT).Set(new Attribute.ScertClientAttribute());
+            var scertClient = ctx.GetAttribute(Constants.SCERT_CLIENT).Get();
+
             // Serialize and add
             foreach (var msg in messages)
             {
                 if (!msgsByEndpoint.TryGetValue(msg.Destination, out temp))
                     msgsByEndpoint.Add(msg.Destination, temp = new List<byte[]>());
 
-                temp.AddRange(msg.Message.Serialize());
+                temp.AddRange(msg.Message.Serialize(scertClient.MediusVersion));
             }
 
             foreach (var kvp in msgsByEndpoint)

@@ -39,7 +39,7 @@ namespace RT.Models
         /// <summary>
         /// Serializes the message.
         /// </summary>
-        public List<byte[]> Serialize()
+        public List<byte[]> Serialize(int mediusVersion)
         {
             var results = new List<byte[]>();
             byte[] result = null;
@@ -50,7 +50,7 @@ namespace RT.Models
             // Serialize message
             using (var stream = new MemoryStream(buffer, true))
             {
-                using (var writer = new MessageWriter(stream))
+                using (var writer = new MessageWriter(stream) { MediusVersion = mediusVersion })
                 {
                     Serialize(writer);
                     length = (int)writer.BaseStream.Position;

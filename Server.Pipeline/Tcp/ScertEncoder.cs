@@ -37,8 +37,13 @@ namespace Server.Pipeline.Tcp
             if (message.CanLog())
                 Logger.Info($"SEND {ctx.Channel}: {message}");
 
+            //
+            if (!ctx.HasAttribute(Constants.SCERT_CLIENT))
+                ctx.GetAttribute(Constants.SCERT_CLIENT).Set(new Attribute.ScertClientAttribute());
+            var scertClient = ctx.GetAttribute(Constants.SCERT_CLIENT).Get();
+
             // Serialize
-            var msgs = message.Serialize();
+            var msgs = message.Serialize(scertClient.MediusVersion);
 
             // 
             foreach (var msg in msgs)
