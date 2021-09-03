@@ -13,7 +13,7 @@ namespace Server.Pipeline.Attribute
         {
             if (message is RT_MSG_CLIENT_HELLO clientHello)
             {
-                MediusVersion = clientHello.Parameters[2];
+                MediusVersion = clientHello.Parameters[1];
                 return true;
             }
 
