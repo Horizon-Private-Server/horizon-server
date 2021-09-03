@@ -29,5 +29,11 @@ namespace RT.Models
             for (int i = 0; i < 5; ++i)
                 writer.Write((Parameters == null || i >= Parameters.Length) ? ushort.MinValue : Parameters[i]);
         }
+        
+         public override string ToString()
+        {
+            return base.ToString() + " " +
+                $"Version:{Parameters[1]}";
+        }
     }
 }
