@@ -47,7 +47,7 @@ namespace RT.Cryptography
                 Array.Copy(b, 0, iv_buffer, i * 4, 4);
             }
 
-            RC_Pass(iv_buffer, ref iv);
+            RC_Pass(iv_buffer, ref iv, true);
             RC_Pass(input, ref iv, true);
             return true;
         }
@@ -81,8 +81,8 @@ namespace RT.Cryptography
                 Array.Copy(b, 0, iv, i * 4, 4);
             }
 
-            RC_Pass(iv, ref seed);
-            RC_Pass(plain, ref seed, true);
+            RC_Pass(iv, ref seed, true);
+            RC_Pass(plain, ref seed, true, true);
 
             Hash(plain, out var checkHash);
             return checkHash.SequenceEqual(hash);
@@ -165,7 +165,7 @@ namespace RT.Cryptography
             }
         }
 
-        protected static void RC_Pass(byte[] input, ref uint[] iv, bool sign = false)
+        protected static void RC_Pass(byte[] input, ref uint[] iv, bool sign = false, bool decrypt = false)
         {
             uint r0 = 0x00000000;
             uint r3 = 0x5B3AA654;
@@ -205,11 +205,13 @@ namespace RT.Cryptography
                 r16 = ~r16;
 
                 r0 = (uint)((buffer[i + 0] << 24) | (buffer[i + 1] << 16) | (buffer[i + 2] << 8) | (buffer[i + 3] << 0));
+                if (decrypt)
+                    r0 ^= r19;
                 r19 ^= r0;
 
                 if (sign)
                 {
-                    byte[] r19_b = BitConverter.GetBytes(r19);
+                    byte[] r19_b = BitConverter.GetBytes(decrypt ? r0 : r19);
                     buffer[i + 0] = r19_b[0];
                     buffer[i + 1] = r19_b[1];
                     buffer[i + 2] = r19_b[2];
