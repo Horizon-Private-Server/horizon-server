@@ -169,7 +169,7 @@ namespace Server.Medius
 
                         if (!createGameWithAttrResponse.IsSuccess)
                         {
-                            rClient.Queue(new MediusCreateGameResponse()
+                            rClient?.Queue(new MediusCreateGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
                                 StatusCode = MediusCallbackStatus.MediusFail
@@ -180,7 +180,7 @@ namespace Server.Medius
                         else
                         {
                             game.DMEWorldId = createGameWithAttrResponse.WorldID;
-                            rClient.Queue(new MediusCreateGameResponse()
+                            rClient?.Queue(new MediusCreateGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
                                 StatusCode = MediusCallbackStatus.MediusSuccess,
@@ -204,7 +204,7 @@ namespace Server.Medius
 
                         if (!joinGameResponse.IsSuccess)
                         {
-                            rClient.Queue(new MediusJoinGameResponse()
+                            rClient?.Queue(new MediusJoinGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
                                 StatusCode = MediusCallbackStatus.MediusFail
@@ -213,10 +213,10 @@ namespace Server.Medius
                         else
                         {
                             // Join game
-                            rClient.JoinGame(game);
+                            rClient?.JoinGame(game);
 
                             // 
-                            rClient.Queue(new MediusJoinGameResponse()
+                            rClient?.Queue(new MediusJoinGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
                                 StatusCode = MediusCallbackStatus.MediusSuccess,

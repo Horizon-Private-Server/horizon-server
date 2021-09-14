@@ -419,7 +419,8 @@ namespace Server.Medius
                             _sessionKeyToClient.Remove(newClient.SessionKey);
                     }
 
-                    throw e;
+                    Logger.Error(e);
+                    //throw e;
                 }
             }
 
