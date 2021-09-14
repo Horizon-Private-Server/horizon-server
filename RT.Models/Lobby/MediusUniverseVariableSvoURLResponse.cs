@@ -26,8 +26,18 @@ namespace RT.Models
             //
             MessageID = reader.Read<MessageId>();
 
-            // 
-            URL = reader.ReadString(128);
+            // read URL
+            if (reader.MediusVersion >= 109)
+            {
+                // 1 byte length prefixed url
+                byte len = reader.ReadByte();
+                URL = reader.ReadString(len);
+            }
+            else
+            {
+                // fixed size url
+                URL = reader.ReadString(128);
+            }
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -38,8 +48,18 @@ namespace RT.Models
             //
             writer.Write(MessageID ?? MessageId.Empty);
 
-            // 
-            writer.Write(URL, 128);
+            // Write URL
+            if (writer.MediusVersion >= 109)
+            {
+                // 1 byte length prefixed url
+                writer.Write((byte)URL.Length);
+                writer.Write(URL, URL.Length);
+            }
+            else
+            {
+                // fixed size url
+                writer.Write(URL, 128);
+            }
         }
 
     }
