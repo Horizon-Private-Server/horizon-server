@@ -481,6 +481,14 @@ namespace Server.Medius
                                             StatusCode = MediusCallbackStatus.MediusFail
                                         });
                                     }
+                                    else if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username)?.IsLoggedIn ?? false)
+                                    {
+                                        data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                        {
+                                            MessageID = accountLoginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusAccountLoggedIn
+                                        });
+                                    }
                                     else if (Utils.ComputeSHA256(accountLoginRequest.Password) == r.Result.AccountPassword)
                                     {
                                         Login(accountLoginRequest.MessageID, clientChannel, data, r.Result);
