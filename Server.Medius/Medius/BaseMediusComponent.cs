@@ -194,6 +194,7 @@ namespace Server.Medius
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
                         pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
+                        pipeline.AddLast(new ScertIEnumerableDecoder(_sessionCipher, AuthKey));
                         pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
                         pipeline.AddLast(_scertHandler);
                     }));
