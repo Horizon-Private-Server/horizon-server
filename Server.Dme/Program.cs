@@ -1,4 +1,5 @@
 ﻿using DotNetty.Common.Internal.Logging;
+using Haukcode.HighResolutionTimer;
 using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
 using NReco.Logging.File;
@@ -51,18 +52,81 @@ namespace Server.Dme
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
         private static DateTime _timeLastPluginTick = DateTime.UtcNow;
 
+        private static int _ticks = 0;
+        private static Stopwatch _sw = new Stopwatch();
+        private static HighResolutionTimer _timer;
+
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
 
+        static async Task TickAsync()
+        {
+            DateTime lastConfigRefresh = DateTime.UtcNow;
+            DateTime lastComponentLog = DateTime.UtcNow;
+            DateTime start = DateTime.Now;
+
+            try
+            {
+#if DEBUG || RELEASE
+                if (!_sw.IsRunning)
+                    _sw.Start();
+#endif
+
+#if DEBUG || RELEASE
+                ++_ticks;
+                if (_sw.Elapsed.TotalSeconds > 5f)
+                {
+                    // 
+                    _sw.Stop();
+                    var averageMsPerTick = 1000 * (_sw.Elapsed.TotalSeconds / _ticks);
+                    var error = Math.Abs(Settings.MainLoopSleepMs - averageMsPerTick) / Settings.MainLoopSleepMs;
+
+                    if (error > 0.1f)
+                        Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
+
+                    _sw.Restart();
+                    _ticks = 0;
+                }
+#endif
+
+                // Check if connected
+                if (Manager.IsConnected)
+                {
+                    // Tick
+                    await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
+
+                    // Tick plugins
+                    if ((DateTime.UtcNow - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                    {
+                        _timeLastPluginTick = DateTime.UtcNow;
+                        Plugins.Tick();
+                    }
+                }
+                else if ((DateTime.UtcNow - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                {
+                    // Try to reconnect to the proxy server
+                    await Manager.Start();
+                }
+
+                // Reload config
+                if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                {
+                    RefreshConfig();
+                    lastConfigRefresh = DateTime.UtcNow;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+
+                await TcpServer.Stop();
+                await Manager.Stop();
+            }
+        }
 
         static async Task StartServerAsync()
         {
-            DateTime lastConfigRefresh = DateTime.UtcNow;
-            ulong ticks = 0;
-
-#if DEBUG
-            Stopwatch tickSw = new Stopwatch();
-#endif
+            int waitMs = Settings.MainLoopSleepMs;
 
             Logger.Info("Starting medius components...");
 
@@ -75,63 +139,28 @@ namespace Server.Dme
             // 
             Logger.Info("Started.");
 
-            try
+            // start timer
+            _timer = new HighResolutionTimer();
+            _timer.SetPeriod(waitMs);
+            _timer.Start();
+
+            // iterate
+            while (true)
             {
-
-#if DEBUG
-                tickSw.Restart();
-#endif
-
-                while (true)
+                // handle tick rate change
+                if (Settings.MainLoopSleepMs != waitMs)
                 {
-                    // Check if connected
-                    if (Manager.IsConnected)
-                    {
-                        // Tick
-                        await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
-
-                        // Tick plugins
-                        if ((DateTime.UtcNow - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
-                        {
-                            _timeLastPluginTick = DateTime.UtcNow;
-                            Plugins.Tick();
-                        }
-                    }
-                    else if ((DateTime.UtcNow - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
-                    {
-                        // Try to reconnect to the proxy server
-                        await Manager.Start();
-                    }
-
-                    // Reload config
-                    if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
-                    {
-                        RefreshConfig();
-                        lastConfigRefresh = DateTime.UtcNow;
-                    }
-
-                    // 
-                    ++ticks;
-                    if ((ticks % 10000) == 0)
-                    {
-#if DEBUG
-                        Logger.Info($"TPS: {ticks / tickSw.Elapsed.TotalSeconds}");
-                        tickSw.Restart();
-#endif
-                        ticks = 0;
-                    }
-
-                    Thread.Sleep(Settings.MainLoopSleepMs);
+                    waitMs = Settings.MainLoopSleepMs;
+                    _timer.Stop();
+                    _timer.SetPeriod(waitMs);
+                    _timer.Start();
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-            }
-            finally
-            {
-                await TcpServer.Stop();
-                await Manager.Stop();
+
+                // tick
+                await TickAsync();
+
+                // wait for next tick
+                _timer.WaitForTrigger();
             }
         }
 

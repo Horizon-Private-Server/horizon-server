@@ -433,24 +433,22 @@ namespace Server.Dme
         {
             try
             {
-                // Give it every reason just to make sure it disconnects
-                for (byte r = 0; r < 7; ++r)
+                // send force disconnect message
+                await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
                 {
-                    await channel.WriteAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
-                    {
-                        Reason = (SERVER_FORCE_DISCONNECT_REASON)r
-                    });
-                }
+                    Reason = SERVER_FORCE_DISCONNECT_REASON.SERVER_FORCED_DISCONNECT_ERROR
+                });
 
-                channel.Flush();
+                // close channel
+                await channel.CloseAsync();
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Silence exception since the client probably just closed the socket before we could write to it
             }
             finally
             {
-                // await channel.CloseAsync();
+
             }
         }
 

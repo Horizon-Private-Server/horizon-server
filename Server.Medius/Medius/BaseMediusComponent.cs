@@ -299,7 +299,7 @@ namespace Server.Medius
                             Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_RECV, onMsg);
 
                             // Ignore if ignored
-                            if (!onMsg.Ignore)
+                            if (!onMsg.Ignore && data.State != ClientState.DISCONNECTED)
                                 await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
@@ -394,16 +394,14 @@ namespace Server.Medius
         {
             try
             {
-                // Give it every reason just to make sure it disconnects
-                for (byte r = 0; r < 7; ++r)
+                // send force disconnect message
+                await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
                 {
-                    await channel.WriteAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
-                    {
-                        Reason = (SERVER_FORCE_DISCONNECT_REASON)r
-                    });
-                }
+                    Reason = SERVER_FORCE_DISCONNECT_REASON.SERVER_FORCED_DISCONNECT_ERROR
+                });
 
-                channel.Flush();
+                // close channel
+                await channel.CloseAsync();
             }
             catch (Exception e)
             {

@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\HighResolutionTimer\HighResolutionTimer.csproj" />
     <ProjectReference Include="..\RT.Common\RT.Common.csproj" />
     <ProjectReference Include="..\RT.Cryptography\RT.Cryptography.csproj" />
     <ProjectReference Include="..\RT.Models\RT.Models.csproj" />

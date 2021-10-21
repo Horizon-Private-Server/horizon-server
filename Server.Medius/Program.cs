@@ -26,6 +26,7 @@ using Server.Common.Logging;
 using Server.Plugins;
 using System.Net.NetworkInformation;
 using Server.Common;
+using Haukcode.HighResolutionTimer;
 
 namespace Server.Medius
 {
@@ -66,18 +67,102 @@ namespace Server.Medius
         private static DateTime? _lastSuccessfulDbAuth = null;
         private static bool _hasPurgedAccountStatuses = false;
 
+        private static int _ticks = 0;
+        private static Stopwatch _sw = new Stopwatch();
+        private static HighResolutionTimer _timer;
+
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
-        static async Task StartServerAsync()
+        static async Task TickAsync()
         {
             DateTime lastConfigRefresh = DateTime.UtcNow;
             DateTime lastComponentLog = DateTime.UtcNow;
-            Stopwatch sleepSw = new Stopwatch();
+            DateTime start = DateTime.Now;
+
+            try
+            {
+#if DEBUG || RELEASE
+                if (!_sw.IsRunning)
+                    _sw.Start();
+#endif
 
 #if DEBUG || RELEASE
-            Stopwatch sw = new Stopwatch();
-            int ticks = 0;
+                ++_ticks;
+                if (_sw.Elapsed.TotalSeconds > 5f)
+                {
+                    // 
+                    _sw.Stop();
+                    float tps = _ticks / (float)_sw.Elapsed.TotalSeconds;
+                    float error = MathF.Abs(Settings.TickRate - tps) / Settings.TickRate;
+
+                    if (error > 0.1f)
+                        Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
+
+                    _sw.Restart();
+                    _ticks = 0;
+                }
 #endif
+
+                // Attempt to authenticate with the db middleware
+                // We do this every 24 hours to get a fresh new token
+                if ((_lastSuccessfulDbAuth == null || (DateTime.UtcNow - _lastSuccessfulDbAuth.Value).TotalHours > 24))
+                {
+                    if (!await Database.Authenticate())
+                    {
+                        // Log and exit when unable to authenticate
+                        Logger.Error("Unable to authenticate with the db middleware server");
+                        return;
+                    }
+                    else
+                    {
+                        _lastSuccessfulDbAuth = DateTime.UtcNow;
+
+                        if (!_hasPurgedAccountStatuses)
+                        {
+                            _hasPurgedAccountStatuses = await Database.ClearAccountStatuses();
+                            await Database.ClearActiveGames();
+                        }
+                    }
+                }
+
+                // Tick
+                await Task.WhenAll(AuthenticationServer.Tick(), LobbyServer.Tick(), ProxyServer.Tick());
+
+                // Tick manager
+                Manager.Tick();
+
+                // Tick plugins
+                Plugins.Tick();
+
+                // 
+                if ((DateTime.UtcNow - lastComponentLog).TotalSeconds > 15f)
+                {
+                    AuthenticationServer.Log();
+                    LobbyServer.Log();
+                    ProxyServer.Log();
+                    lastComponentLog = DateTime.UtcNow;
+                }
+
+                // Reload config
+                if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                {
+                    RefreshConfig();
+                    lastConfigRefresh = DateTime.UtcNow;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+
+                await AuthenticationServer.Stop();
+                await LobbyServer.Stop();
+                await ProxyServer.Stop();
+            }
+        }
+
+        static async Task StartServerAsync()
+        {
+            int waitMs = sleepMS;
 
             Logger.Info("Starting medius components...");
 
@@ -96,93 +181,28 @@ namespace Server.Medius
             // 
             Logger.Info("Started.");
 
-            try
-            {
-#if DEBUG || RELEASE
-                sw.Start();
-#endif
+            // start timer
+            _timer = new HighResolutionTimer();
+            _timer.SetPeriod(waitMs);
+            _timer.Start();
 
-                while (true)
+            // iterate
+            while (true)
+            {
+                // handle tick rate change
+                if (sleepMS != waitMs)
                 {
-#if DEBUG || RELEASE
-                    ++ticks;
-                    if (sw.Elapsed.TotalSeconds > 5f)
-                    {
-                        // 
-                        sw.Stop();
-                        float tps = ticks / (float)sw.Elapsed.TotalSeconds;
-                        float error = MathF.Abs(Settings.TickRate - tps) / Settings.TickRate;
-
-                        if (error > 0.1f)
-                            Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
-
-                        sw.Restart();
-                        ticks = 0;
-                    }
-#endif
-
-                    // Attempt to authenticate with the db middleware
-                    // We do this every 24 hours to get a fresh new token
-                    if ((_lastSuccessfulDbAuth == null || (DateTime.UtcNow - _lastSuccessfulDbAuth.Value).TotalHours > 24))
-                    {
-                        if (!await Database.Authenticate())
-                        {
-                            // Log and exit when unable to authenticate
-                            Logger.Error("Unable to authenticate with the db middleware server");
-                            return;
-                        }
-                        else
-                        {
-                            _lastSuccessfulDbAuth = DateTime.UtcNow;
-
-                            if (!_hasPurgedAccountStatuses)
-                            {
-                                _hasPurgedAccountStatuses = await Database.ClearAccountStatuses();
-                                await Database.ClearActiveGames();
-                            }
-                        }
-                    }
-
-                    // 
-                    sleepSw.Restart();
-
-                    // Tick
-                    await Task.WhenAll(AuthenticationServer.Tick(), LobbyServer.Tick(), ProxyServer.Tick());
-
-                    // Tick manager
-                    Manager.Tick();
-
-                    // Tick plugins
-                    Plugins.Tick();
-
-                    // 
-                    if ((DateTime.UtcNow - lastComponentLog).TotalSeconds > 15f)
-                    {
-                        AuthenticationServer.Log();
-                        LobbyServer.Log();
-                        ProxyServer.Log();
-                        lastComponentLog = DateTime.UtcNow;
-                    }
-
-                    // Reload config
-                    if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
-                    {
-                        RefreshConfig();
-                        lastConfigRefresh = DateTime.UtcNow;
-                    }
-
-                    Thread.Sleep((int)Math.Max(0, sleepMS - sleepSw.ElapsedMilliseconds));
+                    waitMs = sleepMS;
+                    _timer.Stop();
+                    _timer.SetPeriod(waitMs);
+                    _timer.Start();
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-            }
-            finally
-            {
-                await AuthenticationServer.Stop();
-                await LobbyServer.Stop();
-                await ProxyServer.Stop();
+
+                // tick
+                await TickAsync();
+
+                // wait for next tick
+                _timer.WaitForTrigger();
             }
         }
 
