@@ -82,12 +82,12 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoSent { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoSent { get; protected set; } = Common.Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoReply { get; protected set; } = Common.Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// 
@@ -107,10 +107,10 @@ namespace Server.Medius.Models
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => (DateTime.UtcNow - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool Timedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !Timedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
-        public bool KeepAlive => _keepAliveTime.HasValue && (DateTime.UtcNow - _keepAliveTime).Value.TotalSeconds < Program.Settings.KeepAliveGracePeriod;
+        public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.Settings.KeepAliveGracePeriod;
 
         /// <summary>
         /// 
@@ -163,7 +163,7 @@ namespace Server.Medius.Models
         public void QueueServerEcho()
         {
             SendMessageQueue.Enqueue(new RT_MSG_SERVER_ECHO());
-            UtcLastServerEchoSent = DateTime.UtcNow;
+            UtcLastServerEchoSent = Common.Utils.GetHighPrecisionUtcTime();
         }
 
         public void OnRecvServerEcho(RT_MSG_SERVER_ECHO echo)
@@ -172,7 +172,7 @@ namespace Server.Medius.Models
             if (echoTime > _lastServerEchoValue)
             {
                 _lastServerEchoValue = echoTime;
-                UtcLastServerEchoReply = DateTime.UtcNow;
+                UtcLastServerEchoReply = Common.Utils.GetHighPrecisionUtcTime();
                 LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
             }
         }
@@ -181,7 +181,7 @@ namespace Server.Medius.Models
 
         public void KeepAliveUntilNextConnection()
         {
-            _keepAliveTime = DateTime.UtcNow;
+            _keepAliveTime = Common.Utils.GetHighPrecisionUtcTime();
         }
 
         public void OnConnected()
@@ -253,7 +253,7 @@ namespace Server.Medius.Models
             LeaveCurrentChannel();
 
             // Logout
-            _logoutTime = DateTime.UtcNow;
+            _logoutTime = Common.Utils.GetHighPrecisionUtcTime();
 
             // Tell database
             PostStatus();
@@ -280,10 +280,10 @@ namespace Server.Medius.Models
             Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
 
             // Login
-            _loginTime = DateTime.UtcNow;
+            _loginTime = Common.Utils.GetHighPrecisionUtcTime();
 
             // Update last sign in date
-            _ = Program.Database.PostAccountSignInDate(AccountId, DateTime.UtcNow);
+            _ = Program.Database.PostAccountSignInDate(AccountId, Common.Utils.GetHighPrecisionUtcTime());
 
             // Update database status
             PostStatus();

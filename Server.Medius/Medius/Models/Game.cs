@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Common;
 using Server.Database.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
@@ -62,11 +63,11 @@ namespace Server.Medius.Models
         private DateTime? utcTimeEnded;
         private DateTime? utcTimeEmpty;
 
-        public uint Time => (uint)(DateTime.UtcNow - utcTimeCreated).TotalMilliseconds;
+        public uint Time => (uint)(Utils.GetHighPrecisionUtcTime() - utcTimeCreated).TotalMilliseconds;
 
         public int PlayerCount => Clients.Count(x => x != null && x.Client.IsConnected && x.InGame);
 
-        public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (DateTime.UtcNow - utcTimeEmpty)?.TotalSeconds > 1f;
+        public bool ReadyToDestroy => WorldStatus == MediusWorldStatus.WorldClosed && (Utils.GetHighPrecisionUtcTime() - utcTimeEmpty)?.TotalSeconds > 1f;
 
         public Game(ClientObject client, IMediusRequest createGame, Channel chatChannel, DMEObject dmeServer)
         {
@@ -78,7 +79,7 @@ namespace Server.Medius.Models
             Id = IdCounter++;
 
             SetWorldStatus(MediusWorldStatus.WorldPendingCreation);
-            utcTimeCreated = DateTime.UtcNow;
+            utcTimeCreated = Utils.GetHighPrecisionUtcTime();
             utcTimeEmpty = null;
             DMEServer = dmeServer;
             ChatChannel = chatChannel;
@@ -186,9 +187,9 @@ namespace Server.Medius.Models
             }
 
             // Auto close when everyone leaves or if host fails to connect after timeout time
-            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (hasHostJoined || (DateTime.UtcNow - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds))
+            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (hasHostJoined || (Utils.GetHighPrecisionUtcTime() - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds))
             {
-                utcTimeEmpty = DateTime.UtcNow;
+                utcTimeEmpty = Utils.GetHighPrecisionUtcTime();
                 SetWorldStatus(MediusWorldStatus.WorldClosed);
             }
         }
@@ -379,7 +380,7 @@ namespace Server.Medius.Models
             {
                 case MediusWorldStatus.WorldActive:
                     {
-                        utcTimeStarted = DateTime.UtcNow;
+                        utcTimeStarted = Utils.GetHighPrecisionUtcTime();
                         accountIdsAtStart = GetActivePlayerList();
 
                         // Send to plugins
@@ -388,7 +389,7 @@ namespace Server.Medius.Models
                     }
                 case MediusWorldStatus.WorldClosed:
                     {
-                        utcTimeEnded = DateTime.UtcNow;
+                        utcTimeEnded = Utils.GetHighPrecisionUtcTime();
 
                         // Send to plugins
                         Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_ENDED, new OnGameArgs() { Game = this });

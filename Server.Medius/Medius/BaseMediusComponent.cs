@@ -21,6 +21,7 @@ using Server.Pipeline.Tcp;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using DotNetty.Handlers.Timeout;
+using Server.Common;
 
 namespace Server.Medius
 {
@@ -65,13 +66,13 @@ namespace Server.Medius
             /// When true, all messages from this client will be ignored.
             /// </summary>
             public bool Ignore { get; set; } = false;
-            public DateTime TimeConnected { get; set; } = DateTime.UtcNow;
+            public DateTime TimeConnected { get; set; } = Utils.GetHighPrecisionUtcTime();
 
 
             /// <summary>
             /// Timesout client if they authenticated after a given number of seconds.
             /// </summary>
-            public bool ShouldDestroy => ClientObject == null && (DateTime.UtcNow - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+            public bool ShouldDestroy => ClientObject == null && (Utils.GetHighPrecisionUtcTime() - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         }
 
         protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
@@ -79,7 +80,7 @@ namespace Server.Medius
 
         protected PS2_RC4 _sessionCipher = null;
 
-        protected DateTime _timeLastEcho = DateTime.UtcNow;
+        protected DateTime _timeLastEcho = Utils.GetHighPrecisionUtcTime();
 
 
         public virtual async void Start()
@@ -128,9 +129,9 @@ namespace Server.Medius
                                 // Ensure that we're past the from date
                                 // Ensure that we're before the to date (if set)
                                 if (r.Result.MaintenanceMode.IsActive
-                                        && DateTime.UtcNow > r.Result.MaintenanceMode.FromDt
+                                        && Utils.GetHighPrecisionUtcTime() > r.Result.MaintenanceMode.FromDt
                                         && (!r.Result.MaintenanceMode.ToDt.HasValue
-                                            || r.Result.MaintenanceMode.ToDt > DateTime.UtcNow))
+                                            || r.Result.MaintenanceMode.ToDt > Utils.GetHighPrecisionUtcTime()))
                                 {
                                     QueueBanMessage(data, "Server in maintenance.");
                                 }
@@ -334,7 +335,7 @@ namespace Server.Medius
                         if (data.ClientObject != null)
                         {
                             // Echo
-                            if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
+                            if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
                                 data.ClientObject.QueueServerEcho();
 
                             // Add client object's send queue to responses

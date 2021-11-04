@@ -87,12 +87,12 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoSent { get; set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoSent { get; set; } = Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoReply { get; protected set; } = DateTime.UtcNow;
+        public DateTime UtcLastServerEchoReply { get; protected set; } = Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// RTT (ms)
@@ -102,7 +102,7 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime TimeCreated { get; protected set; } = DateTime.UtcNow;
+        public DateTime TimeCreated { get; protected set; } = Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// 
@@ -129,13 +129,13 @@ namespace Server.Dme.Models
         /// </summary>
         public DateTime? LastAggTime { get; set; } = null;
 
-        public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (DateTime.UtcNow - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && ((DateTime.UtcNow - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
+        public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
+        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
         public virtual bool IsDestroyed { get; protected set; } = false;
-        public virtual bool IsAggTime => !LastAggTime.HasValue || (DateTime.UtcNow - LastAggTime.Value).TotalMilliseconds >= AggTimeMs;
+        public virtual bool IsAggTime => !LastAggTime.HasValue || (Utils.GetHighPrecisionUtcTime() - LastAggTime.Value).TotalMilliseconds >= AggTimeMs;
 
         public Action<ClientObject> OnDestroyed;
 
@@ -164,7 +164,7 @@ namespace Server.Dme.Models
         public void QueueServerEcho()
         {
             TcpSendMessageQueue.Enqueue(new RT_MSG_SERVER_ECHO());
-            UtcLastServerEchoSent = DateTime.UtcNow;
+            UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
         }
 
         public void OnRecvServerEcho(RT_MSG_SERVER_ECHO echo)
@@ -173,7 +173,7 @@ namespace Server.Dme.Models
             if (echoTime > _lastServerEchoValue)
             {
                 _lastServerEchoValue = echoTime;
-                UtcLastServerEchoReply = DateTime.UtcNow;
+                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
                 LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
             }
         }
@@ -181,7 +181,7 @@ namespace Server.Dme.Models
         public void Tick()
         {
             List<BaseScertMessage> responses = new List<BaseScertMessage>();
-            LastAggTime = DateTime.UtcNow;
+            LastAggTime = Utils.GetHighPrecisionUtcTime();
 
             // tcp
             while (TcpSendMessageQueue.TryDequeue(out var message))
@@ -241,7 +241,7 @@ namespace Server.Dme.Models
 
         public void OnConnectionCompleted()
         {
-            TimeAuthenticated = DateTime.UtcNow;
+            TimeAuthenticated = Utils.GetHighPrecisionUtcTime();
         }
 
         #endregion

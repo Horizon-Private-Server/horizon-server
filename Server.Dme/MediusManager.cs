@@ -124,7 +124,7 @@ namespace Server.Dme
             _scertHandler.OnChannelInactive += async (channel) =>
             {
                 Logger.Error($"Lost connection to MPS");
-                TimeLostConnection = DateTime.UtcNow;
+                TimeLostConnection = Utils.GetHighPrecisionUtcTime();
                 await Stop();
             };
 
@@ -180,7 +180,7 @@ namespace Server.Dme
 
             //
             if (_mpsState == MPSConnectionState.FAILED || 
-                (_mpsState != MPSConnectionState.AUTHENTICATED && (DateTime.UtcNow - _utcConnectionState).TotalSeconds > 30))
+                (_mpsState != MPSConnectionState.AUTHENTICATED && (Utils.GetHighPrecisionUtcTime() - _utcConnectionState).TotalSeconds > 30))
                 throw new Exception("Failed to authenticate with the MPS server.");
 
             try
@@ -227,7 +227,7 @@ namespace Server.Dme
 
         private async Task ConnectMPS()
         {
-            _utcConnectionState = DateTime.UtcNow;
+            _utcConnectionState = Utils.GetHighPrecisionUtcTime();
             _mpsState = MPSConnectionState.NO_CONNECTION;
 
             try
@@ -237,7 +237,7 @@ namespace Server.Dme
             catch (Exception)
             {
                 Logger.Error($"Failed to connect to MPS");
-                TimeLostConnection = DateTime.UtcNow;
+                TimeLostConnection = Utils.GetHighPrecisionUtcTime();
                 return;
             }
 

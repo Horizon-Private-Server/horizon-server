@@ -134,9 +134,16 @@ namespace Server.Common
 
         #region Time
 
+        private static DateTime _timeAtStart = DateTime.UtcNow;
+        private static long _ticksAtStart = System.Diagnostics.Stopwatch.GetTimestamp();
+        public static DateTime GetHighPrecisionUtcTime()
+        {
+            return _timeAtStart + new TimeSpan(System.Diagnostics.Stopwatch.GetTimestamp() - _ticksAtStart);
+        }
+
         public static uint GetUnixTime()
         {
-            return DateTime.UtcNow.ToUnixTime();
+            return GetHighPrecisionUtcTime().ToUnixTime();
         }
 
         public static uint ToUnixTime(this DateTime time)

@@ -44,13 +44,13 @@ namespace Server.Dme
             public ClientObject ClientObject { get; set; } = null;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
-            public DateTime TimeConnected { get; set; } = DateTime.UtcNow;
+            public DateTime TimeConnected { get; set; } = Utils.GetHighPrecisionUtcTime();
 
 
             /// <summary>
             /// Timesout client if they authenticated after a given number of seconds.
             /// </summary>
-            public bool ShouldDestroy => ClientObject == null && (DateTime.UtcNow - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+            public bool ShouldDestroy => ClientObject == null && (Utils.GetHighPrecisionUtcTime() - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
         }
 
         protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
@@ -234,10 +234,10 @@ namespace Server.Dme
                         if (data.ClientObject != null)
                         {
                             // Echo
-                            if ((DateTime.UtcNow - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
+                            if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
                             {
                                 responses.Add(new RT_MSG_SERVER_ECHO());
-                                data.ClientObject.UtcLastServerEchoSent = DateTime.UtcNow;
+                                data.ClientObject.UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
                             }
 
                             // Add client object's send queue to responses
@@ -316,7 +316,7 @@ namespace Server.Dme
                         Queue(new RT_MSG_SERVER_STARTUP_INFO_NOTIFY()
                         {
                             GameHostType = (byte)MGCL_GAME_HOST_TYPE.MGCLGameHostClientServerAuxUDP,
-                            Timestamp = (uint)(DateTime.UtcNow - data.ClientObject.DmeWorld.WorldCreatedTimeUtc).TotalMilliseconds
+                            Timestamp = (uint)(Utils.GetHighPrecisionUtcTime() - data.ClientObject.DmeWorld.WorldCreatedTimeUtc).TotalMilliseconds
                         }, clientChannel);
                         Queue(new RT_MSG_SERVER_INFO_AUX_UDP()
                         {
@@ -370,7 +370,7 @@ namespace Server.Dme
                         Queue(new RT_MSG_SERVER_TIMEBASE_QUERY_NOTIFY()
                         {
                             ClientTime = timebaseQuery.Timestamp,
-                            ServerTime = (uint)(DateTime.UtcNow - data.ClientObject.DmeWorld.WorldCreatedTimeUtc).TotalMilliseconds
+                            ServerTime = (uint)(Utils.GetHighPrecisionUtcTime() - data.ClientObject.DmeWorld.WorldCreatedTimeUtc).TotalMilliseconds
                         }, clientChannel);
                         break;
                     }

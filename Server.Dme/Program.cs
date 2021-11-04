@@ -50,12 +50,12 @@ namespace Server.Dme
         private static FileLoggerProvider _fileLogger = null;
         private static ulong _sessionKeyCounter = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
-        private static DateTime _timeLastPluginTick = DateTime.UtcNow;
+        private static DateTime _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
 
         private static int _ticks = 0;
         private static Stopwatch _sw = new Stopwatch();
         private static HighResolutionTimer _timer;
-        private static DateTime _lastConfigRefresh = DateTime.UtcNow;
+        private static DateTime _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -82,6 +82,10 @@ namespace Server.Dme
                     if (error > 0.1f)
                         Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
 
+                    var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
+                    if (dt.TotalMilliseconds > 50)
+                        Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
+
                     _sw.Restart();
                     _ticks = 0;
                 }
@@ -94,23 +98,23 @@ namespace Server.Dme
                     await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
 
                     // Tick plugins
-                    if ((DateTime.UtcNow - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                    if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
                     {
-                        _timeLastPluginTick = DateTime.UtcNow;
+                        _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
                         Plugins.Tick();
                     }
                 }
-                else if ((DateTime.UtcNow - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                else if ((Utils.GetHighPrecisionUtcTime() - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
                 {
                     // Try to reconnect to the proxy server
                     await Manager.Start();
                 }
 
                 // Reload config
-                if ((DateTime.UtcNow - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                 {
                     RefreshConfig();
-                    _lastConfigRefresh = DateTime.UtcNow;
+                    _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
                 }
             }
             catch (Exception ex)

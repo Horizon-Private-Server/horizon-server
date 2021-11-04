@@ -5,6 +5,7 @@ using NReco.Logging.File;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC.Rfc7748;
 using RT.Cryptography;
+using Server.Common;
 using Server.Common.Logging;
 using Server.UnivereInformation.Config;
 using System;
@@ -35,7 +36,7 @@ namespace Server.UnivereInformation
 
         static async Task StartServerAsync()
         {
-            DateTime lastConfigRefresh = DateTime.UtcNow;
+            DateTime lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
 
             UniverseInfoServers = new MUIS[Settings.Ports.Length];
             for (int i = 0; i < UniverseInfoServers.Length; ++i)
@@ -54,10 +55,10 @@ namespace Server.UnivereInformation
                     await Task.WhenAll(UniverseInfoServers.Select(x => x.Tick()));
 
                     // Reload config
-                    if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                    if ((Utils.GetHighPrecisionUtcTime() - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                     {
                         RefreshConfig();
-                        lastConfigRefresh = DateTime.UtcNow;
+                        lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
                     }
 
                     await Task.Delay(100);

@@ -33,13 +33,13 @@ namespace Server.Medius.Models
         public uint GenericField4 = 0;
         public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
 
-        public bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((DateTime.UtcNow - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds) && GameCount == 0);
+        public bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((Utils.GetHighPrecisionUtcTime() - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds) && GameCount == 0);
         public int PlayerCount => Clients.Count;
         public int GameCount => _games.Count;
 
         private List<Game> _games = new List<Game>();
         private bool _removeChannel = false;
-        private DateTime _timeCreated = DateTime.UtcNow;
+        private DateTime _timeCreated = Utils.GetHighPrecisionUtcTime();
 
         public Channel()
         {

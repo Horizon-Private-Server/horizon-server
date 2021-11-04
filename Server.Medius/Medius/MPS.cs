@@ -27,7 +27,7 @@ namespace Server.Medius
         public override int Port => Program.Settings.MPSPort;
         public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
-        DateTime lastSend = DateTime.UtcNow;
+        DateTime lastSend = Utils.GetHighPrecisionUtcTime();
 
         public MPS()
         {

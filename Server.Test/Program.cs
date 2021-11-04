@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using NReco.Logging.File;
 using Org.BouncyCastle.Math;
 using RT.Cryptography;
+using Server.Common;
 using Server.Common.Logging;
 using Server.Test.Config;
 using Server.Test.Medius;
@@ -26,8 +27,8 @@ namespace Server.Test
 
         static FileLoggerProvider _fileLogger = null;
         static List<BaseClient> _clients = new List<BaseClient>();
-        static DateTime _lastComponentLog = DateTime.UtcNow;
-        static DateTime _lastConfigRefresh = DateTime.UtcNow;
+        static DateTime _lastComponentLog = Utils.GetHighPrecisionUtcTime();
+        static DateTime _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
 
         public static ServerSettings Settings = new ServerSettings();
 
@@ -49,19 +50,19 @@ namespace Server.Test
                     await Task.WhenAll(_clients.Select(x => x.Tick()));
 
                     // 
-                    if ((DateTime.UtcNow - _lastComponentLog).TotalSeconds > 15f)
+                    if ((Utils.GetHighPrecisionUtcTime() - _lastComponentLog).TotalSeconds > 15f)
                     {
                         foreach (var client in _clients)
                             client.Log();
 
-                        _lastComponentLog = DateTime.UtcNow;
+                        _lastComponentLog = Utils.GetHighPrecisionUtcTime();
                     }
 
                     // Reload config
-                    if ((DateTime.UtcNow - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                    if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                     {
                         RefreshConfig();
-                        _lastConfigRefresh = DateTime.UtcNow;
+                        _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
                     }
 
                     while (sw.ElapsedMilliseconds < 5)

@@ -19,6 +19,7 @@ using Server.Pipeline.Tcp;
 using DotNetty.Handlers.Logging;
 using DotNetty.Handlers.Timeout;
 using System.Data;
+using Server.Common;
 
 namespace Server.Test.Medius
 {
@@ -52,7 +53,7 @@ namespace Server.Test.Medius
         /// </summary>
         public DateTime LastSentEcho { get; set; } = DateTime.UnixEpoch;
         public DateTime LastRecvEcho { get; set; } = DateTime.UnixEpoch;
-        public DateTime TimeConnected { get; set; } = DateTime.UtcNow;
+        public DateTime TimeConnected { get; set; } = Utils.GetHighPrecisionUtcTime();
 
 
         /// <summary>
@@ -210,9 +211,9 @@ namespace Server.Test.Medius
 
         protected virtual void Echo(ref List<BaseScertMessage> responses)
         {
-            if ((DateTime.UtcNow - LastSentEcho).TotalSeconds > 5f)
+            if ((Utils.GetHighPrecisionUtcTime() - LastSentEcho).TotalSeconds > 5f)
             {
-                LastSentEcho = DateTime.UtcNow;
+                LastSentEcho = Utils.GetHighPrecisionUtcTime();
                 responses.Add(new RT_MSG_SERVER_ECHO() { });
             }
         }

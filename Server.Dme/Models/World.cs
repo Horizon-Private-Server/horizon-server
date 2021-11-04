@@ -77,12 +77,12 @@ namespace Server.Dme.Models
 
         public bool ForceDestruct { get; protected set; } = false;
 
-        public bool Timedout => !WorldTimeUtc.HasValue && (DateTime.UtcNow - WorldCreatedTimeUtc).TotalSeconds > Program.Settings.GameTimeoutSeconds;
+        public bool Timedout => !WorldTimeUtc.HasValue && (Server.Common.Utils.GetHighPrecisionUtcTime() - WorldCreatedTimeUtc).TotalSeconds > Program.Settings.GameTimeoutSeconds;
 
         public bool Destroy => (Timedout || SelfDestructFlag) && Clients.Count == 0;
         public bool Destroyed { get; protected set; } = false;
 
-        public DateTime WorldCreatedTimeUtc { get; protected set; } = DateTime.UtcNow;
+        public DateTime WorldCreatedTimeUtc { get; protected set; } = Server.Common.Utils.GetHighPrecisionUtcTime();
         public DateTime? WorldTimeUtc { get; protected set; } = null;
 
         public ConcurrentDictionary<int, ClientObject> Clients = new ConcurrentDictionary<int, ClientObject>();
