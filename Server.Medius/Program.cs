@@ -98,7 +98,7 @@ namespace Server.Medius
                         Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
 
                     var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
-                    if (dt.TotalMilliseconds > 50)
+                    if (Math.Abs(dt.TotalMilliseconds) > 50)
                         Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
 
                     _sw.Restart();
