@@ -65,6 +65,8 @@ namespace Server.Medius
         private static int sleepMS = 0;
         private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
         private static DateTime? _lastSuccessfulDbAuth = null;
+        private static DateTime _lastConfigRefresh = DateTime.UtcNow;
+        private static DateTime _lastComponentLog = DateTime.UtcNow;
         private static bool _hasPurgedAccountStatuses = false;
 
         private static int _ticks = 0;
@@ -75,9 +77,6 @@ namespace Server.Medius
 
         static async Task TickAsync()
         {
-            DateTime lastConfigRefresh = DateTime.UtcNow;
-            DateTime lastComponentLog = DateTime.UtcNow;
-            DateTime start = DateTime.Now;
 
             try
             {
@@ -135,19 +134,19 @@ namespace Server.Medius
                 Plugins.Tick();
 
                 // 
-                if ((DateTime.UtcNow - lastComponentLog).TotalSeconds > 15f)
+                if ((DateTime.UtcNow - _lastComponentLog).TotalSeconds > 15f)
                 {
                     AuthenticationServer.Log();
                     LobbyServer.Log();
                     ProxyServer.Log();
-                    lastComponentLog = DateTime.UtcNow;
+                    _lastComponentLog = DateTime.UtcNow;
                 }
 
                 // Reload config
-                if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                if ((DateTime.UtcNow - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                 {
                     RefreshConfig();
-                    lastConfigRefresh = DateTime.UtcNow;
+                    _lastConfigRefresh = DateTime.UtcNow;
                 }
             }
             catch (Exception ex)
