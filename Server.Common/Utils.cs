@@ -1,16 +1,22 @@
-﻿using System;
+﻿using HpTimeStamps;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using MonotonicContext = HpTimeStamps.MonotonicStampContext;
 
 namespace Server.Common
 {
+    using MonoStampSource = MonotonicTimeStampUtil<MonotonicContext>;
+
     public static class Utils
     {
         public static byte[] ReverseEndian(byte[] ba)
@@ -134,11 +140,19 @@ namespace Server.Common
 
         #region Time
 
-        private static DateTime _timeAtStart = DateTime.UtcNow;
-        private static long _ticksAtStart = System.Diagnostics.Stopwatch.GetTimestamp();
+        /// <summary>
+        /// Monotonic stamp context used by monotonic clock.  Contains
+        /// information about frequencies, conversions, a reference time, etc.
+        /// </summary>
+        public static ref readonly MonotonicContext MonotonicContext
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref MonoStampSource.StampContext;
+        }
+
         public static DateTime GetHighPrecisionUtcTime()
         {
-            return _timeAtStart + new TimeSpan(System.Diagnostics.Stopwatch.GetTimestamp() - _ticksAtStart);
+            return MonoStampSource.UtcNow;
         }
 
         public static uint GetUnixTime()
