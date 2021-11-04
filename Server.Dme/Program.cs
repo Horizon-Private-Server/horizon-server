@@ -55,15 +55,13 @@ namespace Server.Dme
         private static int _ticks = 0;
         private static Stopwatch _sw = new Stopwatch();
         private static HighResolutionTimer _timer;
+        private static DateTime _lastConfigRefresh = DateTime.UtcNow;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
 
         static async Task TickAsync()
         {
-            DateTime lastConfigRefresh = DateTime.UtcNow;
-            DateTime lastComponentLog = DateTime.UtcNow;
-            DateTime start = DateTime.Now;
 
             try
             {
@@ -109,10 +107,10 @@ namespace Server.Dme
                 }
 
                 // Reload config
-                if ((DateTime.UtcNow - lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
+                if ((DateTime.UtcNow - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                 {
                     RefreshConfig();
-                    lastConfigRefresh = DateTime.UtcNow;
+                    _lastConfigRefresh = DateTime.UtcNow;
                 }
             }
             catch (Exception ex)
