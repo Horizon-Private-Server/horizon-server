@@ -19,7 +19,7 @@ namespace RT.Models
         public int ClanMessageID;
         public string Message; // CLANMSG_MAXLEN
         public MediusClanMessageStatus Status;
-        public char EndOfList;
+        public bool EndOfList;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -33,7 +33,7 @@ namespace RT.Models
             ClanMessageID = reader.ReadInt32();
             Message = reader.ReadString(Constants.CLANMSG_MAXLEN);
             Status = reader.Read<MediusClanMessageStatus>();
-            EndOfList = reader.ReadChar();
+            EndOfList = reader.ReadBoolean();
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)

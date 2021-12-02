@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RT.Common\RT.Common.csproj" />
+    <ProjectReference Include="..\Server.Common\Server.Common.csproj" />
   </ItemGroup>
 
 </Project>

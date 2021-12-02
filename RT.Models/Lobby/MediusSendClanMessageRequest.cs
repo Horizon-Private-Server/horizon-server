@@ -26,7 +26,6 @@ namespace RT.Models
             // 
             MessageID = reader.Read<MessageId>();
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
-            reader.ReadBytes(2);
             Message = reader.ReadString(Constants.CLANMSG_MAXLEN);
         }
 
@@ -38,7 +37,6 @@ namespace RT.Models
             // 
             writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
-            writer.Write(new byte[2]);
             writer.Write(Message, Constants.CLANMSG_MAXLEN);
         }
 

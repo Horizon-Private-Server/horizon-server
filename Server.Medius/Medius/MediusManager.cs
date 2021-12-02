@@ -260,37 +260,57 @@ namespace Server.Medius
 
         public Channel GetChannelByChannelId(int channelId)
         {
-            if (_channelIdToChannel.TryGetValue(channelId, out var result))
-                return result;
+            lock (_channelIdToChannel)
+            {
+                if (_channelIdToChannel.TryGetValue(channelId, out var result))
+                    return result;
+            }
 
             return null;
         }
 
+        public Channel GetChannelByChannelName(string channelName, int appId)
+        {
+            lock (_channelIdToChannel)
+            {
+                return _channelIdToChannel.FirstOrDefault(x => x.Value.Name == channelName && x.Value.ApplicationId == appId).Value;
+            }
+        }
+
         public uint GetChannelCount(ChannelType type)
         {
-            return (uint)_channelIdToChannel.Count(x => x.Value.Type == type);
+            lock (_channelIdToChannel)
+            {
+                return (uint)_channelIdToChannel.Count(x => x.Value.Type == type);
+            }
         }
 
         public Channel GetDefaultLobbyChannel(int appId)
         {
-            // If all app ids are compatible then return the default
-            if (Program.Settings.ApplicationIds == null)
+            lock (_channelIdToChannel)
             {
-                return _channelIdToChannel
-                    .Select(x => x.Value)
-                    .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == 0);
-            }
-            else
-            {
-                return _channelIdToChannel
-                    .Select(x => x.Value)
-                    .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == appId);
+                // If all app ids are compatible then return the default
+                if (Program.Settings.ApplicationIds == null)
+                {
+                    return _channelIdToChannel
+                        .Select(x => x.Value)
+                        .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == 0);
+                }
+                else
+                {
+                    return _channelIdToChannel
+                        .Select(x => x.Value)
+                        .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == appId);
+                }
             }
         }
 
         public void AddChannel(Channel channel)
         {
-            _channelIdToChannel.Add(channel.Id, channel);
+            lock (_channelIdToChannel)
+            {
+                _channelIdToChannel.Add(channel.Id, channel);
+            }
         }
 
         public IEnumerable<Channel> GetChannelList(int appId, int pageIndex, int pageSize, ChannelType type)

@@ -42,11 +42,6 @@ namespace Server.Database.Models
         public int? ClanId { get; set; }
         
         /// <summary>
-        /// 
-        /// </summary>
-        public ClanInvitationDTO[] ClanInvitations { get; set; }
-
-        /// <summary>
         /// Application specific user data as a Base64 encoded string.
         /// Convert back to byte array for use with Medius application.
         /// </summary>

@@ -1,6 +1,7 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Newtonsoft.Json;
 using RT.Common;
+using Server.Common;
 using Server.Database.Config;
 using Server.Database.Models;
 using System;
@@ -21,8 +22,10 @@ namespace Server.Database
 
         private DbSettings _settings = new DbSettings();
 
-        private int _simulatedAccountIdCounter = 0;
-        private int _simulatedClanIdCounter = 0;
+        private int _simulatedAccountIdCounter = 1;
+        private int _simulatedClanIdCounter = 1;
+        private int _simulatedClanMessageIdCounter = 1;
+        private int _simulatedClanInvitationIdCounter = 1;
         private string _dbAccessToken = null;
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
         private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
@@ -814,9 +817,9 @@ namespace Server.Database
         /// <param name="clanId">Clan id of clan.</param>
         /// <param name="statId">Index of stat. Starts at 1.</param>
         /// <returns>Leaderboard result for clan.</returns>
-        public async Task<LeaderboardDTO> GetClanLeaderboardIndex(int clanId, int statId)
+        public async Task<ClanLeaderboardDTO> GetClanLeaderboardIndex(int clanId, int statId)
         {
-            LeaderboardDTO result = null;
+            ClanLeaderboardDTO result = null;
 
             try
             {
@@ -826,19 +829,59 @@ namespace Server.Database
                     if (clan == null)
                         return null;
 
-                    return new LeaderboardDTO()
+                    var ordered = _simulatedClans.Where(x => !x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).ToList();
+                    return new ClanLeaderboardDTO()
                     {
-                        AccountId = clan.ClanId,
-                        AccountName = clan.ClanName,
-                        Index = 1,
+                        ClanId = clan.ClanId,
+                        ClanName = clan.ClanName,
+                        Index = ordered.FindIndex(0, ordered.Count, x => x.ClanId == clanId),
                         MediusStats = clan.ClanMediusStats,
-                        StatValue = clan.ClanWideStats[statId-1],
-                        TotalRankedAccounts = 1
+                        StatValue = clan.ClanWideStats[statId],
+                        TotalRankedClans = _simulatedClans.Count(x => !x.IsDisbanded)
                     };
                 }
                 else
                 {
-                    result = await GetDbAsync<LeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId}");
+                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get clan leaderboard for a given stat by page and size.
+        /// </summary>
+        /// <param name="statId">Stat id. Starts at 1.</param>
+        /// <param name="startIndex">Position to start gathering results from. Starts at 0.</param>
+        /// <param name="size">Max number of items to retrieve.</param>
+        /// <returns>Collection of leaderboard results for each player in page.</returns>
+        public async Task<ClanLeaderboardDTO[]> GetClanLeaderboard(int statId, int startIndex, int size)
+        {
+            ClanLeaderboardDTO[] result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var ordered = _simulatedClans.Where(x=>!x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    result = ordered.Select(x => new ClanLeaderboardDTO()
+                    {
+                        ClanId = x.ClanId,
+                        ClanName = x.ClanName,
+                        MediusStats = x.ClanMediusStats,
+                        StatValue = x.ClanWideStats[statId],
+                        TotalRankedClans = _simulatedClans.Count(y => !y.IsDisbanded),
+                        Index = startIndex + ordered.IndexOf(x)
+                    }).ToArray();
+                }
+                else
+                {
+                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
                 }
             }
             catch (Exception e)
@@ -864,7 +907,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedAccounts.OrderBy(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedAccounts.OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new LeaderboardDTO()
                     {
                         AccountId = x.AccountId,
@@ -1030,7 +1073,6 @@ namespace Server.Database
 
         #region Clan
 
-
         /// <summary>
         /// Get clan by name.
         /// </summary>
@@ -1110,10 +1152,13 @@ namespace Server.Database
                             ClanName = createClan.ClanName,
                             ClanLeaderAccount = creatorAccount,
                             ClanMemberAccounts = new List<AccountDTO>(new AccountDTO[] { creatorAccount }),
+                            ClanMemberInvitations = new List<ClanInvitationDTO>(),
+                            ClanMessages = new List<ClanMessageDTO>(),
                             ClanMediusStats = Convert.ToBase64String(new byte[Constants.CLANSTATS_MAXLEN]),
                             ClanWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
                             AppId = createClan.AppId
                         });
+
                         creatorAccount.ClanId = result.ClanId;
                     }
                     else
@@ -1139,11 +1184,11 @@ namespace Server.Database
         }
 
         /// <summary>
-        /// Delete clan by name.
+        /// Delete clan by id.
         /// </summary>
-        /// <param name="clanName">Case insensitive name of clan.</param>
+        /// <param name="clanId">Id of clan.</param>
         /// <returns>Success or failure.</returns>
-        public async Task<bool> DeleteClan(string clanName)
+        public async Task<bool> DeleteClan(int accountId, int clanId)
         {
             bool result = false;
 
@@ -1151,11 +1196,25 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedClans.RemoveAll(x => x.ClanName.ToLower() == clanName.ToLower()) > 0;
+                    // 
+                    var clan = await GetClanById(clanId);
+                    if (clan == null || clan.ClanLeaderAccount.AccountId != accountId)
+                        return false;
+
+                    // remove members
+                    foreach (var member in clan.ClanMemberAccounts)
+                        member.ClanId = null;
+
+                    // revoke invitations
+                    foreach (var inv in clan.ClanMemberInvitations)
+                        inv.ResponseStatus = 3;
+
+                    // remove
+                    return _simulatedClans.Remove(clan);
                 }
                 else
                 {
-                    result = (await GetDbAsync($"Clan/deleteClan?ClanName={clanName}")).IsSuccessStatusCode;
+                    result = (await GetDbAsync($"Clan/deleteClan?AccountId={accountId}&ClanId={clanId}")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1166,6 +1225,421 @@ namespace Server.Database
             return result;
         }
 
+        /// <summary>
+        /// Transfers leadership of a clan to a new leader.
+        /// </summary>
+        /// <param name="leaderAccountId">Account id of leader.</param>
+        /// <param name="clanId">Id of clan.</param>
+        /// <param name="newLeaderAccountId">Account id of new leader.</param>
+        /// <returns>Returns created clan.</returns>
+        public async Task<bool> ClanTransferLeadership(int leaderAccountId, int clanId, int newLeaderAccountId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var clan = await GetClanById(clanId);
+                    if (clan == null || clan.ClanLeaderAccount.AccountId != leaderAccountId)
+                        return false;
+
+                    var newLeaderAccount = await GetAccountById(newLeaderAccountId);
+                    if (newLeaderAccount == null)
+                        return false;
+
+                    // must be a member
+                    if (newLeaderAccount.ClanId != clanId)
+                        return false;
+
+                    clan.ClanLeaderAccount = newLeaderAccount;
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/transferLeadership", JsonConvert.SerializeObject(new ClanTransferLeadershipDTO()
+                    {
+                        AccountId = leaderAccountId,
+                        ClanId = clanId,
+                        NewLeaderAccountId = newLeaderAccountId
+                    }))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a new clan invitation for the given player.
+        /// </summary>
+        /// <param name="fromAccountId">Id of account sending invite.</param>
+        /// <param name="clanId">Id of clan.</param>
+        /// <param name="accountId">Id of target player.</param>
+        /// <param name="message">Invite message.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> CreateClanInvitation(int fromAccountId, int clanId, int accountId, string message)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // get clan
+                    var clan = _simulatedClans.FirstOrDefault(x => x.ClanId == clanId);
+                    if (clan == null)
+                        return false;
+
+                    // validate from is leader
+                    if (clan.ClanLeaderAccount.AccountId != fromAccountId)
+                        return false;
+
+                    // get target account
+                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    if (account == null)
+                        return false;
+
+                    // check if invitations already made
+                    if (clan.ClanMemberInvitations.Any(x => x.TargetAccountId == accountId && x.ResponseStatus == 0))
+                        return false;
+
+                    // add
+                    clan.ClanMemberInvitations.Add(new ClanInvitationDTO()
+                    {
+                        Id = _simulatedClanInvitationIdCounter++,
+                        AppId = clan.AppId,
+                        ClanId = clanId,
+                        ClanName = clan.ClanName,
+                        TargetAccountId = accountId,
+                        TargetAccountName = account.AccountName,
+                        Message = message
+                    });
+
+                    return true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/createInvitation?FromAccountId={fromAccountId}", new ClanInvitationDTO()
+                    {
+                        ClanId = clanId,
+                        TargetAccountId = accountId,
+                        Message = message
+                    })).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Returns all clan invitations for the given player.
+        /// </summary>
+        /// <param name="accountId">Id of target player.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<List<AccountClanInvitationDTO>> GetClanInvitationsByAccount(int accountId)
+        {
+            List<AccountClanInvitationDTO> result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // get clans
+                    var clans = _simulatedClans.Where(x => x.ClanMemberInvitations.Any(y => y.TargetAccountId == accountId));
+
+                    // 
+                    result = clans
+                        .Select(x => new AccountClanInvitationDTO()
+                        {
+                            LeaderAccountId = x.ClanLeaderAccount.AccountId,
+                            LeaderAccountName = x.ClanLeaderAccount.AccountName,
+                            Invitation = x.ClanMemberInvitations.FirstOrDefault(y => y.TargetAccountId == accountId)
+                        })
+                        .Where(x => x.Invitation != null)
+                        .ToList();
+                }
+                else
+                {
+                    result = (await GetDbAsync<List<AccountClanInvitationDTO>>($"Clan/invitations?AccountId={accountId}"));
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Sets the response to the given clan invitation.
+        /// </summary>
+        /// <param name="accountId">Id of account.</param>
+        /// <param name="inviteId">Id of clan invitation.</param>
+        /// <param name="message">Response message to record.</param>
+        /// <param name="responseStatus">Response to invitation.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> RespondToClanInvitation(int accountId, int inviteId, string message, int responseStatus)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // find invitation
+                    var invite = _simulatedClans.Select(x => x.ClanMemberInvitations.FirstOrDefault(y => y.Id == inviteId)).FirstOrDefault(x => x != null);
+                    if (invite == null)
+                        return false;
+
+                    // get clan
+                    var clan = _simulatedClans.FirstOrDefault(x => x.ClanMemberInvitations.Contains(invite));
+                    if (clan == null)
+                        return false;
+
+                    // get account
+                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    if (account == null)
+                        return false;
+
+                    // validate its for user
+                    if (invite.TargetAccountId != accountId)
+                        return false;
+
+                    // validate it's not already been decided
+                    if (invite.ResponseStatus != 0)
+                        return false;
+
+                    // 
+                    invite.ResponseMessage = message;
+                    invite.ResponseStatus = responseStatus;
+                    invite.ResponseTime = (int)Utils.GetUnixTime();
+                    
+                    // handle accept
+                    if (responseStatus == 1)
+                    {
+                        account.ClanId = invite.ClanId;
+                        clan.ClanMemberAccounts.Add(account);
+                    }
+
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/respondInvitation", new ClanInvitationResponseDTO()
+                    {
+                        AccountId = accountId,
+                        InvitationId = inviteId,
+                        Response = responseStatus,
+                        ResponseMessage = message,
+                        ResponseTime = (int)Utils.GetUnixTime()
+                    })).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Revokes a given clan's invitation to the target account.
+        /// </summary>
+        /// <param name="fromAccountId">Id of account requesting revoke.</param>
+        /// <param name="clanId">Id of clan.</param>
+        /// <param name="targetAccountId">Target account to revoke invitation to.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> RevokeClanInvitation(int fromAccountId, int clanId, int targetAccountId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // get clan
+                    var clan = _simulatedClans.FirstOrDefault(x => x.ClanId == clanId);
+                    if (clan == null)
+                        return false;
+
+                    // validate leader is fromAccount
+                    if (clan.ClanLeaderAccount.AccountId != fromAccountId)
+                        return false;
+
+                    // find invitation
+                    var invite = clan.ClanMemberInvitations.FirstOrDefault(x => x.TargetAccountId == targetAccountId);
+                    if (invite == null)
+                        return false;
+
+                    // validate it's not already been decided
+                    if (invite.ResponseStatus != 0)
+                        return false;
+
+                    // 
+                    invite.ResponseStatus = 3;
+
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/revokeInvitation?FromAccountId={fromAccountId}&ClanId={clanId}&TargetAccountId={targetAccountId}", null)).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns all clan invitations for the given player.
+        /// </summary>
+        /// <param name="accountId">Id of target player.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<List<ClanMessageDTO>> GetClanMessages(int accountId, int clanId, int startIndex, int pageSize)
+        {
+            List<ClanMessageDTO> result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // get clan
+                    var clan = await GetClanById(clanId);
+                    if (clan != null)
+                    {
+                        // 
+                        result = clan.ClanMessages
+                            .Skip(startIndex * pageSize)
+                            .Take(pageSize)
+                            .ToList();
+                    }
+                }
+                else
+                {
+                    result = (await GetDbAsync<List<ClanMessageDTO>>($"Clan/messages?AccountId={accountId}&ClanId={clanId}&start={startIndex}&pageSize={pageSize}"));
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Adds a clan message to the clan.
+        /// </summary>
+        /// <param name="accountId">Id of sender account.</param>
+        /// <param name="clanId">Id of clan.</param>
+        /// <param name="message">Message to add.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> ClanAddMessage(int accountId, int clanId, string message)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // get clan
+                    var clan = await GetClanById(clanId);
+                    if (clan == null)
+                        return false;
+
+                    // validate leader
+                    if (clan.ClanLeaderAccount.AccountId != accountId)
+                        return false;
+
+                    //
+                    clan.ClanMessages.Add(new ClanMessageDTO()
+                    {
+                        Id = _simulatedClanMessageIdCounter++,
+                        Message = message
+                    });
+
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/addMessage?AccountId={accountId}&ClanId={clanId}", new ClanMessageDTO()
+                    {
+                        Message = message
+                    })).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Edits an existing clan message.
+        /// </summary>
+        /// <param name="accountId">Id of sender account.</param>
+        /// <param name="clanId">Id of clan.</param>
+        /// <param name="messageId">Id of clan message to edit.</param>
+        /// <param name="message">Message to add.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> ClanEditMessage(int accountId, int clanId, int messageId, string message)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    // get clan
+                    var clan = await GetClanById(clanId);
+                    if (clan == null)
+                        return false;
+
+                    // validate leader
+                    if (clan.ClanLeaderAccount.AccountId != accountId)
+                        return false;
+
+                    // find message
+                    var clanMessage = clan.ClanMessages.FirstOrDefault(x => x.Id == messageId);
+                    if (clanMessage == null)
+                        return false;
+
+                    //
+                    clanMessage.Message = message;
+
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/addMessage?AccountId={accountId}&ClanId={clanId}", new ClanMessageDTO()
+                    {
+                        Message = message
+                    })).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
 
         #endregion
 
