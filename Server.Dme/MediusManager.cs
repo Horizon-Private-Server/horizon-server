@@ -43,10 +43,6 @@ namespace Server.Dme
         private ConcurrentDictionary<string, ClientObject> _accessTokenToClient = new ConcurrentDictionary<string, ClientObject>();
         private ConcurrentDictionary<string, ClientObject> _sessionKeyToClient = new ConcurrentDictionary<string, ClientObject>();
 
-        private PS2_RSA _serverKey => Program.GlobalAuthKey;
-        private PS2_RSA _clientKey => Program.Settings.MPS.Key;
-        private PS2_RC4 _sessionCipher = null;
-
         private DateTime _utcConnectionState;
         private MPSConnectionState _mpsState = MPSConnectionState.NO_CONNECTION;
 
@@ -246,8 +242,7 @@ namespace Server.Dme
 
             _mpsState = MPSConnectionState.CONNECTED;
 
-            // Send hello
-            await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_HELLO()
+            var clientHello = new RT_MSG_CLIENT_HELLO()
             {
                 Parameters = new ushort[]
                 {
@@ -257,13 +252,19 @@ namespace Server.Dme
                     1,
                     1
                 }
-            });
+            };
+
+            // Send hello
+            await _mpsChannel.WriteAndFlushAsync(clientHello);
 
             _mpsState = MPSConnectionState.HELLO;
         }
 
         private async Task ProcessMessage(BaseScertMessage message, IChannel serverChannel)
         {
+            // Get ScertClient data
+            var scertClient = serverChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+
             // 
             switch (message)
             {
@@ -273,10 +274,13 @@ namespace Server.Dme
                         if (_mpsState != MPSConnectionState.HELLO)
                             throw new Exception($"Unexpected RT_MSG_SERVER_HELLO from server. {serverHello}");
 
+                        // 
+                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.MPS.Key));
+
                         // Send public key
                         Enqueue(new RT_MSG_CLIENT_CRYPTKEY_PUBLIC()
                         {
-                            Key = _clientKey.N.ToByteArrayUnsigned().Reverse().ToArray()
+                            Key = Program.Settings.MPS.Key.N.ToByteArrayUnsigned().Reverse().ToArray()
                         });
 
                         _mpsState = MPSConnectionState.HANDSHAKE;

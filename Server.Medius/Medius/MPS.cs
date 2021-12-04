@@ -44,7 +44,7 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
                         // initialize default key
-                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.DefaultKey));
+                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.MPSKey));
 
                         if (data.State > ClientState.HELLO)
                             throw new Exception($"Unexpected RT_MSG_CLIENT_HELLO from {clientChannel.RemoteAddress}: {clientHello}");

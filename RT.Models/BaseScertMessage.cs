@@ -82,7 +82,7 @@ namespace RT.Models
 
                             var data = new byte[length];
                             Array.Copy(buffer, data, length);
-                            if (cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                            if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                             {
                                 totalHeaderSize += HASH_SIZE;
 
@@ -114,7 +114,7 @@ namespace RT.Models
             {
                 var data = new byte[length];
                 Array.Copy(buffer, data, length);
-                if (cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                 {
                     totalHeaderSize += HASH_SIZE;
 
