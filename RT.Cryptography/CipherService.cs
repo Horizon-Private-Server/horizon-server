@@ -9,6 +9,8 @@ namespace RT.Cryptography
         private ICipherFactory _factory = null;
         private Dictionary<CipherContext, ICipher> _ciphers = new Dictionary<CipherContext, ICipher>();
 
+        public bool EnableEncryption { get; set; } = true;
+
         public CipherService(ICipherFactory factory)
         {
             _factory = factory;
@@ -51,7 +53,7 @@ namespace RT.Cryptography
         {
             cipher = null;
             hash = null;
-            if (!_ciphers.TryGetValue(context, out var c) || c == null)
+            if (!EnableEncryption || !_ciphers.TryGetValue(context, out var c) || c == null)
                 return false;
 
             return c.Encrypt(input, out cipher, out hash);

@@ -26,6 +26,12 @@ namespace Server.Dme.Config
             new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
             );
 
+
+        /// <summary>
+        /// Whether or not to encrypt server messages.
+        /// </summary>
+        public bool EncryptServerMessages { get; set; } = true;
+
         /// <summary>
         /// How many milliseconds before refreshing the config.
         /// </summary>

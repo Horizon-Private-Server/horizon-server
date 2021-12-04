@@ -29,6 +29,11 @@ namespace Server.UnivereInformation.Config
             );
 
         /// <summary>
+        /// Whether or not to encrypt server messages.
+        /// </summary>
+        public bool EncryptServerMessages { get; set; } = true;
+
+        /// <summary>
         /// Universes.
         /// </summary>
         public Dictionary<int, UniverseInfo> Universes { get; set; } = new Dictionary<int, UniverseInfo>();
