@@ -20,9 +20,9 @@ namespace RT.Models
 
         public RSA_KEY(byte[] keyBytes)
         {
-            for (int i = 0; i < key.Length; ++i)
+            for (int i = 0; i < key.Length; i++)
             {
-                key[i] = (uint)((keyBytes[i + 3] << 24) | (keyBytes[i + 2] << 16) | (keyBytes[i + 1] << 8) | (keyBytes[i + 0]));
+                key[i] = (uint)((keyBytes[(i*4) + 3] << 24) | (keyBytes[(i * 4) + 2] << 16) | (keyBytes[(i * 4) + 1] << 8) | (keyBytes[(i * 4) + 0]));
             }
         }
 
@@ -35,7 +35,7 @@ namespace RT.Models
 
         public void Serialize(BinaryWriter writer)
         {
-            for (int i = 0; i < key.Length; ++i)
+            for (int i = 0; i < Constants.RSA_SIZE_DWORD; ++i)
                 writer.Write(i >= key.Length ? 0 : key[i]);
         }
 

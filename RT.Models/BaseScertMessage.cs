@@ -216,16 +216,9 @@ namespace RT.Models
                 {
                     msg = Instantiate(classType, id, plain, mediusVersion);
                 }
-
-                // This is a hack to make the dme server connect
-                // We don't really care what their key is since we're not encrypting our response
-                else if (id == RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC)
-                {
-                    msg = Instantiate(classType, id, plain, mediusVersion);
-                }
                 else
                 {
-                    Logger.Error($"Unable to decrypt {id}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(messageBuffer)}");
+                    Logger.Error($"Unable to decrypt {id}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(messageBuffer).Replace("-", "")}");
                 }
             }
             else

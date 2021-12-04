@@ -843,6 +843,9 @@ namespace Server.Medius
 
         private void Login(MessageId messageId, IChannel clientChannel, ChannelData data, Database.Models.AccountDTO accountDto)
         {
+            var fac = new PS2CipherFactory();
+            var rsa = fac.CreateNew(CipherContext.RSA_AUTH) as PS2_RSA;
+
             //
             data.ClientObject.Login(accountDto);
 
@@ -857,6 +860,8 @@ namespace Server.Medius
 
             // Put client in default channel
             data.ClientObject.JoinChannel(Program.Manager.GetDefaultLobbyChannel(data.ApplicationId));
+
+
 
             // Tell client
             data.ClientObject.Queue(new MediusAccountLoginResponse()
