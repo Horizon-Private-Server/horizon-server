@@ -25,22 +25,27 @@ namespace Server.Medius
 
         protected override IInternalLogger Logger => _logger;
         public override int Port => Program.Settings.MPSPort;
-        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         DateTime lastSend = Utils.GetHighPrecisionUtcTime();
 
         public MPS()
         {
-            _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
+
         }
 
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
+            // Get ScertClient data
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+
             // 
             switch (message)
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
+                        // initialize default key
+                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.DefaultKey));
+
                         if (data.State > ClientState.HELLO)
                             throw new Exception($"Unexpected RT_MSG_CLIENT_HELLO from {clientChannel.RemoteAddress}: {clientHello}");
 
@@ -63,7 +68,12 @@ namespace Server.Medius
                         }
 
                         data.State = ClientState.CONNECT_1;
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
+
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RSA_AUTH, clientCryptKeyPublic.Key.Reverse().ToArray());
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION);
+
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:

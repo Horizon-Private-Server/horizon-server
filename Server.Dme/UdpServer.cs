@@ -119,7 +119,7 @@ namespace Server.Dme
                     pipeline.AddLast(new ScertDatagramEncoder(Constants.MEDIUS_UDP_MESSAGE_MAXLEN));
                     pipeline.AddLast(new ScertDatagramIEnumerableEncoder(Constants.MEDIUS_UDP_MESSAGE_MAXLEN));
                     pipeline.AddLast(new ScertDatagramDecoder());
-                    pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
+                    pipeline.AddLast(new ScertDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 

@@ -43,8 +43,6 @@ namespace Server.Medius
         public abstract int Port { get; }
         public IPAddress IPAddress => Program.SERVER_IP;
 
-        public abstract PS2_RSA AuthKey { get; }
-
         protected IEventLoopGroup _bossGroup = null;
         protected IEventLoopGroup _workerGroup = null;
         protected IChannel _boundChannel = null;
@@ -89,15 +87,6 @@ namespace Server.Medius
             _bossGroup = new MultithreadEventLoopGroup(1);
             _workerGroup = new MultithreadEventLoopGroup();
 
-            Func<RT_MSG_TYPE, CipherContext, ICipher> getCipher = (id, context) =>
-            {
-                switch (context)
-                {
-                    case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
-                    case CipherContext.RSA_AUTH: return AuthKey;
-                    default: return null;
-                }
-            };
             _scertHandler = new ScertServerHandler();
 
             // Add client on connect
@@ -195,8 +184,8 @@ namespace Server.Medius
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
                         pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
-                        pipeline.AddLast(new ScertIEnumerableDecoder(_sessionCipher, AuthKey));
-                        pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
+                        pipeline.AddLast(new ScertIEnumerableDecoder());
+                        pipeline.AddLast(new ScertDecoder());
                         pipeline.AddLast(_scertHandler);
                     }));
 

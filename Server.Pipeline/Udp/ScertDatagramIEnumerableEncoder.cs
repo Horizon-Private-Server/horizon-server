@@ -42,7 +42,7 @@ namespace Server.Pipeline.Udp
                 if (!msgsByEndpoint.TryGetValue(msg.Destination, out temp))
                     msgsByEndpoint.Add(msg.Destination, temp = new List<byte[]>());
 
-                temp.AddRange(msg.Message.Serialize(scertClient.MediusVersion));
+                temp.AddRange(msg.Message.Serialize(scertClient.MediusVersion, scertClient.CipherService));
             }
 
             foreach (var kvp in msgsByEndpoint)

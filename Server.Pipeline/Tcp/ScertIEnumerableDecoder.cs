@@ -18,19 +18,11 @@ namespace Server.Pipeline.Tcp
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ScertIEnumerableDecoder>();
 
-        readonly ICipher[] _ciphers = null;
-        readonly Func<RT_MSG_TYPE, CipherContext, ICipher> _getCipher = null;
-
         /// <summary>
         ///     Create a new instance.
         /// </summary>
-        public ScertIEnumerableDecoder(params ICipher[] ciphers)
+        public ScertIEnumerableDecoder()
         {
-            this._ciphers = ciphers;
-            this._getCipher = (id, ctx) =>
-            {
-                return _ciphers?.FirstOrDefault(x => x.Context == ctx);
-            };
         }
 
         protected override void Decode(IChannelHandlerContext context, IByteBuffer input, List<object> output)

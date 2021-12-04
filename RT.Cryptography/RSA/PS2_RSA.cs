@@ -85,6 +85,11 @@ namespace RT.Cryptography
 
         #endregion
 
+        public byte[] GetPublicKey()
+        {
+            return this.N.ToByteArrayUnsigned();
+        }
+
         public override string ToString()
         {
             return $"PS2_RSA({Context}, {N}, {E}, {D})";

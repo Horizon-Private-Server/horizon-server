@@ -250,6 +250,13 @@ namespace RT.Cryptography
 
         #endregion
 
+        public byte[] GetPublicKey()
+        {
+            var copy = new byte[this._key.Length];
+            Array.Copy(this._key, copy, copy.Length);
+            return copy;
+        }
+
         public override string ToString()
         {
             return $"PS3_RCQ({Context}, {BitConverter.ToString(_key).Replace("-", "")})";

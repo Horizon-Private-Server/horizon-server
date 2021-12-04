@@ -43,7 +43,7 @@ namespace Server.Pipeline.Tcp
             var scertClient = ctx.GetAttribute(Constants.SCERT_CLIENT).Get();
 
             // Serialize
-            var msgs = message.Serialize(scertClient.MediusVersion);
+            var msgs = message.Serialize(scertClient.MediusVersion, scertClient.CipherService);
 
             // 
             foreach (var msg in msgs)
