@@ -216,7 +216,7 @@ namespace Server.UnivereInformation
                     {
                         data.ApplicationId = clientConnectTcp.AppId;
 
-                        if (scertClient.MediusVersion >= 0x6D)
+                        if (scertClient.MediusVersion >= 109)
                         {
                             Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
                         }

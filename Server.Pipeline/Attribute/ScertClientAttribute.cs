@@ -10,6 +10,7 @@ namespace Server.Pipeline.Attribute
     public class ScertClientAttribute
     {
         public int MediusVersion { get; set; }
+        public bool IsPS3Client => MediusVersion >= 112;
         public CipherService CipherService { get; set; }
 
         public bool OnMessage(BaseScertMessage message)
@@ -26,27 +27,25 @@ namespace Server.Pipeline.Attribute
 
         private void OnMediusVersionChanged()
         {
-            // PS2 medius uses version < 112
-            if (MediusVersion < 112)
+            if (IsPS3Client)
             {
-                CipherService = new CipherService(new PS2CipherFactory());
+                CipherService = new CipherService(new PS3CipherFactory());
             }
             else
             {
-                CipherService = new CipherService(new PS3CipherFactory());
+                CipherService = new CipherService(new PS2CipherFactory());
             }
         }
 
         public ICipher GetDefaultRSAKey(PS2_RSA rsa)
         {
-            // PS2 medius uses version < 112
-            if (MediusVersion < 112)
+            if (IsPS3Client)
             {
-                return rsa;
+                return new PS3_RSA(rsa.N, rsa.E, rsa.D);
             }
             else
             {
-                return new PS3_RSA(rsa.N, rsa.E, rsa.D);
+                return rsa;
             }
         }
     }
