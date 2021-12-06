@@ -37,19 +37,24 @@ namespace RT.Cryptography
 
         public virtual bool Decrypt(byte[] input, byte[] hash, out byte[] plain)
         {
-            bool match = false;
-            var plainBigInt = Decrypt(input.ToBigInteger());
+            plain = new byte[input.Length];
+            for (int i = 0; i < input.Length; i += 0x40)
+            {
+                var len = input.Length - i;
+                if (len >= 0x40)
+                {
+                    // decrypt via rsa
+                    var plainBigInt = Decrypt(input.ToBigInteger(i, 0x40));
+                    Array.Copy(plainBigInt.ToBA(), 0, plain, i, 0x40);
+                }
+                else
+                {
+                    // for the trailing bytes just copy over to plaintext
+                    Array.Copy(input, 0, plain, i, len);
+                }
+            }
 
-            plain = plainBigInt.ToBA();
             Hash(plain, out var ourHash);
-            match = ourHash.SequenceEqual(hash);
-            if (match)
-                return true;
-
-            // Handle case where message > n
-            plainBigInt = plainBigInt.Add(N);
-            plain = plainBigInt.ToBA();
-            Hash(plain, out ourHash);
             return ourHash.SequenceEqual(hash);
         }
 
@@ -140,6 +145,11 @@ namespace RT.Cryptography
         public static BigInteger ToBigInteger(this byte[] ba)
         {
             return new BigInteger(1, ba.Reverse().ToArray());
+        }
+
+        public static BigInteger ToBigInteger(this byte[] ba, int startIndex, int length)
+        {
+            return new BigInteger(1, ba.Skip(startIndex).Take(length).Reverse().ToArray());
         }
     }
 }
