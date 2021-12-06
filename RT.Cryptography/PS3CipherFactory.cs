@@ -69,7 +69,7 @@ namespace RT.Cryptography
         private ICipher CreateAsymFromPublicKey(byte[] publicKey)
         {
             BigInteger e = new BigInteger("17");
-            return new PS3_RSA(new BigInteger(publicKey), e, e);
+            return new PS3_RSA(new BigInteger(1, publicKey), e, e);
         }
     }
 }
