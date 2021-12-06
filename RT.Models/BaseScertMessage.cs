@@ -57,7 +57,7 @@ namespace RT.Models
                 }
             }
 
-            var ctx = Id == RT_MSG_TYPE.RT_MSG_SERVER_CRYPTKEY_PEER ? CipherContext.RSA_AUTH : CipherContext.RC_SERVER_SESSION;
+            var ctx = Id == RT_MSG_TYPE.RT_MSG_SERVER_CRYPTKEY_PEER ? CipherContext.RSA_AUTH : CipherContext.RC_CLIENT_SESSION;
 
             // Check for fragmentation
             if (Id == RT_MSG_TYPE.RT_MSG_SERVER_APP && length > Constants.MEDIUS_MESSAGE_MAXLEN)
