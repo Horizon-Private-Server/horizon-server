@@ -58,7 +58,21 @@ namespace Server.Medius
                         // initialize default key
                         scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.DefaultKey));
 
-                        Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
+                        if (scertClient.MediusVersion < 112)
+                        {   //PS2
+                            Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
+                        } else {
+                            string s = "71000006e702308202e3308201cba00302010202140100000000000000000000001100000000000004300d06092a864886f70d0101050500308196310b3009060355040613025553310b3009060355040813024341311230100603550407130953616e20446965676f3131302f060355040a1328534f4e5920436f6d707574657220456e7465727461696e6d656e7420416d657269636120496e632e31143012060355040b130b53434552542047726f7570311d301b06035504031314534345525420526f6f7420417574686f72697479301e170d3035303432373231303233335a170d3335303432363233353935395a308187310b3009060355040613025553310b3009060355040813024341311230100603550407130953616e20446965676f3131302f060355040a1328534f4e5920436f6d707574657220456e7465727461696e6d656e7420416d657269636120496e632e31143012060355040b130b53434552542047726f7570310e300c060355040313054d4c532030305c300d06092a864886f70d0101010500034b003048024100cf16b818a204ba6db8fc85d866e4f708e6cfa754a5a2399d08eafdfdbbff852d3f1c86944e157dd8f6408d7cd9cfdab409d32fddee05bdde8cff303187b374690203000011300d06092a864886f70d010105050003820101007cc5ccb73e8bffb1888d870279767063a8ea2a619fdd3bbc0b1209b5384853408ec61aafa8b9071f9e41ab93bb56dbcea59ebf18ca113775fd146c3e97fb673db572f849dc906e9f6ee6817cdcf104c4ac4758020ff2443b770d0979fce7cd8807c69ef787e51660e22e35ca19f43da41346ee619d1a707c335684f183ea432c38aaf5dbb277c8527ad98412d7624362d89d52af9f39459db0c5159a8d737262b4a9abdd95b1b8d9d586230bc3cef9fafab68b0fa8e516a89672aa4f0b3956c0a1fbb392b4b7cfca233bee6b83a4b90fe9a8211803f35f3ab83ef81dd2077e185cfc86204adc2538225951a6e9473540d647cbca5d2f6d189644006f2af7d85386dbb9b3d4885887fbb394268da005317eff6eed";
+
+                            byte[] a = new byte[s.Length / 2];
+                            for (int i = 0, h = 0; h < s.Length; i++, h += 2)
+                            {
+                                a[i] = (byte)Int32.Parse(s.Substring(h, 2), System.Globalization.NumberStyles.HexNumber);
+                            }
+
+
+                            Queue(new RT_MSG_SERVER_HELLO() { Certificate = a, MLS = false }, clientChannel);
+                        }
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
