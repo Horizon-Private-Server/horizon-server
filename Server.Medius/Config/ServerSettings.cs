@@ -123,7 +123,7 @@ namespace Server.Medius.Config
             );
 
         /// <summary>
-        /// Whether or not to encrypt server messages.
+        /// Whether or not to encrypt messages.
         /// </summary>
         public bool EncryptMessages { get; set; } = true;
 
