@@ -29,9 +29,9 @@ namespace Server.UnivereInformation.Config
             );
 
         /// <summary>
-        /// Whether or not to encrypt server messages.
+        /// Whether or not to encrypt messages.
         /// </summary>
-        public bool EncryptServerMessages { get; set; } = true;
+        public bool EncryptMessages { get; set; } = true;
 
         /// <summary>
         /// Universes.
