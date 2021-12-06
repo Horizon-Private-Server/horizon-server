@@ -35,7 +35,7 @@ namespace Server.Medius
         {
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
-            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptServerMessages;
+            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
 
             // 
             switch (message)
@@ -46,7 +46,7 @@ namespace Server.Medius
                         scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.DefaultKey));
 
                         // send hello
-                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.DefaultKey.N }, clientChannel);
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:

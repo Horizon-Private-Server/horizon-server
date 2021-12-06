@@ -125,7 +125,7 @@ namespace Server.Medius.Config
         /// <summary>
         /// Whether or not to encrypt server messages.
         /// </summary>
-        public bool EncryptServerMessages { get; set; } = true;
+        public bool EncryptMessages { get; set; } = true;
 
         /// <summary>
         /// Logging settings.
