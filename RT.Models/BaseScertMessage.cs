@@ -87,7 +87,7 @@ namespace RT.Models
                                 totalHeaderSize += HASH_SIZE;
 
                                 Array.Copy(hash, 0, buffer, 3, hash.Length);
-                                Array.Copy(signed, 0, buffer, 3 + hash.Length, hash.Length);
+                                Array.Copy(signed, 0, buffer, 3 + hash.Length, signed.Length);
                                 writer.Seek(0, SeekOrigin.Begin);
                                 writer.Write((byte)((byte)this.Id | 0x80));
                             }
