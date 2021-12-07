@@ -25,16 +25,20 @@ namespace RT.Cryptography
         {
             hash = null;
             cipher = null;
+            if (input == null)
+                return false;
+
+            cipher = new byte[input.Length];
+            Array.Copy(input, cipher, input.Length);
             if (_key == null)
                 return false;
 
-            hash = Hash(input, Context);
+            hash = Hash(cipher, Context);
 
             // IV
             byte[] iv_buffer = new byte[0x10];
             uint[] iv = new uint[4];
             Array.Copy(_key, 0, iv_buffer, 0, 0x10);
-            FlipWords(iv_buffer);
 
             // Reload
             for (int i = 0; i < 4; ++i)
@@ -48,7 +52,13 @@ namespace RT.Cryptography
             }
 
             RC_Pass(iv_buffer, ref iv, true);
-            RC_Pass(input, ref iv, true);
+            RC_Pass(cipher, ref iv, true);
+
+            if (Decrypt(cipher, hash, out var plain))
+            {
+
+            }
+
             return true;
         }
 
