@@ -24,7 +24,7 @@ namespace RT.Models
             Port = reader.ReadUInt16();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Ip?.MapToIPv4()?.ToString(), 16);
             writer.Write(Port);

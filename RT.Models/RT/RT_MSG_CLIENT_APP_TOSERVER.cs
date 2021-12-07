@@ -20,7 +20,7 @@ namespace RT.Models
             Message = BaseMediusMessage.Instantiate(reader);
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (Message != null)
             {

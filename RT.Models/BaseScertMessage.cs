@@ -145,7 +145,7 @@ namespace RT.Models
         /// <summary>
         /// Serialize contents of the message.
         /// </summary>
-        protected abstract void Serialize(MessageWriter writer);
+        public abstract void Serialize(MessageWriter writer);
 
         #endregion
 
@@ -196,6 +196,19 @@ namespace RT.Models
                 _messageClassById.Add(id, type);
             else
                 _messageClassById[id] = type;
+        }
+
+        public static BaseScertMessage Instantiate(Server.Common.Stream.MessageReader reader)
+        {
+            var id = reader.ReadByte();
+            var rtId = (RT_MSG_TYPE)(id & 0x7f);
+            var len = reader.ReadInt16();
+            var messageBytes = reader.ReadBytes(len);
+            if (id >= 0x80)
+                throw new Exception($"Unable instantiate encrypted message {id} without a cipher!");
+
+
+            return Instantiate(rtId, null, messageBytes, reader.MediusVersion, null);
         }
 
         public static BaseScertMessage Instantiate(RT_MSG_TYPE id, byte[] hash, byte[] messageBuffer, int mediusVersion, CipherService cipherService)

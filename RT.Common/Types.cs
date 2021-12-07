@@ -60,7 +60,9 @@ namespace RT.Common
         RT_MSG_CLIENT_APP_SINGLE_QOS,
         RT_MSG_CLIENT_APP_LIST_QOS,
         RT_MSG_CLIENT_MAX_MSGLEN,
-        RT_MSG_SERVER_MAX_MSGLEN
+        RT_MSG_SERVER_MAX_MSGLEN,
+        RT_MSG_CLIENT_MULTI_APP_TOSERVER = 59,
+        RT_MSG_SERVER_MULTI_APP_TOCLIENT,
     }
 
     public enum MediusCallbackStatus : int

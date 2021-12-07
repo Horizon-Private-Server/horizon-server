@@ -30,7 +30,7 @@ namespace RT.Models
             EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(PlayerId);
             writer.Write(ScertId);

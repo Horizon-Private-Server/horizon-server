@@ -21,7 +21,7 @@ namespace RT.Models
             Contents = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(ReqServerPassword);
             writer.Write(Contents);

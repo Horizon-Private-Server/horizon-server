@@ -20,7 +20,7 @@ namespace RT.Models
             ServerTime = reader.ReadUInt32();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(ClientTime);
             writer.Write(ServerTime);

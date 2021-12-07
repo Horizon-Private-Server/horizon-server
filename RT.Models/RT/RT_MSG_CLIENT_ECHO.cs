@@ -20,7 +20,7 @@ namespace RT.Models
             Value = reader.ReadByte();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Value);
         }

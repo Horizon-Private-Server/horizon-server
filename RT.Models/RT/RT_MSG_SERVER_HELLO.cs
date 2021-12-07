@@ -35,7 +35,7 @@ namespace RT.Models
             ARG2 = reader.ReadUInt16();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             //If PS3 Medius Version 112/113, Send PS3 MAS Cert for Encryption/Decryption
             if ((writer.MediusVersion == 112 || writer.MediusVersion == 113) && MLS == false)

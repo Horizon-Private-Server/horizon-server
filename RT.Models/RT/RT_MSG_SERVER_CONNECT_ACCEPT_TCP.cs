@@ -32,7 +32,7 @@ namespace RT.Models
             IP = reader.ReadIPAddress();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (writer.MediusVersion >= 0x6D)
             {

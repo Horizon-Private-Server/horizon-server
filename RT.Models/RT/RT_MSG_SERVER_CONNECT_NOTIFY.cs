@@ -30,7 +30,7 @@ namespace RT.Models
             Key = reader.Read<RSA_KEY>();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(PlayerIndex);
             writer.Write(ScertId);

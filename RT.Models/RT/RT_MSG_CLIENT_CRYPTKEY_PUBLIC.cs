@@ -19,7 +19,7 @@ namespace RT.Models
             Key = reader.ReadBytes(0x40);
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (Key == null || Key.Length != 0x40)
                 throw new InvalidOperationException("Unable to serialize CLIENT_GET_KEY key because key is either null or not 64 bytes long!");

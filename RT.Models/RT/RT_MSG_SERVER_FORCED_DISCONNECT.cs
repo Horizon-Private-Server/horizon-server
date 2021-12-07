@@ -19,7 +19,7 @@ namespace RT.Models
             Reason = reader.Read<SERVER_FORCE_DISCONNECT_REASON>();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Reason);
         }

@@ -24,7 +24,7 @@ namespace RT.Models
                 Parameters[i] = reader.ReadUInt16();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             for (int i = 0; i < 5; ++i)
                 writer.Write((Parameters == null || i >= Parameters.Length) ? ushort.MinValue : Parameters[i]);
