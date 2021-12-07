@@ -68,12 +68,22 @@ namespace Server.Medius
                         }
 
                         data.ApplicationId = clientConnectTcp.AppId;
-                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
+                        if (!scertClient.IsPS3Client)
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
+                        }
+                        else
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                        }
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                        if (!scertClient.IsPS3Client)
+                        {
+                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                        }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,
@@ -254,6 +264,24 @@ namespace Server.Medius
                         });
                         break;
                     }
+
+                case MediusSessionBegin1Request SessionBegin1Request:
+                    {
+                        // Create client object
+                        data.ClientObject = Program.LobbyServer.ReserveClient1(SessionBegin1Request);
+                        data.ClientObject.ApplicationId = data.ApplicationId;
+                        data.ClientObject.OnConnected();
+
+                        // Reply
+                        data.ClientObject.Queue(new MediusSessionBeginResponse()
+                        {
+                            MessageID = SessionBegin1Request.MessageID,
+                            SessionKey = data.ClientObject.SessionKey,
+                            StatusCode = MediusCallbackStatus.MediusSuccess
+                        });
+                        break;
+                    }
+
                 case MediusSessionEndRequest sessionEndRequest:
                     {
                         if (data.ClientObject == null)

@@ -37,6 +37,13 @@ namespace Server.Medius
             return client;
         }
 
+        public ClientObject ReserveClient1(MediusSessionBegin1Request request)
+        {
+            var client = new ClientObject();
+            client.BeginSession();
+            return client;
+        }
+
         public ClientObject ReserveClient(MediusExtendedSessionBeginRequest request)
         {
             var client = new ClientObject();
