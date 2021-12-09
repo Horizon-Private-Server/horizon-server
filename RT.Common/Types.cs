@@ -885,8 +885,14 @@ namespace RT.Common
         AccountUpdateStats_OpenAccessResponse = 0x3A,
         AddPlayerToClan_ByClanOfficer = 0x3B,
         AddPlayerToClan_ByClanOfficerResponse = 0x3C,
-
-        SessionBegin1 = 0x8B, // Ratchet: Deadlocked HD
+		// PS3
+        TicketLogin = 0x58,
+        TicketLoginResponse = 0x59,
+        SetLocalizationParams1 = 0x7B,
+        SessionBegin1 = 0x8B,
+        SetLobbyWorldFilter1 = 0x86,
+        SetLobbyWorldFilterResponse1 = 0x87,
+        CreateClan2 = 0x75,
     }
 
     public enum MGCL_TRUST_LEVEL : int
