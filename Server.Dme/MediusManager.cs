@@ -148,6 +148,7 @@ namespace Server.Dme
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, Constants.MEDIUS_MESSAGE_MAXLEN, 1, 2, 0, 0, false));
                     pipeline.AddLast(new ScertDecoder());
+                    pipeline.AddLast(new ScertMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 
@@ -290,6 +291,9 @@ namespace Server.Dme
                     {
                         if (_mpsState != MPSConnectionState.HANDSHAKE)
                             throw new Exception($"Unexpected RT_MSG_SERVER_CRYPTKEY_PEER from server. {serverCryptKeyPeer}");
+
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION, serverCryptKeyPeer.Key);
 
                         await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_CONNECT_TCP()
                         {

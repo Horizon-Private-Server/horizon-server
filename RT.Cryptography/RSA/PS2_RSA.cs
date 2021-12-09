@@ -45,6 +45,8 @@ namespace RT.Cryptography
                 {
                     // decrypt via rsa
                     var plainBigInt = Decrypt(input.ToBigInteger(i, 0x40));
+                    if (plainBigInt.BitLength != 512)
+                        plainBigInt = plainBigInt.Add(N);
                     Array.Copy(plainBigInt.ToBA(), 0, plain, i, 0x40);
                 }
                 else
