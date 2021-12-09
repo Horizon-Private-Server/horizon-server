@@ -318,6 +318,18 @@ namespace Server.Medius
                         });
                         break;
                     }
+                case MediusSetLocalizationParamsRequest1 setLocalizationParamsRequest:
+                    {
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLocalizationParamsRequest} without a session.");
+
+                        data.ClientObject.Queue(new MediusSetLocalizationParamsResponse()
+                        {
+                            MessageID = setLocalizationParamsRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess
+                        });
+                        break;
+                    }
                 case MediusDnasSignaturePost dnasSignaturePost:
                     {
 
