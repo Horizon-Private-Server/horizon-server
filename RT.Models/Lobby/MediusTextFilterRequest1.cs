@@ -7,17 +7,16 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.CreateClan2)]
-    public class MediusCreateClanRequest2 : BaseLobbyMessage, IMediusRequest
+	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.MediusTextFilter1)]
+    public class MediusTextFilterRequest1 : BaseLobbyMessage, IMediusRequest
     {
 
-		public override byte PacketType => (byte)MediusLobbyExtMessageIds.CreateClan2;
+		public override byte PacketType => (byte)MediusLobbyExtMessageIds.MediusTextFilter1;
 
         public MessageId MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public int ApplicationID;
-        public string ClanName; // CLANNAME_MAXLEN
+        public string Text; // variable len
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -29,9 +28,9 @@ namespace RT.Models
 
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
-            reader.ReadBytes(2);
-            ApplicationID = reader.ReadInt32();
-            ClanName = reader.ReadString(Constants.CLANNAME_MAXLEN);
+            reader.ReadBytes(4);
+            int textLen = reader.ReadInt32();
+            Text = reader.ReadString(textLen);
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -44,9 +43,9 @@ namespace RT.Models
 
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
-            writer.Write(new byte[2]);
-            writer.Write(ApplicationID);
-            writer.Write(ClanName, Constants.CLANNAME_MAXLEN);
+            writer.Write(new byte[4]);
+            writer.Write(Text?.Length ?? 0);
+            writer.Write(Text, Text?.Length ?? 0);
         }
 
 
@@ -54,9 +53,8 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-             $"SessionKey:{SessionKey} " +
-$"ApplicationID:{ApplicationID} " +
-$"ClanName:{ClanName}";
+                $"SessionKey:{SessionKey} " +
+                $"Text:{Text}";
         }
     }
 }

@@ -4,16 +4,15 @@ using RT.Common;
 using RT.Cryptography;
 using RT.Models;
 using Server.Common;
-using Server.Database;
 using Server.Database.Models;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Server.Medius
@@ -103,7 +102,7 @@ namespace Server.Medius
                             // Update our client object to use existing one
                             data.ClientObject.ApplicationId = clientConnectTcp.AppId;
 
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0, Contents = Utils.FromString("4802") }, clientChannel);
                         }
 
                         break;
@@ -2786,6 +2785,32 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusSetLobbyWorldFilterRequest1 setLobbyWorldFilterRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLobbyWorldFilterRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLobbyWorldFilterRequest} without a being logged in.");
+
+                        data.ClientObject.Queue(new MediusSetLobbyWorldFilterResponse1()
+                        {
+                            MessageID = setLobbyWorldFilterRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                            FilterMask1 = setLobbyWorldFilterRequest.FilterMask1,
+                            FilterMask2 = setLobbyWorldFilterRequest.FilterMask2,
+                            FilterMask3 = setLobbyWorldFilterRequest.FilterMask3,
+                            FilterMask4 = setLobbyWorldFilterRequest.FilterMask4,
+                            FilterMaskLevel = setLobbyWorldFilterRequest.FilterMaskLevel,
+                            LobbyFilterType = setLobbyWorldFilterRequest.LobbyFilterType
+                        });
+
+
+                        break;
+                    }
+
                 case MediusCreateChannelRequest createChannelRequest:
                     {
                         // ERROR - Need a session
@@ -3257,6 +3282,26 @@ namespace Server.Medius
                             MessageID = textFilterRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusSuccess,
                             Text = textFilterRequest.Text
+                        });
+
+                        break;
+                    }
+
+                case MediusTextFilterRequest1 textFilterRequest1:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest1} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest1} without a being logged in.");
+
+
+                        data.ClientObject.Queue(new MediusTextFilterResponse1()
+                        {
+                            MessageID = textFilterRequest1.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess
                         });
 
                         break;
