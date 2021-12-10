@@ -38,32 +38,32 @@ namespace RT.Cryptography
         public virtual bool Decrypt(byte[] input, byte[] hash, out byte[] plain)
         {
             plain = new byte[input.Length];
-            for (int i = 0; i < input.Length; i += 0x40)
+            if (input.Length > this.N.BitLength/8)
+                throw new NotImplementedException($"Unable to decrypt RSA cipher with length greater than key ({input.Length}).");
+
+            // decrypt
+            var plainBigInt = Decrypt(input.ToBigInteger());
+            var plainBytes = plainBigInt.ToBA();
+            Array.Copy(plainBytes, plain, plainBytes.Length);
+            Hash(plain, out var ourHash);
+
+            // if hashes don't match then try adding N
+            // this accounts for when a value larger than N but less than 513 bits is encrypted
+            if (!ourHash.SequenceEqual(hash))
             {
-                var len = input.Length - i;
-                if (len >= 0x40)
-                {
-                    // decrypt via rsa
-                    var plainBigInt = Decrypt(input.ToBigInteger(i, 0x40));
-                    if (plainBigInt.BitLength != 512)
-                        plainBigInt = plainBigInt.Add(N);
-                    Array.Copy(plainBigInt.ToBA(), 0, plain, i, 0x40);
-                }
-                else
-                {
-                    // for the trailing bytes just copy over to plaintext
-                    Array.Copy(input, 0, plain, i, len);
-                }
+                // decrypt
+                plainBytes = plainBigInt.Add(N).ToBA();
+                Array.Copy(plainBytes, plain, plainBytes.Length);
+                Hash(plain, out ourHash);
             }
 
-            Hash(plain, out var ourHash);
             return ourHash.SequenceEqual(hash);
         }
 
         public virtual bool Encrypt(byte[] input, out byte[] cipher, out byte[] hash)
         {
             Hash(input, out hash);
-            cipher = Encrypt(input.ToBigInteger()).ToBA();
+            cipher = Encrypt(input.ToBigInteger()).ToBA(input.Length);
             return true;
         }
 
@@ -142,6 +142,14 @@ namespace RT.Cryptography
         public static byte[] ToBA(this BigInteger b)
         {
             return b.ToByteArrayUnsigned().Reverse().ToArray();
+        }
+
+        public static byte[] ToBA(this BigInteger b, int minLen)
+        {
+            var bytes = b.ToByteArrayUnsigned().Reverse().ToArray();
+            if (bytes.Length < minLen)
+                Array.Resize(ref bytes, minLen);
+            return bytes;
         }
 
         public static BigInteger ToBigInteger(this byte[] ba)
