@@ -307,7 +307,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        if (!scertClient.IsPS3Client)
+                        if (!scertClient.IsPS3Client && scertClient.CipherService.HasKey(CipherContext.RC_CLIENT_SESSION))
                         {
                             Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         }

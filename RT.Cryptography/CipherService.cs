@@ -40,6 +40,11 @@ namespace RT.Cryptography
                 _ciphers[context] = cipher;
         }
 
+        public bool HasKey(CipherContext context)
+        {
+            return _ciphers.TryGetValue(context, out var value) && value != null;
+        }
+
         public byte[] GetPublicKey(CipherContext context)
         {
             var cipher = _ciphers[context];
