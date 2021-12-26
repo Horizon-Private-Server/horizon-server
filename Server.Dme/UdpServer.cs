@@ -107,7 +107,8 @@ namespace Server.Dme
                     pipeline.AddLast(new ScertDatagramEncoder(Constants.MEDIUS_UDP_MESSAGE_MAXLEN));
                     pipeline.AddLast(new ScertDatagramIEnumerableEncoder(Constants.MEDIUS_UDP_MESSAGE_MAXLEN));
                     pipeline.AddLast(new ScertDatagramDecoder());
-                    pipeline.AddLast(new ScertDecoder());
+                    //pipeline.AddLast(new ScertDecoder());
+                    pipeline.AddLast(new ScertDatagramMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 

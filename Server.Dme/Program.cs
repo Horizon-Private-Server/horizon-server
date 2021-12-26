@@ -72,9 +72,9 @@ namespace Server.Dme
                     if (error > 0.1f)
                         Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
 
-                    var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
-                    if (Math.Abs(dt.TotalMilliseconds) > 50)
-                        Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
+                    //var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
+                    //if (Math.Abs(dt.TotalMilliseconds) > 50)
+                    //    Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
 
                     _sw.Restart();
                     _ticks = 0;
