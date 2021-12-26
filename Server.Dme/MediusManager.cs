@@ -27,6 +27,7 @@ namespace Server.Dme
 
         public bool IsConnected => _mpsChannel != null && _mpsChannel.Active && _mpsState > 0;
         public DateTime? TimeLostConnection { get; set; } = null;
+        public int ApplicationId { get; } = 0;
 
         private enum MPSConnectionState
         {
@@ -56,6 +57,11 @@ namespace Server.Dme
 
         private ConcurrentQueue<BaseScertMessage> _mpsRecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
         private ConcurrentQueue<BaseScertMessage> _mpsSendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+
+        public MediusManager(int appId)
+        {
+            ApplicationId = appId;
+        }
 
         #region Clients
 
@@ -297,7 +303,7 @@ namespace Server.Dme
 
                         await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_CONNECT_TCP()
                         {
-                            AppId = Program.Settings.ApplicationId
+                            AppId = ApplicationId
                         });
 
                         _mpsState = MPSConnectionState.CONNECT_TCP;
@@ -384,7 +390,7 @@ namespace Server.Dme
                 //
                 case MediusServerCreateGameWithAttributesRequest createGameWithAttributesRequest:
                     {
-                        World world = new World(createGameWithAttributesRequest.MaxClients);
+                        World world = new World(this, createGameWithAttributesRequest.MaxClients);
                         _worlds.Add(world);
 
                         Enqueue(new MediusServerCreateGameWithAttributesResponse()

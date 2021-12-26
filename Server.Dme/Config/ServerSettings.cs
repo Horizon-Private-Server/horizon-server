@@ -40,7 +40,7 @@ namespace Server.Dme.Config
         /// <summary>
         /// Application id.
         /// </summary>
-        public int ApplicationId { get; set; } = 0;
+        public List<int> ApplicationIds { get; set; } = new List<int>();
 
 
         /// <summary>

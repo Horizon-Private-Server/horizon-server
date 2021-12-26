@@ -86,9 +86,13 @@ namespace Server.Dme.Models
         public DateTime? WorldTimeUtc { get; protected set; } = null;
 
         public ConcurrentDictionary<int, ClientObject> Clients = new ConcurrentDictionary<int, ClientObject>();
+
+        public MediusManager Manager { get; } = null;
         
-        public World(int maxPlayers)
+        public World(MediusManager manager, int maxPlayers)
         {
+            Manager = manager;
+
             // populate collection of used player ids
             for (int i = 0; i < MAX_CLIENTS_PER_WORLD; ++i)
                 _pIdIsUsed.TryAdd(i, false);
@@ -121,7 +125,7 @@ namespace Server.Dme.Models
                     if (client.Destroy || ForceDestruct || Destroyed)
                     {
                         OnPlayerLeft(client);
-                        Program.Manager.RemoveClient(client);
+                        Manager.RemoveClient(client);
                         _ = client.Stop();
                         Clients.TryRemove(i, out _);
                     }
@@ -141,7 +145,7 @@ namespace Server.Dme.Models
                     await Stop();
                 }
 
-                Program.Manager.RemoveWorld(this);
+                Manager.RemoveWorld(this);
             }
         }
 
@@ -279,7 +283,7 @@ namespace Server.Dme.Models
             }
 
             // Tell server
-            Program.Manager.Enqueue(new MediusServerConnectNotification()
+            Manager.Enqueue(new MediusServerConnectNotification()
             {
                 MediusWorldUID = (uint)WorldId,
                 PlayerSessionKey = player.SessionKey,
@@ -311,7 +315,7 @@ namespace Server.Dme.Models
             }
 
             // Tell server
-            Program.Manager.Enqueue(new MediusServerConnectNotification()
+            Manager.Enqueue(new MediusServerConnectNotification()
             {
                 MediusWorldUID = (uint)WorldId,
                 PlayerSessionKey = player.SessionKey,
@@ -362,7 +366,7 @@ namespace Server.Dme.Models
             }
 
             // Add client to manager
-            Program.Manager.AddClient(newClient);
+            Manager.AddClient(newClient);
 
             return new MediusServerJoinGameResponse()
             {

@@ -164,25 +164,29 @@ namespace RT.Models
         #region Dynamic Instantiation
 
         private static Dictionary<RT_MSG_TYPE, Type> _messageClassById = null;
-
+        private static int _messageClassByIdLockValue = 0;
+        private static object _messageClassByIdLockObject = (object)_messageClassByIdLockValue;
 
         private static void Initialize()
         {
-            if (_messageClassById != null)
-                return;
-
-            _messageClassById = new Dictionary<RT_MSG_TYPE, Type>();
-
-            // Populate
-            var assembly = System.Reflection.Assembly.GetAssembly(typeof(BaseScertMessage));
-            var types = assembly.GetTypes();
-
-            foreach (Type classType in types)
+            lock (_messageClassByIdLockObject)
             {
-                // Objects by Id
-                var attrs = (ScertMessageAttribute[])classType.GetCustomAttributes(typeof(ScertMessageAttribute), true);
-                if (attrs != null && attrs.Length > 0)
-                    _messageClassById.Add(attrs[0].MessageId, classType);
+                if (_messageClassById != null)
+                    return;
+
+                _messageClassById = new Dictionary<RT_MSG_TYPE, Type>();
+
+                // Populate
+                var assembly = System.Reflection.Assembly.GetAssembly(typeof(BaseScertMessage));
+                var types = assembly.GetTypes();
+
+                foreach (Type classType in types)
+                {
+                    // Objects by Id
+                    var attrs = (ScertMessageAttribute[])classType.GetCustomAttributes(typeof(ScertMessageAttribute), true);
+                    if (attrs != null && attrs.Length > 0)
+                        _messageClassById.Add(attrs[0].MessageId, classType);
+                }
             }
         }
 

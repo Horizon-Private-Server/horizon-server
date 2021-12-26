@@ -11,6 +11,7 @@ using Server.Common.Logging;
 using Server.Dme.Config;
 using Server.Plugins;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -33,7 +34,7 @@ namespace Server.Dme
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
-        public static MediusManager Manager = new MediusManager();
+        public static Dictionary<int, MediusManager> Managers = new Dictionary<int, MediusManager>();
         public static TcpServer TcpServer = new TcpServer();
         public static PluginsManager Plugins = null;
 
@@ -81,24 +82,31 @@ namespace Server.Dme
                 }
 #endif
 
-                // Check if connected
-                if (Manager.IsConnected)
+                var tasks = new List<Task>()
                 {
-                    // Tick
-                    await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
+                    TcpServer.Tick()
+                };
 
-                    // Tick plugins
-                    if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                foreach (var manager in Managers)
+                {
+                    if (manager.Value.IsConnected)
                     {
-                        _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
-                        Plugins.Tick();
+                        tasks.Add(manager.Value.Tick());
+                    }
+                    else if ((Utils.GetHighPrecisionUtcTime() - manager.Value.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                    {
+                        tasks.Add(manager.Value.Start());
                     }
                 }
-                else if ((Utils.GetHighPrecisionUtcTime() - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+
+                // Tick plugins
+                if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
                 {
-                    // Try to reconnect to the proxy server
-                    await Manager.Start();
+                    _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
+                    Plugins.Tick();
                 }
+
+                await Task.WhenAll(tasks);
 
                 // Reload config
                 if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -112,7 +120,7 @@ namespace Server.Dme
                 Logger.Error(ex);
 
                 await TcpServer.Stop();
-                await Manager.Stop();
+                await Task.WhenAll(Managers.Select(x => x.Value.Stop()));
             }
         }
 
@@ -126,7 +134,15 @@ namespace Server.Dme
             TcpServer.Start();
             Logger.Info($"TCP started.");
 
-            await Manager.Start();
+            // build and start medius managers per app id
+           foreach (var applicationId in Settings.ApplicationIds)
+            {
+                var manager = new MediusManager(applicationId);
+                Logger.Info($"Starting MPS for appid {applicationId}.");
+                await manager.Start();
+                Logger.Info($"MPS started.");
+                Managers.Add(applicationId, manager);
+            }
 
             // 
             Logger.Info("Started.");
@@ -244,6 +260,17 @@ namespace Server.Dme
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
+        }
+
+        public static MediusManager GetManager(int applicationId, bool useDefaultOnMissing)
+        {
+            if (Managers.TryGetValue(applicationId, out var manager))
+                return manager;
+
+            if (useDefaultOnMissing && Managers.TryGetValue(0, out manager))
+                return manager;
+
+            return null;
         }
 
         public static string GenerateSessionKey()

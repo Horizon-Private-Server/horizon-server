@@ -167,7 +167,7 @@ namespace Server.Medius
 
             // Try to get next free dme server
             // If none exist, return error to clist
-            var dme = Program.ProxyServer.GetFreeDme();
+            var dme = Program.ProxyServer.GetFreeDme(client.ApplicationId);
             if (dme == null)
             {
                 client.Queue(new MediusCreateGameResponse()

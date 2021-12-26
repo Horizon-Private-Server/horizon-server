@@ -282,13 +282,13 @@ namespace Server.Medius
             }
         }
 
-        public DMEObject GetFreeDme()
+        public DMEObject GetFreeDme(int appId)
         {
             try
             {
                 return _scertHandler.Group
                     .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
-                    .Where(x => x is DMEObject && x != null)
+                    .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
                     .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
             }
             catch (Exception e)

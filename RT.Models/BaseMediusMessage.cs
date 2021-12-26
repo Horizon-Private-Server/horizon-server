@@ -104,50 +104,55 @@ namespace RT.Models
         private static Dictionary<MediusMGCLMessageIds, Type> _mgclMessageClassById = null;
         private static Dictionary<MediusLobbyMessageIds, Type> _lobbyMessageClassById = null;
         private static Dictionary<MediusLobbyExtMessageIds, Type> _lobbyExtMessageClassById = null;
+        private static int _messageClassByIdLockValue = 0;
+        private static object _messageClassByIdLockObject = (object)_messageClassByIdLockValue;
 
 
         private static void Initialize()
         {
-            if (_dmeMessageClassById != null)
-                return;
-
-            _dmeMessageClassById = new Dictionary<MediusDmeMessageIds, Type>();
-            _mgclMessageClassById = new Dictionary<MediusMGCLMessageIds, Type>();
-            _lobbyMessageClassById = new Dictionary<MediusLobbyMessageIds, Type>();
-            _lobbyExtMessageClassById = new Dictionary<MediusLobbyExtMessageIds, Type>();
-
-            // Populate
-            var assembly = System.Reflection.Assembly.GetAssembly(typeof(BaseMediusMessage));
-            var types = assembly.GetTypes();
-
-            foreach (Type classType in types)
+            lock (_messageClassByIdLockObject)
             {
-                // Objects by Id
-                var attrs = (MediusMessageAttribute[])classType.GetCustomAttributes(typeof(MediusMessageAttribute), true);
-                if (attrs != null && attrs.Length > 0)
+                if (_dmeMessageClassById != null)
+                    return;
+
+                _dmeMessageClassById = new Dictionary<MediusDmeMessageIds, Type>();
+                _mgclMessageClassById = new Dictionary<MediusMGCLMessageIds, Type>();
+                _lobbyMessageClassById = new Dictionary<MediusLobbyMessageIds, Type>();
+                _lobbyExtMessageClassById = new Dictionary<MediusLobbyExtMessageIds, Type>();
+
+                // Populate
+                var assembly = System.Reflection.Assembly.GetAssembly(typeof(BaseMediusMessage));
+                var types = assembly.GetTypes();
+
+                foreach (Type classType in types)
                 {
-                    switch (attrs[0].MessageClass)
+                    // Objects by Id
+                    var attrs = (MediusMessageAttribute[])classType.GetCustomAttributes(typeof(MediusMessageAttribute), true);
+                    if (attrs != null && attrs.Length > 0)
                     {
-                        case NetMessageTypes.MessageClassDME:
-                            {
-                                _dmeMessageClassById.Add((MediusDmeMessageIds)attrs[0].MessageType, classType);
-                                break;
-                            }
-                        case NetMessageTypes.MessageClassLobbyReport:
-                            {
-                                _mgclMessageClassById.Add((MediusMGCLMessageIds)attrs[0].MessageType, classType);
-                                break;
-                            }
-                        case NetMessageTypes.MessageClassLobby:
-                            {
-                                _lobbyMessageClassById.Add((MediusLobbyMessageIds)attrs[0].MessageType, classType);
-                                break;
-                            }
-                        case NetMessageTypes.MessageClassLobbyExt:
-                            {
-                                _lobbyExtMessageClassById.Add((MediusLobbyExtMessageIds)attrs[0].MessageType, classType);
-                                break;
-                            }
+                        switch (attrs[0].MessageClass)
+                        {
+                            case NetMessageTypes.MessageClassDME:
+                                {
+                                    _dmeMessageClassById.Add((MediusDmeMessageIds)attrs[0].MessageType, classType);
+                                    break;
+                                }
+                            case NetMessageTypes.MessageClassLobbyReport:
+                                {
+                                    _mgclMessageClassById.Add((MediusMGCLMessageIds)attrs[0].MessageType, classType);
+                                    break;
+                                }
+                            case NetMessageTypes.MessageClassLobby:
+                                {
+                                    _lobbyMessageClassById.Add((MediusLobbyMessageIds)attrs[0].MessageType, classType);
+                                    break;
+                                }
+                            case NetMessageTypes.MessageClassLobbyExt:
+                                {
+                                    _lobbyExtMessageClassById.Add((MediusLobbyExtMessageIds)attrs[0].MessageType, classType);
+                                    break;
+                                }
+                        }
                     }
                 }
             }
