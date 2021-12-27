@@ -6,6 +6,7 @@ using RT.Models;
 using Server.Common;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
+using Server.Pipeline.Attribute;
 using Server.Plugins;
 using System;
 using System.Collections.Concurrent;
@@ -25,17 +26,21 @@ namespace Server.Medius
 
         protected override IInternalLogger Logger => _logger;
         public override int Port => Program.Settings.MPSPort;
-        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         DateTime lastSend = Utils.GetHighPrecisionUtcTime();
 
         public MPS()
         {
-            _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
+
         }
 
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
+            // Get ScertClient data
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+
+
             // 
             switch (message)
             {
@@ -63,7 +68,12 @@ namespace Server.Medius
                         }
 
                         data.State = ClientState.CONNECT_1;
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
+
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RSA_AUTH, clientCryptKeyPublic.Key.Reverse().ToArray());
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION);
+
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
@@ -270,13 +280,13 @@ namespace Server.Medius
             }
         }
 
-        public DMEObject GetFreeDme()
+        public DMEObject GetFreeDme(int appId)
         {
             try
             {
                 return _scertHandler.Group
                     .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
-                    .Where(x => x is DMEObject && x != null)
+                    .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
                     .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
             }
             catch (Exception e)

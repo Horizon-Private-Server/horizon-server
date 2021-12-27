@@ -40,5 +40,10 @@ namespace RT.Cryptography
         /// Computes the hash of the given input buffer.
         /// </summary>
         void Hash(byte[] input, out byte[] hash);
+
+        /// <summary>
+        /// Returns the public key.
+        /// </summary>
+        byte[] GetPublicKey();
     }
 }

@@ -29,13 +29,11 @@ namespace Server.UnivereInformation
 
         private int _port = 0;
         public int Port => _port;
-        public PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         protected IEventLoopGroup _bossGroup = null;
         protected IEventLoopGroup _workerGroup = null;
         protected IChannel _boundChannel = null;
         protected ScertServerHandler _scertHandler = null;
-        protected byte[] _clientSessionKey = new byte[0x40];
         private uint _clientCounter = 0;
 
         protected internal class ChannelData
@@ -47,14 +45,9 @@ namespace Server.UnivereInformation
 
         protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
 
-        protected PS2_RC4 _sessionCipher = null;
-
         public MUIS(int port)
         {
             this._port = port;
-
-            RNG.NextBytes(_clientSessionKey);
-            _sessionCipher = new PS2_RC4(_clientSessionKey, CipherContext.RC_CLIENT_SESSION);
         }
 
         /// <summary>
@@ -109,8 +102,8 @@ namespace Server.UnivereInformation
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
-                    pipeline.AddLast(new ScertIEnumerableDecoder(_sessionCipher, AuthKey));
-                    pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
+                    pipeline.AddLast(new ScertDecoder());
+                    pipeline.AddLast(new ScertMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 
@@ -197,25 +190,31 @@ namespace Server.UnivereInformation
         {
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
 
             // 
             switch (message)
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
+                        // send hello
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = _clientSessionKey }, clientChannel);
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RSA_AUTH, clientCryptKeyPublic.Key.Reverse().ToArray());
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION);
+
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
                         data.ApplicationId = clientConnectTcp.AppId;
 
-                        if (scertClient.MediusVersion >= 0x6D)
+                        if (scertClient.MediusVersion >= 109)
                         {
                             Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
                         }
@@ -231,7 +230,7 @@ namespace Server.UnivereInformation
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = _clientSessionKey }, clientChannel);
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,

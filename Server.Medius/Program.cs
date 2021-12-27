@@ -35,16 +35,8 @@ namespace Server.Medius
         public const string CONFIG_FILE = "config.json";
         public const string DB_CONFIG_FILE = "db.config.json";
         public const string PLUGINS_PATH = "plugins/";
-        public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
 
-        public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
-            new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
-            new BigInteger("17", 10),
-            new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
-        );
-
-        public readonly static RSA_KEY GlobalAuthPublic = new RSA_KEY(GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray());
-        public readonly static RSA_KEY GlobalAuthPrivate = new RSA_KEY(GlobalAuthKey.D.ToByteArrayUnsigned().Reverse().ToArray());
+        public static RSA_KEY GlobalAuthPublic = null;
 
         public static ServerSettings Settings = new ServerSettings();
         public static DbController Database = new DbController(DB_CONFIG_FILE);
@@ -77,7 +69,6 @@ namespace Server.Medius
 
         static async Task TickAsync()
         {
-
             try
             {
 #if DEBUG || RELEASE
@@ -97,9 +88,9 @@ namespace Server.Medius
                     if (error > 0.1f)
                         Logger.Error($"Average TPS: {tps} is {error * 100}% off of target {Settings.TickRate}");
 
-                    var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
-                    if (Math.Abs(dt.TotalMilliseconds) > 50)
-                        Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
+                    //var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
+                    //if (Math.Abs(dt.TotalMilliseconds) > 50)
+                    //    Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
 
                     _sw.Restart();
                     _ticks = 0;
@@ -244,10 +235,43 @@ namespace Server.Medius
 
         static void Initialize()
         {
+            RefreshConfig();
+
+            // 
+            if (Settings.ApplicationIds != null)
+            {
+                foreach (var appId in Settings.ApplicationIds)
+                {
+                    Manager.AddChannel(new Channel()
+                    {
+                        ApplicationId = appId,
+                        MaxPlayers = 256,
+                        Name = "Default",
+                        Type = ChannelType.Lobby
+                    });
+                }
+            }
+            else
+            {
+                Manager.AddChannel(new Channel()
+                {
+                    ApplicationId = 0,
+                    MaxPlayers = 256,
+                    Name = "Default",
+                    Type = ChannelType.Lobby
+                });
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        static void RefreshConfig()
+        {
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
-                MissingMemberHandling = MissingMemberHandling.Ignore
+                MissingMemberHandling = MissingMemberHandling.Ignore,
             };
 
             // Load settings
@@ -279,63 +303,15 @@ namespace Server.Medius
             if (string.IsNullOrEmpty(Settings.NATIp))
                 Settings.NATIp = SERVER_IP.ToString();
 
-            // 
-            if (Settings.ApplicationIds != null)
-            {
-                foreach (var appId in Settings.ApplicationIds)
-                {
-                    Manager.AddChannel(new Channel()
-                    {
-                        ApplicationId = appId,
-                        MaxPlayers = 256,
-                        Name = "Default",
-                        Type = ChannelType.Lobby
-                    });
-                }
-            }
-            else
-            {
-                Manager.AddChannel(new Channel()
-                {
-                    ApplicationId = 0,
-                    MaxPlayers = 256,
-                    Name = "Default",
-                    Type = ChannelType.Lobby
-                });
-            }
-
-            // Clear account status table
-            //Database.ClearAccountStatuses().Wait();
-
-            // Load tick time into sleep ms for main loop
-            sleepMS = TickMS;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        static void RefreshConfig()
-        {
-            // 
-            var serializerSettings = new JsonSerializerSettings()
-            {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-            };
-
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
-            {
-                // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
-            }
-
-            // Update NAT Ip with server ip if null
-            if (string.IsNullOrEmpty(Settings.NATIp))
-                Settings.NATIp = SERVER_IP.ToString();
-
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
+
+            // Update default rsa key
+            Pipeline.Attribute.ScertClientAttribute.DefaultRsaAuthKey = Settings.DefaultKey;
+
+            if (Settings.DefaultKey != null)
+                GlobalAuthPublic = new RSA_KEY(Settings.DefaultKey.N.ToByteArrayUnsigned().Reverse().ToArray());
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;

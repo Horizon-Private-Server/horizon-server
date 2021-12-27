@@ -28,7 +28,7 @@ namespace RT.Models
             Data = reader.ReadRest();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(QueryType);
             writer.Write(SequenceId);

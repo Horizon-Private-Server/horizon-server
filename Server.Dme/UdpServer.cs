@@ -28,8 +28,6 @@ namespace Server.Dme
 
 
         public int Port { get; protected set; } = -1;
-        public PS2_RSA AuthKey => Program.GlobalAuthKey;
-        protected PS2_RC4 _sessionCipher = null;
 
         protected IEventLoopGroup _workerGroup = null;
         protected IChannel _boundChannel = null;
@@ -79,16 +77,6 @@ namespace Server.Dme
         {
             //
             _workerGroup = new MultithreadEventLoopGroup();
-
-            Func<RT_MSG_TYPE, CipherContext, ICipher> getCipher = (id, context) =>
-            {
-                switch (context)
-                {
-                    case CipherContext.RC_CLIENT_SESSION: return _sessionCipher;
-                    case CipherContext.RSA_AUTH: return AuthKey;
-                    default: return null;
-                }
-            };
             _scertHandler = new ScertDatagramHandler();
 
             // Queue all incoming messages
@@ -119,7 +107,8 @@ namespace Server.Dme
                     pipeline.AddLast(new ScertDatagramEncoder(Constants.MEDIUS_UDP_MESSAGE_MAXLEN));
                     pipeline.AddLast(new ScertDatagramIEnumerableEncoder(Constants.MEDIUS_UDP_MESSAGE_MAXLEN));
                     pipeline.AddLast(new ScertDatagramDecoder());
-                    pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
+                    //pipeline.AddLast(new ScertDecoder());
+                    pipeline.AddLast(new ScertDatagramMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 

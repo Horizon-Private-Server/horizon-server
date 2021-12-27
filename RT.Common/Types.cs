@@ -60,7 +60,9 @@ namespace RT.Common
         RT_MSG_CLIENT_APP_SINGLE_QOS,
         RT_MSG_CLIENT_APP_LIST_QOS,
         RT_MSG_CLIENT_MAX_MSGLEN,
-        RT_MSG_SERVER_MAX_MSGLEN
+        RT_MSG_SERVER_MAX_MSGLEN,
+        RT_MSG_CLIENT_MULTI_APP_TOSERVER = 59,
+        RT_MSG_SERVER_MULTI_APP_TOCLIENT,
     }
 
     public enum MediusCallbackStatus : int
@@ -883,6 +885,17 @@ namespace RT.Common
         AccountUpdateStats_OpenAccessResponse = 0x3A,
         AddPlayerToClan_ByClanOfficer = 0x3B,
         AddPlayerToClan_ByClanOfficerResponse = 0x3C,
+		// PS3
+        TicketLogin = 0x58,
+        TicketLoginResponse = 0x59,
+        GenericChatMessage1 = 0x73,
+        GenericChatFwdMessage1 = 0x74,
+        MediusTextFilter1 = 0x75,
+        MediusTextFilterResponse1 = 0x76,
+        SetLocalizationParams1 = 0x7B,
+        SetLobbyWorldFilter1 = 0x86,
+        SetLobbyWorldFilterResponse1 = 0x87,
+        SessionBegin1 = 0x8B,
     }
 
     public enum MGCL_TRUST_LEVEL : int

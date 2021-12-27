@@ -29,7 +29,6 @@ namespace Server.Dme
         public bool IsRunning => _boundChannel != null && _boundChannel.Active;
 
         public int Port => Program.Settings.TCPPort;
-        public PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         protected IEventLoopGroup _bossGroup = null;
         protected IEventLoopGroup _workerGroup = null;
@@ -56,8 +55,6 @@ namespace Server.Dme
         protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
         protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
         protected ConcurrentDictionary<uint, ClientObject> _scertIdToClient = new ConcurrentDictionary<uint, ClientObject>();
-
-        protected PS2_RC4 _sessionCipher = null;
 
         /// <summary>
         /// Start the Dme Tcp Server.
@@ -123,9 +120,9 @@ namespace Server.Dme
                     pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
-                    pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024, 1, 2, 0, 0, false));
-                    pipeline.AddLast(new ScertIEnumerableDecoder(_sessionCipher, AuthKey));
-                    pipeline.AddLast(new ScertDecoder(_sessionCipher, AuthKey));
+                    pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
+                    pipeline.AddLast(new ScertDecoder());
+                    pipeline.AddLast(new ScertMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 
@@ -263,23 +260,33 @@ namespace Server.Dme
 
         protected async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
+            // Get ScertClient data
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+
             // 
             switch (message)
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        Queue(new RT_MSG_SERVER_HELLO() { ARG2 = 0 }, clientChannel);
+                        // send hello
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RSA_AUTH, clientCryptKeyPublic.Key.Reverse().ToArray());
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION);
+
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP_AUX_UDP clientConnectTcpAuxUdp:
                     {
                         data.ApplicationId = clientConnectTcpAuxUdp.AppId;
-                        data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcpAuxUdp.AccessToken);
+                        var manager = Program.GetManager(data.ApplicationId, true);
+                        data.ClientObject = manager.GetClientByAccessToken(clientConnectTcpAuxUdp.AccessToken);
                         if (data.ClientObject == null || data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.WorldId != clientConnectTcpAuxUdp.ARG1)
                             throw new Exception($"Client connected with invalid world id!");
 
@@ -298,7 +305,10 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        // Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) }, clientChannel);
+                        if (!scertClient.IsPS3Client && scertClient.CipherService.HasKey(CipherContext.RC_CLIENT_SESSION))
+                        {
+                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                        }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = (ushort)data.ClientObject.DmeId,

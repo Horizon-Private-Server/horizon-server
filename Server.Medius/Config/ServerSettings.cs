@@ -107,11 +107,25 @@ namespace Server.Medius.Config
         /// <summary>
         /// Key used to authenticate dme servers.
         /// </summary>
-        public PS2_RSA MPSKey { get; set; } = new PS2_RSA(
+        public RsaKeyPair MPSKey { get; set; } = new RsaKeyPair(
             new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
             new BigInteger("17", 10),
             new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
             );
+
+        /// <summary>
+        /// Key used to authenticate clients.
+        /// </summary>
+        public RsaKeyPair DefaultKey { get; set; } = new RsaKeyPair(
+            new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
+            new BigInteger("17", 10),
+            new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
+            );
+
+        /// <summary>
+        /// Whether or not to encrypt messages.
+        /// </summary>
+        public bool EncryptMessages { get; set; } = true;
 
         /// <summary>
         /// Logging settings.

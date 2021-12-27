@@ -28,7 +28,7 @@ namespace RT.Models
             IP = reader.Read<IPAddress>();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(PlayerIndex);
             writer.Write(ScertId);

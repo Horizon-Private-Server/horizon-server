@@ -19,7 +19,7 @@ namespace RT.Models
             Flag = reader.Read<RT_RECV_FLAG>();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Flag);
         }

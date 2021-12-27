@@ -1,4 +1,5 @@
 using RT.Common;
+using RT.Models.Misc;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -8,16 +9,16 @@ using System.Text;
 namespace RT.Models
 {
 	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GenericChatMessage)]
-    public class MediusGenericChatMessage : BaseLobbyExtMessage
+    public class MediusGenericChatMessage : BaseLobbyExtMessage, IMediusChatMessage
     {
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.GenericChatMessage;
 
         public MessageId MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public MediusChatMessageType MessageType;
-        public int TargetID;
-        public string Message; // CHATMESSAGE_MAXLEN
+        public MediusChatMessageType MessageType { get; set; }
+        public int TargetID { get; set; }
+        public string Message { get; set; } // CHATMESSAGE_MAXLEN
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {

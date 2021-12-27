@@ -30,7 +30,7 @@ namespace RT.Models
                         Targets.Add(i + (b * 8));
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // Determine size of bitmask in bytes
             byte size = 1;

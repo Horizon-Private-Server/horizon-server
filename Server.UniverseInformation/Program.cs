@@ -23,12 +23,6 @@ namespace Server.UnivereInformation
 
         public static ServerSettings Settings = new ServerSettings();
 
-        public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
-            new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
-            new BigInteger("17", 10),
-            new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
-        );
-
         public static MUIS[] UniverseInfoServers = null;
 
         private static FileLoggerProvider _fileLogger = null;
@@ -106,10 +100,18 @@ namespace Server.UnivereInformation
 
         static void Initialize()
         {
+            RefreshConfig();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        static void RefreshConfig()
+        {
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
-                MissingMemberHandling = MissingMemberHandling.Ignore
+                MissingMemberHandling = MissingMemberHandling.Ignore,
             };
 
             // Load settings
@@ -135,25 +137,9 @@ namespace Server.UnivereInformation
 
             // Set LogSettings singleton
             LogSettings.Singleton = Settings.Logging;
-        }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        static void RefreshConfig()
-        {
-            // 
-            var serializerSettings = new JsonSerializerSettings()
-            {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-            };
-
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
-            {
-                // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
-            }
+            // Update default rsa key
+            Pipeline.Attribute.ScertClientAttribute.DefaultRsaAuthKey = Settings.DefaultKey;
 
             // Update file logger min level
             if (_fileLogger != null)

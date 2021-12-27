@@ -27,6 +27,7 @@ namespace Server.Dme
 
         public bool IsConnected => _mpsChannel != null && _mpsChannel.Active && _mpsState > 0;
         public DateTime? TimeLostConnection { get; set; } = null;
+        public int ApplicationId { get; } = 0;
 
         private enum MPSConnectionState
         {
@@ -43,10 +44,6 @@ namespace Server.Dme
         private ConcurrentDictionary<string, ClientObject> _accessTokenToClient = new ConcurrentDictionary<string, ClientObject>();
         private ConcurrentDictionary<string, ClientObject> _sessionKeyToClient = new ConcurrentDictionary<string, ClientObject>();
 
-        private PS2_RSA _serverKey => Program.GlobalAuthKey;
-        private PS2_RSA _clientKey => Program.Settings.MPS.Key;
-        private PS2_RC4 _sessionCipher = null;
-
         private DateTime _utcConnectionState;
         private MPSConnectionState _mpsState = MPSConnectionState.NO_CONNECTION;
 
@@ -60,6 +57,11 @@ namespace Server.Dme
 
         private ConcurrentQueue<BaseScertMessage> _mpsRecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
         private ConcurrentQueue<BaseScertMessage> _mpsSendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
+
+        public MediusManager(int appId)
+        {
+            ApplicationId = appId;
+        }
 
         #region Clients
 
@@ -151,7 +153,8 @@ namespace Server.Dme
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, Constants.MEDIUS_MESSAGE_MAXLEN, 1, 2, 0, 0, false));
-                    pipeline.AddLast(new ScertDecoder(_sessionCipher, _serverKey));
+                    pipeline.AddLast(new ScertDecoder());
+                    pipeline.AddLast(new ScertMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }));
 
@@ -246,8 +249,7 @@ namespace Server.Dme
 
             _mpsState = MPSConnectionState.CONNECTED;
 
-            // Send hello
-            await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_HELLO()
+            var clientHello = new RT_MSG_CLIENT_HELLO()
             {
                 Parameters = new ushort[]
                 {
@@ -257,13 +259,19 @@ namespace Server.Dme
                     1,
                     1
                 }
-            });
+            };
+
+            // Send hello
+            await _mpsChannel.WriteAndFlushAsync(clientHello);
 
             _mpsState = MPSConnectionState.HELLO;
         }
 
         private async Task ProcessMessage(BaseScertMessage message, IChannel serverChannel)
         {
+            // Get ScertClient data
+            var scertClient = serverChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+
             // 
             switch (message)
             {
@@ -276,7 +284,7 @@ namespace Server.Dme
                         // Send public key
                         Enqueue(new RT_MSG_CLIENT_CRYPTKEY_PUBLIC()
                         {
-                            Key = _clientKey.N.ToByteArrayUnsigned().Reverse().ToArray()
+                            Key = Program.Settings.MPS.Key.N.ToByteArrayUnsigned().Reverse().ToArray()
                         });
 
                         _mpsState = MPSConnectionState.HANDSHAKE;
@@ -287,9 +295,12 @@ namespace Server.Dme
                         if (_mpsState != MPSConnectionState.HANDSHAKE)
                             throw new Exception($"Unexpected RT_MSG_SERVER_CRYPTKEY_PEER from server. {serverCryptKeyPeer}");
 
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION, serverCryptKeyPeer.Key);
+
                         await _mpsChannel.WriteAndFlushAsync(new RT_MSG_CLIENT_CONNECT_TCP()
                         {
-                            AppId = Program.Settings.ApplicationId
+                            AppId = ApplicationId
                         });
 
                         _mpsState = MPSConnectionState.CONNECT_TCP;
@@ -376,7 +387,7 @@ namespace Server.Dme
                 //
                 case MediusServerCreateGameWithAttributesRequest createGameWithAttributesRequest:
                     {
-                        World world = new World(createGameWithAttributesRequest.MaxClients);
+                        World world = new World(this, createGameWithAttributesRequest.MaxClients);
                         _worlds.Add(world);
 
                         Enqueue(new MediusServerCreateGameWithAttributesResponse()

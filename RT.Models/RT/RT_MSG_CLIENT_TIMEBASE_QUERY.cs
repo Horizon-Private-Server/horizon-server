@@ -18,7 +18,7 @@ namespace RT.Models
             Timestamp = reader.ReadUInt32();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Timestamp);
         }

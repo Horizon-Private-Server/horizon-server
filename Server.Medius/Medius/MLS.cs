@@ -3,17 +3,17 @@ using DotNetty.Transport.Channels;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
+using RT.Models.Misc;
 using Server.Common;
-using Server.Database;
 using Server.Database.Models;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Server.Medius
@@ -24,14 +24,20 @@ namespace Server.Medius
 
         protected override IInternalLogger Logger => _logger;
         public override int Port => Program.Settings.MLSPort;
-        public override PS2_RSA AuthKey => Program.GlobalAuthKey;
 
         public MLS()
         {
-            _sessionCipher = new PS2_RC4(Utils.FromString(Program.KEY), CipherContext.RC_CLIENT_SESSION);
+
         }
 
         public ClientObject ReserveClient(MediusSessionBeginRequest request)
+        {
+            var client = new ClientObject();
+            client.BeginSession();
+            return client;
+        }
+
+        public ClientObject ReserveClient1(MediusSessionBegin1Request request)
         {
             var client = new ClientObject();
             client.BeginSession();
@@ -47,17 +53,26 @@ namespace Server.Medius
 
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
+            // Get ScertClient data
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+
             // 
             switch (message)
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        Queue(new RT_MSG_SERVER_HELLO(), clientChannel);
+                        // send hello
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = Utils.FromString(Program.KEY) }, clientChannel);
+                        // generate new client session key
+                        scertClient.CipherService.GenerateCipher(CipherContext.RSA_AUTH, clientCryptKeyPublic.Key.Reverse().ToArray());
+                        scertClient.CipherService.GenerateCipher(CipherContext.RC_CLIENT_SESSION);
+
+                        Queue(new RT_MSG_SERVER_CRYPTKEY_PEER() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
@@ -85,14 +100,17 @@ namespace Server.Medius
                             // Update our client object to use existing one
                             data.ClientObject.ApplicationId = clientConnectTcp.AppId;
 
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0, Contents = Utils.FromString("4802") }, clientChannel);
                         }
 
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = Utils.FromString(Program.KEY) }, clientChannel);
+                        if (!scertClient.IsPS3Client)
+                        {
+                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                        }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0x0019,
@@ -2765,6 +2783,32 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusSetLobbyWorldFilterRequest1 setLobbyWorldFilterRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLobbyWorldFilterRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {setLobbyWorldFilterRequest} without a being logged in.");
+
+                        data.ClientObject.Queue(new MediusSetLobbyWorldFilterResponse1()
+                        {
+                            MessageID = setLobbyWorldFilterRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                            FilterMask1 = setLobbyWorldFilterRequest.FilterMask1,
+                            FilterMask2 = setLobbyWorldFilterRequest.FilterMask2,
+                            FilterMask3 = setLobbyWorldFilterRequest.FilterMask3,
+                            FilterMask4 = setLobbyWorldFilterRequest.FilterMask4,
+                            FilterMaskLevel = setLobbyWorldFilterRequest.FilterMaskLevel,
+                            LobbyFilterType = setLobbyWorldFilterRequest.LobbyFilterType
+                        });
+
+
+                        break;
+                    }
+
                 case MediusCreateChannelRequest createChannelRequest:
                     {
                         // ERROR - Need a session
@@ -3131,6 +3175,20 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusGenericChatMessage1 genericChatMessage:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a being logged in.");
+
+                        await ProcessGenericChatMessage(clientChannel, data.ClientObject, genericChatMessage);
+                        break;
+                    }
+
                 case MediusGenericChatMessage genericChatMessage:
                     {
                         // ERROR - Need a session
@@ -3241,6 +3299,26 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusTextFilterRequest1 textFilterRequest1:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest1} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest1} without a being logged in.");
+
+
+                        data.ClientObject.Queue(new MediusTextFilterResponse1()
+                        {
+                            MessageID = textFilterRequest1.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess
+                        });
+
+                        break;
+                    }
+
                 case MediusGetMyIPRequest getMyIpRequest:
                     {
                         // ERROR - Need a session
@@ -3346,7 +3424,7 @@ namespace Server.Medius
         }
 
 
-        private async Task ProcessGenericChatMessage(IChannel clientChannel, ClientObject clientObject, MediusGenericChatMessage chatMessage)
+        private async Task ProcessGenericChatMessage(IChannel clientChannel, ClientObject clientObject, IMediusChatMessage chatMessage)
         {
             var channel = clientObject.CurrentChannel;
             var game = clientObject.CurrentGame;
@@ -3367,7 +3445,7 @@ namespace Server.Medius
                 case MediusChatMessageType.Broadcast:
                     {
                         // Relay
-                        channel.BroadcastChatMessage(allButSender, clientObject, chatMessage.Message.Substring(1));
+                        channel.BroadcastChatMessage(allButSender, clientObject, chatMessage.Message);
                         break;
                     }
                 default:

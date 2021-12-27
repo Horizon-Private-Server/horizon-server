@@ -11,6 +11,7 @@ using Server.Common.Logging;
 using Server.Dme.Config;
 using Server.Plugins;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -28,22 +29,12 @@ namespace Server.Dme
     {
         public const string CONFIG_FILE = "config.json";
         public const string PLUGINS_PATH = "plugins/";
-        public const string KEY = "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242";
-
-        public readonly static PS2_RSA GlobalAuthKey = new PS2_RSA(
-            new BigInteger("10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237", 10),
-            new BigInteger("17", 10),
-            new BigInteger("4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513", 10)
-        );
-
-        public readonly static RSA_KEY GlobalAuthPublic = new RSA_KEY(GlobalAuthKey.N.ToByteArrayUnsigned().Reverse().ToArray());
-        public readonly static RSA_KEY GlobalAuthPrivate = new RSA_KEY(GlobalAuthKey.D.ToByteArrayUnsigned().Reverse().ToArray());
 
         public static ServerSettings Settings = new ServerSettings();
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
-        public static MediusManager Manager = new MediusManager();
+        public static Dictionary<int, MediusManager> Managers = new Dictionary<int, MediusManager>();
         public static TcpServer TcpServer = new TcpServer();
         public static PluginsManager Plugins = null;
 
@@ -82,33 +73,40 @@ namespace Server.Dme
                     if (error > 0.1f)
                         Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
 
-                    var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
-                    if (Math.Abs(dt.TotalMilliseconds) > 50)
-                        Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
+                    //var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
+                    //if (Math.Abs(dt.TotalMilliseconds) > 50)
+                    //    Logger.Error($"System clock and local clock are out of sync! delta ms: {dt.TotalMilliseconds}");
 
                     _sw.Restart();
                     _ticks = 0;
                 }
 #endif
 
-                // Check if connected
-                if (Manager.IsConnected)
+                var tasks = new List<Task>()
                 {
-                    // Tick
-                    await Task.WhenAll(TcpServer.Tick(), Manager.Tick());
+                    TcpServer.Tick()
+                };
 
-                    // Tick plugins
-                    if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                foreach (var manager in Managers)
+                {
+                    if (manager.Value.IsConnected)
                     {
-                        _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
-                        Plugins.Tick();
+                        tasks.Add(manager.Value.Tick());
+                    }
+                    else if ((Utils.GetHighPrecisionUtcTime() - manager.Value.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                    {
+                        tasks.Add(manager.Value.Start());
                     }
                 }
-                else if ((Utils.GetHighPrecisionUtcTime() - Manager.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+
+                // Tick plugins
+                if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
                 {
-                    // Try to reconnect to the proxy server
-                    await Manager.Start();
+                    _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
+                    Plugins.Tick();
                 }
+
+                await Task.WhenAll(tasks);
 
                 // Reload config
                 if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -122,7 +120,7 @@ namespace Server.Dme
                 Logger.Error(ex);
 
                 await TcpServer.Stop();
-                await Manager.Stop();
+                await Task.WhenAll(Managers.Select(x => x.Value.Stop()));
             }
         }
 
@@ -136,7 +134,15 @@ namespace Server.Dme
             TcpServer.Start();
             Logger.Info($"TCP started.");
 
-            await Manager.Start();
+            // build and start medius managers per app id
+           foreach (var applicationId in Settings.ApplicationIds)
+            {
+                var manager = new MediusManager(applicationId);
+                Logger.Info($"Starting MPS for appid {applicationId}.");
+                await manager.Start();
+                Logger.Info($"MPS started.");
+                Managers.Add(applicationId, manager);
+            }
 
             // 
             Logger.Info("Started.");
@@ -201,36 +207,7 @@ namespace Server.Dme
 
         static void Initialize()
         {
-            // 
-            var serializerSettings = new JsonSerializerSettings()
-            {
-                MissingMemberHandling = MissingMemberHandling.Ignore
-            };
-
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
-            {
-                // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
-            }
-            else
-            {
-                // Save defaults
-                File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
-            }
-
-            // Set LogSettings singleton
-            LogSettings.Singleton = Settings.Logging;
-
-            // Determine server ip
-            if (!Settings.UsePublicIp)
-            {
-                SERVER_IP = Utils.GetLocalIPAddress();
-            }
-            else
-            {
-                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
-            }
+            RefreshConfig();
         }
 
         /// <summary>
@@ -250,10 +227,42 @@ namespace Server.Dme
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+            else
+            {
+                // Save defaults
+                File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+            }
+
+            // Set LogSettings singleton
+            LogSettings.Singleton = Settings.Logging;
+
+            // Update default rsa key
+            Pipeline.Attribute.ScertClientAttribute.DefaultRsaAuthKey = Settings.DefaultKey;
 
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
+
+            // Determine server ip
+            if (!Settings.UsePublicIp)
+            {
+                SERVER_IP = Utils.GetLocalIPAddress();
+            }
+            else
+            {
+                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+            }
+        }
+
+        public static MediusManager GetManager(int applicationId, bool useDefaultOnMissing)
+        {
+            if (Managers.TryGetValue(applicationId, out var manager))
+                return manager;
+
+            if (useDefaultOnMissing && Managers.TryGetValue(0, out manager))
+                return manager;
+
+            return null;
         }
 
         public static string GenerateSessionKey()

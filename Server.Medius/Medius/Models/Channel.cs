@@ -120,41 +120,83 @@ namespace Server.Medius.Models
         {
             foreach (var target in targets)
             {
-                target?.Queue(new MediusGenericChatFwdMessage()
+                if (target.MediusVersion >= 112)
                 {
-                    OriginatorAccountID = source.AccountId,
-                    OriginatorAccountName = source.AccountName,
-                    Message = "A" + message,
+                    target?.Queue(new MediusGenericChatFwdMessage1()
+                    {
+                        OriginatorAccountID = source.AccountId,
+                        OriginatorAccountName = source.AccountName,
+                        Message = message,
+                        MessageType = MediusChatMessageType.Broadcast,
+                        TimeStamp = Utils.GetUnixTime()
+                    });
+                }
+                else
+                {
+                    target?.Queue(new MediusGenericChatFwdMessage()
+                    {
+                        OriginatorAccountID = source.AccountId,
+                        OriginatorAccountName = source.AccountName,
+                        Message = message,
+                        MessageType = MediusChatMessageType.Broadcast,
+                        TimeStamp = Utils.GetUnixTime()
+                    });
+                }
+            }
+        }
+
+        public void SendSystemMessage(ClientObject client, string message)
+        {
+            if (client.MediusVersion >= 112)
+            {
+                client.Queue(new MediusGenericChatFwdMessage1()
+                {
+                    OriginatorAccountID = 0,
+                    OriginatorAccountName = "SYSTEM",
+                    Message = message,
+                    MessageType = MediusChatMessageType.Broadcast,
+                    TimeStamp = Utils.GetUnixTime()
+                });
+            }
+            else
+            {
+                client.Queue(new MediusGenericChatFwdMessage()
+                {
+                    OriginatorAccountID = 0,
+                    OriginatorAccountName = "SYSTEM",
+                    Message = message,
                     MessageType = MediusChatMessageType.Broadcast,
                     TimeStamp = Utils.GetUnixTime()
                 });
             }
         }
 
-        public void SendSystemMessage(ClientObject client, string message)
-        {
-            client.Queue(new MediusGenericChatFwdMessage()
-            {
-                OriginatorAccountID = 0,
-                OriginatorAccountName = "SYSTEM",
-                Message = "A" + message,
-                MessageType = MediusChatMessageType.Broadcast,
-                TimeStamp = Utils.GetUnixTime()
-            });
-        }
-
         public void BroadcastSystemMessage(IEnumerable<ClientObject> targets, string message)
         {
             foreach (var target in targets)
             {
-                target?.Queue(new MediusGenericChatFwdMessage()
+                if (target.MediusVersion >= 112)
                 {
-                    OriginatorAccountID = 0,
-                    OriginatorAccountName = "SYSTEM",
-                    Message = "A" + message,
-                    MessageType = MediusChatMessageType.Broadcast,
-                    TimeStamp = Utils.GetUnixTime()
-                });
+                    target?.Queue(new MediusGenericChatFwdMessage1()
+                    {
+                        OriginatorAccountID = 0,
+                        OriginatorAccountName = "SYSTEM",
+                        Message = message,
+                        MessageType = MediusChatMessageType.Broadcast,
+                        TimeStamp = Utils.GetUnixTime()
+                    });
+                }
+                else
+                {
+                    target?.Queue(new MediusGenericChatFwdMessage()
+                    {
+                        OriginatorAccountID = 0,
+                        OriginatorAccountName = "SYSTEM",
+                        Message = message,
+                        MessageType = MediusChatMessageType.Broadcast,
+                        TimeStamp = Utils.GetUnixTime()
+                    });
+                }
             }
         }
     }

@@ -18,19 +18,12 @@ namespace Server.Pipeline.Tcp
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<ScertDecoder>();
 
-        readonly ICipher[] _ciphers = null;
-        readonly Func<RT_MSG_TYPE, CipherContext, ICipher> _getCipher = null;
-
         /// <summary>
         ///     Create a new instance.
         /// </summary>
-        public ScertDecoder(params ICipher[] ciphers)
+        public ScertDecoder()
         {
-            this._ciphers = ciphers;
-            this._getCipher = (id, ctx) =>
-            {
-                return _ciphers?.FirstOrDefault(x => x.Context == ctx);
-            };
+
         }
 
         protected override void Decode(IChannelHandlerContext context, IByteBuffer input, List<object> output)
@@ -71,7 +64,7 @@ namespace Server.Pipeline.Tcp
             var scertClient = context.GetAttribute(Constants.SCERT_CLIENT).Get();
 
             if (frameLength <= 0)
-                return BaseScertMessage.Instantiate((RT_MSG_TYPE)(id & 0x7F), null, new byte[0], scertClient.MediusVersion, _getCipher);
+                return BaseScertMessage.Instantiate((RT_MSG_TYPE)(id & 0x7F), null, new byte[0], scertClient.MediusVersion, scertClient.CipherService);
 
             if (id >= 0x80)
             {
@@ -100,7 +93,7 @@ namespace Server.Pipeline.Tcp
 
             // 
             input.SetReaderIndex(input.ReaderIndex + totalLength + frameLengthInt);
-            return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, scertClient.MediusVersion, _getCipher);
+            return BaseScertMessage.Instantiate((RT_MSG_TYPE)id, hash, messageContents, scertClient.MediusVersion, scertClient.CipherService);
         }
 
     }

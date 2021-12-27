@@ -33,6 +33,9 @@ namespace RT.Models
             StatusCode = reader.Read<MediusCallbackStatus>();
             GameHostType = reader.Read<MediusGameHostType>();
             ConnectInfo = reader.Read<NetConnectionInfo>();
+
+            if (reader.MediusVersion >= 112)
+                reader.ReadBytes(4);
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -48,6 +51,9 @@ namespace RT.Models
             writer.Write(StatusCode);
             writer.Write(GameHostType);
             writer.Write(ConnectInfo);
+
+            if (writer.MediusVersion >= 112)
+                writer.Write(new byte[4]);
         }
 
 

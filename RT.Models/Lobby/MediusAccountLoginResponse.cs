@@ -55,7 +55,7 @@ namespace RT.Models
             writer.Write(AccountID);
             writer.Write(AccountType);
             writer.Write(MediusWorldID);
-            writer.Write(ConnectInfo);
+            writer.Write(ConnectInfo ?? new NetConnectionInfo());
         }
 
 

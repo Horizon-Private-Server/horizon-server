@@ -31,7 +31,7 @@ namespace RT.Models
             UNK_26 = reader.ReadUInt16();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(WorldId);
             writer.Write(ApplicationId);

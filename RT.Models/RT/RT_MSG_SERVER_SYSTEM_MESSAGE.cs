@@ -27,7 +27,7 @@ namespace RT.Models
             Message = reader.ReadRestAsString();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Severity);
             writer.Write(EncodingType);

@@ -39,7 +39,7 @@ namespace RT.Models
         /// <summary>
         /// Serializes the message.
         /// </summary>
-        public List<byte[]> Serialize(int mediusVersion)
+        public List<byte[]> Serialize(int mediusVersion, CipherService cipherService)
         {
             var results = new List<byte[]>();
             byte[] result = null;
@@ -57,6 +57,8 @@ namespace RT.Models
                 }
             }
 
+            var ctx = (Id == RT_MSG_TYPE.RT_MSG_SERVER_CRYPTKEY_PEER || Id == RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC) ? CipherContext.RSA_AUTH : CipherContext.RC_CLIENT_SESSION;
+
             // Check for fragmentation
             if (Id == RT_MSG_TYPE.RT_MSG_SERVER_APP && length > Constants.MEDIUS_MESSAGE_MAXLEN)
             {
@@ -66,24 +68,41 @@ namespace RT.Models
 
                 foreach (var frag in fragments)
                 {
+                    // 
+                    totalHeaderSize = HEADER_SIZE;
+
                     // Serialize message
                     using (var stream = new MemoryStream(buffer, true))
                     {
                         using (var writer = new MessageWriter(stream))
                         {
-                            // Serialize header
-                            writer.Write((byte)this.Id);
-                            writer.Write((ushort)0);
-
                             // Serialize message
                             new RT_MSG_SERVER_APP() { Message = frag }.Serialize(writer);
-                            length = (int)stream.Position - totalHeaderSize;
+                            length = (int)stream.Position;
+
+                            var data = new byte[length];
+                            Array.Copy(buffer, data, length);
+                            if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                            {
+                                totalHeaderSize += HASH_SIZE;
+
+                                Array.Copy(hash, 0, buffer, 3, hash.Length);
+                                Array.Copy(signed, 0, buffer, 3 + hash.Length, signed.Length);
+                                writer.Seek(0, SeekOrigin.Begin);
+                                writer.Write((byte)((byte)this.Id | 0x80));
+                            }
+                            else
+                            {
+                                Array.Copy(buffer, 0, buffer, 3, length);
+                                writer.Seek(0, SeekOrigin.Begin);
+                                writer.Write((byte)this.Id);
+                            }
 
                             // Write length
                             writer.Seek(1, SeekOrigin.Begin);
                             writer.Write((ushort)length);
 
-
+                            // 
                             result = new byte[length + totalHeaderSize];
                             Array.Copy(buffer, 0, result, 0, result.Length);
                             results.Add(result);
@@ -93,13 +112,30 @@ namespace RT.Models
             }
             else
             {
-                // Add id and length to header
-                result = new byte[length + totalHeaderSize];
-                result[0] = (byte)this.Id;
-                result[1] = (byte)(length & 0xFF);
-                result[2] = (byte)((length >> 8) & 0xFF);
+                var data = new byte[length];
+                Array.Copy(buffer, data, length);
+                if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                {
+                    totalHeaderSize += HASH_SIZE;
 
-                Array.Copy(buffer, 0, result, totalHeaderSize, length);
+                    // 
+                    result = new byte[length + totalHeaderSize];
+                    result[0] = (byte)((byte)this.Id | 0x80);
+                    result[1] = (byte)(length & 0xFF);
+                    result[2] = (byte)((length >> 8) & 0xFF);
+                    Array.Copy(hash, 0, result, HEADER_SIZE, HASH_SIZE);
+                    Array.Copy(signed, 0, result, totalHeaderSize, length);
+                }
+                else
+                {
+                    // Add id and length to header
+                    result = new byte[length + totalHeaderSize];
+                    result[0] = (byte)this.Id;
+                    result[1] = (byte)(length & 0xFF);
+                    result[2] = (byte)((length >> 8) & 0xFF);
+                    Array.Copy(buffer, 0, result, totalHeaderSize, length);
+                }
+
                 results.Add(result);
             }
 
@@ -109,7 +145,7 @@ namespace RT.Models
         /// <summary>
         /// Serialize contents of the message.
         /// </summary>
-        protected abstract void Serialize(MessageWriter writer);
+        public abstract void Serialize(MessageWriter writer);
 
         #endregion
 
@@ -128,25 +164,29 @@ namespace RT.Models
         #region Dynamic Instantiation
 
         private static Dictionary<RT_MSG_TYPE, Type> _messageClassById = null;
-
+        private static int _messageClassByIdLockValue = 0;
+        private static object _messageClassByIdLockObject = (object)_messageClassByIdLockValue;
 
         private static void Initialize()
         {
-            if (_messageClassById != null)
-                return;
-
-            _messageClassById = new Dictionary<RT_MSG_TYPE, Type>();
-
-            // Populate
-            var assembly = System.Reflection.Assembly.GetAssembly(typeof(BaseScertMessage));
-            var types = assembly.GetTypes();
-
-            foreach (Type classType in types)
+            lock (_messageClassByIdLockObject)
             {
-                // Objects by Id
-                var attrs = (ScertMessageAttribute[])classType.GetCustomAttributes(typeof(ScertMessageAttribute), true);
-                if (attrs != null && attrs.Length > 0)
-                    _messageClassById.Add(attrs[0].MessageId, classType);
+                if (_messageClassById != null)
+                    return;
+
+                _messageClassById = new Dictionary<RT_MSG_TYPE, Type>();
+
+                // Populate
+                var assembly = System.Reflection.Assembly.GetAssembly(typeof(BaseScertMessage));
+                var types = assembly.GetTypes();
+
+                foreach (Type classType in types)
+                {
+                    // Objects by Id
+                    var attrs = (ScertMessageAttribute[])classType.GetCustomAttributes(typeof(ScertMessageAttribute), true);
+                    if (attrs != null && attrs.Length > 0)
+                        _messageClassById.Add(attrs[0].MessageId, classType);
+                }
             }
         }
 
@@ -162,7 +202,20 @@ namespace RT.Models
                 _messageClassById[id] = type;
         }
 
-        public static BaseScertMessage Instantiate(RT_MSG_TYPE id, byte[] hash, byte[] messageBuffer, int mediusVersion, Func<RT_MSG_TYPE, CipherContext, ICipher> getCipherCallback = null)
+        public static BaseScertMessage Instantiate(Server.Common.Stream.MessageReader reader)
+        {
+            var id = reader.ReadByte();
+            var rtId = (RT_MSG_TYPE)(id & 0x7f);
+            var len = reader.ReadInt16();
+            var messageBytes = reader.ReadBytes(len);
+            if (id >= 0x80)
+                throw new Exception($"Unable instantiate encrypted message {id} without a cipher!");
+
+
+            return Instantiate(rtId, null, messageBytes, reader.MediusVersion, null);
+        }
+
+        public static BaseScertMessage Instantiate(RT_MSG_TYPE id, byte[] hash, byte[] messageBuffer, int mediusVersion, CipherService cipherService)
         {
             // Init first
             Initialize();
@@ -176,25 +229,13 @@ namespace RT.Models
             // Decrypt
             if (hash != null)
             {
-                CipherContext context = (CipherContext)(hash[3] >> 5);
-                var cipher = getCipherCallback(id, context);
-                if (cipher == null)
-                    return null;
-
-                if (cipher.Decrypt(messageBuffer, hash, out var plain))
-                {
-                    msg = Instantiate(classType, id, plain, mediusVersion);
-                }
-
-                // This is a hack to make the dme server connect
-                // We don't really care what their key is since we're not encrypting our response
-                else if (id == RT_MSG_TYPE.RT_MSG_CLIENT_CRYPTKEY_PUBLIC)
+                if (cipherService.Decrypt(messageBuffer, hash, out var plain))
                 {
                     msg = Instantiate(classType, id, plain, mediusVersion);
                 }
                 else
                 {
-                    Logger.Error($"Unable to decrypt {id}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(messageBuffer)} CIPHER:{cipher}");
+                    Logger.Error($"Unable to decrypt {id}, HASH:{BitConverter.ToString(hash)} DATA:{BitConverter.ToString(messageBuffer).Replace("-", "")}");
                 }
             }
             else

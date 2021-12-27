@@ -37,26 +37,33 @@ namespace RT.Cryptography
 
         public virtual bool Decrypt(byte[] input, byte[] hash, out byte[] plain)
         {
-            bool match = false;
+            plain = new byte[input.Length];
+            if (input.Length > this.N.BitLength/8)
+                throw new NotImplementedException($"Unable to decrypt RSA cipher with length greater than key ({input.Length}).");
+
+            // decrypt
             var plainBigInt = Decrypt(input.ToBigInteger());
-
-            plain = plainBigInt.ToBA();
+            var plainBytes = plainBigInt.ToBA();
+            Array.Copy(plainBytes, plain, plainBytes.Length);
             Hash(plain, out var ourHash);
-            match = ourHash.SequenceEqual(hash);
-            if (match)
-                return true;
 
-            // Handle case where message > n
-            plainBigInt = plainBigInt.Add(N);
-            plain = plainBigInt.ToBA();
-            Hash(plain, out ourHash);
+            // if hashes don't match then try adding N
+            // this accounts for when a value larger than N but less than 513 bits is encrypted
+            if (!ourHash.SequenceEqual(hash))
+            {
+                // decrypt
+                plainBytes = plainBigInt.Add(N).ToBA();
+                Array.Copy(plainBytes, plain, plainBytes.Length);
+                Hash(plain, out ourHash);
+            }
+
             return ourHash.SequenceEqual(hash);
         }
 
         public virtual bool Encrypt(byte[] input, out byte[] cipher, out byte[] hash)
         {
             Hash(input, out hash);
-            cipher = Encrypt(input.ToBigInteger()).ToBA();
+            cipher = Encrypt(input.ToBigInteger()).ToBA(input.Length);
             return true;
         }
 
@@ -84,6 +91,11 @@ namespace RT.Cryptography
         }
 
         #endregion
+
+        public byte[] GetPublicKey()
+        {
+            return this.N.ToByteArrayUnsigned();
+        }
 
         public override string ToString()
         {
@@ -132,9 +144,22 @@ namespace RT.Cryptography
             return b.ToByteArrayUnsigned().Reverse().ToArray();
         }
 
+        public static byte[] ToBA(this BigInteger b, int minLen)
+        {
+            var bytes = b.ToByteArrayUnsigned().Reverse().ToArray();
+            if (bytes.Length < minLen)
+                Array.Resize(ref bytes, minLen);
+            return bytes;
+        }
+
         public static BigInteger ToBigInteger(this byte[] ba)
         {
             return new BigInteger(1, ba.Reverse().ToArray());
+        }
+
+        public static BigInteger ToBigInteger(this byte[] ba, int startIndex, int length)
+        {
+            return new BigInteger(1, ba.Skip(startIndex).Take(length).Reverse().ToArray());
         }
     }
 }

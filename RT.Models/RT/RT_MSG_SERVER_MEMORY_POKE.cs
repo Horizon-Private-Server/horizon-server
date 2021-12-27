@@ -22,7 +22,7 @@ namespace RT.Models
             Payload = reader.ReadBytes(len);
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Address);
             writer.Write(Payload?.Length ?? 0);

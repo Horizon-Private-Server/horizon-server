@@ -6,7 +6,7 @@ using System.Text;
 namespace RT.Cryptography
 {
     /// <summary>
-    /// UYA's custom RC4 implementation,
+    /// PS2's custom RC4 implementation,
     /// based off https://github.com/bcgit/bc-csharp/blob/f18a2dbbc2c1b4277e24a2e51f09cac02eedf1f5/crypto/src/crypto/engines/RC4Engine.cs
     /// </summary>
     public class PS2_RC4 : ICipher
@@ -256,6 +256,13 @@ namespace RT.Cryptography
         }
 
         #endregion
+
+        public byte[] GetPublicKey()
+        {
+            var copy = new byte[this.workingKey.Length];
+            Array.Copy(this.workingKey, copy, copy.Length);
+            return copy;
+        }
 
         public override string ToString()
         {

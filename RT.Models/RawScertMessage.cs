@@ -29,7 +29,7 @@ namespace RT.Models
             Contents = reader.ReadRest();
         }
 
-        protected override void Serialize(Server.Common.Stream.MessageWriter writer)
+        public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             if (Contents != null)
                 writer.Write(Contents);
