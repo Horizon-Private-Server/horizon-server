@@ -134,6 +134,7 @@ namespace Server.Medius
 
         protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
             if (message == null)
                 return;
 
@@ -237,6 +238,7 @@ namespace Server.Medius
                         // Create client object
                         data.ClientObject = Program.LobbyServer.ReserveClient(extendedSessionBeginRequest);
                         data.ClientObject.ApplicationId = data.ApplicationId;
+                        data.ClientObject.MediusVersion = scertClient.MediusVersion;
                         data.ClientObject.OnConnected();
 
                         // Reply
@@ -253,6 +255,7 @@ namespace Server.Medius
                         // Create client object
                         data.ClientObject = Program.LobbyServer.ReserveClient(sessionBeginRequest);
                         data.ClientObject.ApplicationId = data.ApplicationId;
+                        data.ClientObject.MediusVersion = scertClient.MediusVersion;
                         data.ClientObject.OnConnected();
 
                         // Reply
@@ -270,6 +273,7 @@ namespace Server.Medius
                         // Create client object
                         data.ClientObject = Program.LobbyServer.ReserveClient1(SessionBegin1Request);
                         data.ClientObject.ApplicationId = data.ApplicationId;
+                        data.ClientObject.MediusVersion = scertClient.MediusVersion;
                         data.ClientObject.OnConnected();
 
                         // Reply

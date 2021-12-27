@@ -3,6 +3,7 @@ using DotNetty.Transport.Channels;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
+using RT.Models.Misc;
 using Server.Common;
 using Server.Database.Models;
 using Server.Medius.Models;
@@ -3177,6 +3178,20 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusGenericChatMessage1 genericChatMessage:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a being logged in.");
+
+                        await ProcessGenericChatMessage(clientChannel, data.ClientObject, genericChatMessage);
+                        break;
+                    }
+
                 case MediusGenericChatMessage genericChatMessage:
                     {
                         // ERROR - Need a session
@@ -3412,7 +3427,7 @@ namespace Server.Medius
         }
 
 
-        private async Task ProcessGenericChatMessage(IChannel clientChannel, ClientObject clientObject, MediusGenericChatMessage chatMessage)
+        private async Task ProcessGenericChatMessage(IChannel clientChannel, ClientObject clientObject, IMediusChatMessage chatMessage)
         {
             var channel = clientObject.CurrentChannel;
             var game = clientObject.CurrentGame;
@@ -3433,7 +3448,7 @@ namespace Server.Medius
                 case MediusChatMessageType.Broadcast:
                     {
                         // Relay
-                        channel.BroadcastChatMessage(allButSender, clientObject, chatMessage.Message.Substring(1));
+                        channel.BroadcastChatMessage(allButSender, clientObject, chatMessage.Message);
                         break;
                     }
                 default:

@@ -57,6 +57,11 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
+        public int MediusVersion { get; set; } = 0;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public int? ClanId { get; protected set; } = null;
 
         /// <summary>

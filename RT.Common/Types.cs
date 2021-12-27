@@ -888,12 +888,14 @@ namespace RT.Common
 		// PS3
         TicketLogin = 0x58,
         TicketLoginResponse = 0x59,
+        GenericChatMessage1 = 0x73,
+        GenericChatFwdMessage1 = 0x74,
         MediusTextFilter1 = 0x75,
         MediusTextFilterResponse1 = 0x76,
         SetLocalizationParams1 = 0x7B,
-        SessionBegin1 = 0x8B,
         SetLobbyWorldFilter1 = 0x86,
         SetLobbyWorldFilterResponse1 = 0x87,
+        SessionBegin1 = 0x8B,
     }
 
     public enum MGCL_TRUST_LEVEL : int

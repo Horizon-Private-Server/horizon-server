@@ -1,4 +1,5 @@
 ﻿using RT.Models;
+using RT.Models.Misc;
 using Server.Medius.Models;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace Server.Medius.PluginArgs
         /// <summary>
         /// Message.
         /// </summary>
-        public MediusGenericChatMessage Message { get; set; }
+        public IMediusChatMessage Message { get; set; }
 
         public override string ToString()
         {

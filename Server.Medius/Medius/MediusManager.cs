@@ -32,6 +32,11 @@ namespace Server.Medius
 
         #region Clients
 
+        public List<ClientObject> GetClients(int appId)
+        {
+            return _accountIdToClient.Select(x => x.Value).Where(x => x.ApplicationId == appId).ToList();
+        }
+
         public ClientObject GetClientByAccountId(int accountId)
         {
             if (_accountIdToClient.TryGetValue(accountId, out var result))
