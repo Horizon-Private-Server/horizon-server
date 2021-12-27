@@ -6,6 +6,7 @@ using RT.Models;
 using Server.Common;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
+using Server.Pipeline.Attribute;
 using Server.Plugins;
 using System;
 using System.Collections.Concurrent;
@@ -45,9 +46,6 @@ namespace Server.Medius
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        // initialize default key
-                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.MPSKey));
-
                         if (data.State > ClientState.HELLO)
                             throw new Exception($"Unexpected RT_MSG_CLIENT_HELLO from {clientChannel.RemoteAddress}: {clientHello}");
 

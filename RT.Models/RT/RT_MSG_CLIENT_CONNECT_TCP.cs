@@ -14,6 +14,7 @@ namespace RT.Models
 
         // 
         public uint TargetWorldId;
+        public byte UNK0;
         public int AppId;
         public RSA_KEY Key;
 
@@ -26,6 +27,8 @@ namespace RT.Models
             AccessToken = null;
 
             TargetWorldId = reader.ReadUInt32();
+            if (reader.MediusVersion < 109)
+                UNK0 = reader.ReadByte();
             AppId = reader.ReadInt32();
             Key = reader.Read<RSA_KEY>();
 
@@ -39,6 +42,8 @@ namespace RT.Models
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(TargetWorldId);
+            if (writer.MediusVersion < 109)
+                writer.Write(UNK0);
             writer.Write(AppId);
             writer.Write(Key ?? RSA_KEY.Empty);
         }
@@ -46,8 +51,9 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"ARG1:{TargetWorldId:X8} " +
-                $"ARG2:{AppId:X8} " +
+                $"TargetWorldId:{TargetWorldId:X8} " +
+                $"UNK0:{UNK0:X2} " +
+                $"AppId:{AppId:X8} " +
                 $"Key:{Key}";
         }
     }

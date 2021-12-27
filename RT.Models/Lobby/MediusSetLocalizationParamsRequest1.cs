@@ -8,7 +8,7 @@ using System.Text;
 namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.SetLocalizationParams1)]
-    public class MediusSetLocalizationParamsRequest1 : BaseLobbyMessage, IMediusRequest
+    public class MediusSetLocalizationParamsRequest1 : BaseLobbyExtMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyExtMessageIds.SetLocalizationParams1;
 
@@ -44,6 +44,9 @@ namespace RT.Models
 
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
+            writer.Write(new byte[2]);
+            writer.Write(CharacterEncoding);
+            writer.Write(Language);
         }
 
 

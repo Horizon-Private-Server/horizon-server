@@ -235,10 +235,43 @@ namespace Server.Medius
 
         static void Initialize()
         {
+            RefreshConfig();
+
+            // 
+            if (Settings.ApplicationIds != null)
+            {
+                foreach (var appId in Settings.ApplicationIds)
+                {
+                    Manager.AddChannel(new Channel()
+                    {
+                        ApplicationId = appId,
+                        MaxPlayers = 256,
+                        Name = "Default",
+                        Type = ChannelType.Lobby
+                    });
+                }
+            }
+            else
+            {
+                Manager.AddChannel(new Channel()
+                {
+                    ApplicationId = 0,
+                    MaxPlayers = 256,
+                    Name = "Default",
+                    Type = ChannelType.Lobby
+                });
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        static void RefreshConfig()
+        {
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
-                MissingMemberHandling = MissingMemberHandling.Ignore
+                MissingMemberHandling = MissingMemberHandling.Ignore,
             };
 
             // Load settings
@@ -270,63 +303,12 @@ namespace Server.Medius
             if (string.IsNullOrEmpty(Settings.NATIp))
                 Settings.NATIp = SERVER_IP.ToString();
 
-            // 
-            if (Settings.ApplicationIds != null)
-            {
-                foreach (var appId in Settings.ApplicationIds)
-                {
-                    Manager.AddChannel(new Channel()
-                    {
-                        ApplicationId = appId,
-                        MaxPlayers = 256,
-                        Name = "Default",
-                        Type = ChannelType.Lobby
-                    });
-                }
-            }
-            else
-            {
-                Manager.AddChannel(new Channel()
-                {
-                    ApplicationId = 0,
-                    MaxPlayers = 256,
-                    Name = "Default",
-                    Type = ChannelType.Lobby
-                });
-            }
-
-            // Clear account status table
-            //Database.ClearAccountStatuses().Wait();
-
-            // Load tick time into sleep ms for main loop
-            sleepMS = TickMS;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        static void RefreshConfig()
-        {
-            // 
-            var serializerSettings = new JsonSerializerSettings()
-            {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-            };
-
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
-            {
-                // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
-            }
-
-            // Update NAT Ip with server ip if null
-            if (string.IsNullOrEmpty(Settings.NATIp))
-                Settings.NATIp = SERVER_IP.ToString();
-
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
+
+            // Update default rsa key
+            Pipeline.Attribute.ScertClientAttribute.DefaultRsaAuthKey = Settings.DefaultKey;
 
             if (Settings.DefaultKey != null)
                 GlobalAuthPublic = new RSA_KEY(Settings.DefaultKey.N.ToByteArrayUnsigned().Reverse().ToArray());

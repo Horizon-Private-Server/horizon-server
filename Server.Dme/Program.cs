@@ -207,36 +207,7 @@ namespace Server.Dme
 
         static void Initialize()
         {
-            // 
-            var serializerSettings = new JsonSerializerSettings()
-            {
-                MissingMemberHandling = MissingMemberHandling.Ignore
-            };
-
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
-            {
-                // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
-            }
-            else
-            {
-                // Save defaults
-                File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
-            }
-
-            // Set LogSettings singleton
-            LogSettings.Singleton = Settings.Logging;
-
-            // Determine server ip
-            if (!Settings.UsePublicIp)
-            {
-                SERVER_IP = Utils.GetLocalIPAddress();
-            }
-            else
-            {
-                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
-            }
+            RefreshConfig();
         }
 
         /// <summary>
@@ -256,10 +227,31 @@ namespace Server.Dme
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
+            else
+            {
+                // Save defaults
+                File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+            }
+
+            // Set LogSettings singleton
+            LogSettings.Singleton = Settings.Logging;
+
+            // Update default rsa key
+            Pipeline.Attribute.ScertClientAttribute.DefaultRsaAuthKey = Settings.DefaultKey;
 
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
+
+            // Determine server ip
+            if (!Settings.UsePublicIp)
+            {
+                SERVER_IP = Utils.GetLocalIPAddress();
+            }
+            else
+            {
+                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+            }
         }
 
         public static MediusManager GetManager(int applicationId, bool useDefaultOnMissing)

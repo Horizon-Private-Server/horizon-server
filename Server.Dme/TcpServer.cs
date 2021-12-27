@@ -269,9 +269,6 @@ namespace Server.Dme
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        // initialize default key
-                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.DefaultKey));
-
                         // send hello
                         Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;

@@ -100,10 +100,18 @@ namespace Server.UnivereInformation
 
         static void Initialize()
         {
+            RefreshConfig();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        static void RefreshConfig()
+        {
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
-                MissingMemberHandling = MissingMemberHandling.Ignore
+                MissingMemberHandling = MissingMemberHandling.Ignore,
             };
 
             // Load settings
@@ -129,25 +137,9 @@ namespace Server.UnivereInformation
 
             // Set LogSettings singleton
             LogSettings.Singleton = Settings.Logging;
-        }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        static void RefreshConfig()
-        {
-            // 
-            var serializerSettings = new JsonSerializerSettings()
-            {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-            };
-
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
-            {
-                // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
-            }
+            // Update default rsa key
+            Pipeline.Attribute.ScertClientAttribute.DefaultRsaAuthKey = Settings.DefaultKey;
 
             // Update file logger min level
             if (_fileLogger != null)

@@ -42,9 +42,6 @@ namespace Server.Medius
             {
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
-                        // initialize default key
-                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.DefaultKey));
-
                         // send hello
                         Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
@@ -729,7 +726,7 @@ namespace Server.Medius
                                     }
                                     else if (Utils.ComputeSHA256(ticketLoginRequest.Password) == r.Result.AccountPassword)
                                     {
-                                        Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
+                                        
                                     }
                                     else
                                     {

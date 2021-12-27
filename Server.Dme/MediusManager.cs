@@ -281,9 +281,6 @@ namespace Server.Dme
                         if (_mpsState != MPSConnectionState.HELLO)
                             throw new Exception($"Unexpected RT_MSG_SERVER_HELLO from server. {serverHello}");
 
-                        // 
-                        scertClient.CipherService.SetCipher(CipherContext.RSA_AUTH, scertClient.GetDefaultRSAKey(Program.Settings.MPS.Key));
-
                         // Send public key
                         Enqueue(new RT_MSG_CLIENT_CRYPTKEY_PUBLIC()
                         {
