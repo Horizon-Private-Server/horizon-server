@@ -333,7 +333,14 @@ namespace Server.Medius
                     }
                 case MediusDnasSignaturePost dnasSignaturePost:
                     {
+                        if (dnasSignaturePost.DnasSignatureType == MediusDnasCategory.DnasConsoleID)
+                        {
+                            data.MachineId = BitConverter.ToString(dnasSignaturePost.DnasSignature);
 
+                            // post if logged in
+                            if (data.ClientObject?.IsLoggedIn ?? false)
+                                _ = Program.Database.PostMachineId(data.ClientObject.AccountId, data.MachineId);
+                        }
                         break;
                     }
 
@@ -357,11 +364,22 @@ namespace Server.Medius
                             return;
                         }
 
+                        // validate name
+                        if (!Program.PassTextFilter(Config.TextFilterContext.ACCOUNT_NAME, accountRegRequest.AccountName))
+                        {
+                            data.ClientObject.Queue(new MediusAccountRegistrationResponse()
+                            {
+                                MessageID = accountRegRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusFail,
+                            });
+                            return;
+                        }
+
                         _ = Program.Database.CreateAccount(new Database.Models.CreateAccountDTO()
                         {
                             AccountName = accountRegRequest.AccountName,
                             AccountPassword = Utils.ComputeSHA256(accountRegRequest.Password),
-                            MachineId = null,
+                            MachineId = data.MachineId,
                             MediusStats = Convert.ToBase64String(new byte[Constants.ACCOUNTSTATS_MAXLEN]),
                             AppId = data.ClientObject.ApplicationId
                         }).ContinueWith((r) =>
@@ -393,7 +411,7 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountGetIdRequest} without a session.");
 
-                        _ = Program.Database.GetAccountByName(accountGetIdRequest.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.GetAccountByName(accountGetIdRequest.AccountName, data.ClientObject.ApplicationId).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null)
                             {
@@ -502,7 +520,7 @@ namespace Server.Medius
                         }
                         else
                         {
-                            Program.Database.GetAccountByName(accountLoginRequest.Username).ContinueWith((r) =>
+                            Program.Database.GetAccountByName(accountLoginRequest.Username, data.ClientObject.ApplicationId).ContinueWith((r) =>
                             {
                                 if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                     return;
@@ -569,11 +587,22 @@ namespace Server.Medius
                                         return;
                                     }
 
+                                    // validate name
+                                    if (!Program.PassTextFilter(Config.TextFilterContext.ACCOUNT_NAME, accountLoginRequest.Username))
+                                    {
+                                        data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                        {
+                                            MessageID = accountLoginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusFail,
+                                        });
+                                        return;
+                                    }
+
                                     _ = Program.Database.CreateAccount(new Database.Models.CreateAccountDTO()
                                     {
                                         AccountName = accountLoginRequest.Username,
                                         AccountPassword = Utils.ComputeSHA256(accountLoginRequest.Password),
-                                        MachineId = null,
+                                        MachineId = data.MachineId,
                                         MediusStats = Convert.ToBase64String(new byte[Constants.ACCOUNTSTATS_MAXLEN]),
                                         AppId = data.ClientObject.ApplicationId
                                     }).ContinueWith((r) =>
@@ -642,14 +671,15 @@ namespace Server.Medius
                         {
                             case MediusTextFilterType.MediusTextFilterPassFail:
                                 {
-                                    if (textFilterRequest.Text.Any(x => x < 0x20 || x >= 0x7F))
+                                    // validate name
+                                    if (!Program.PassTextFilter(Config.TextFilterContext.ACCOUNT_NAME, textFilterRequest.Text))
                                     {
-                                        // Failed due to special characters
                                         data.ClientObject.Queue(new MediusTextFilterResponse()
                                         {
                                             MessageID = textFilterRequest.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusFail
                                         });
+                                        return;
                                     }
                                     else
                                     {
@@ -669,7 +699,7 @@ namespace Server.Medius
                                     {
                                         MessageID = textFilterRequest.MessageID,
                                         StatusCode = MediusCallbackStatus.MediusSuccess,
-                                        Text = String.Concat(textFilterRequest.Text.Trim().Where(x => x >= 0x20 && x < 0x7F))
+                                        Text = Program.FilterTextFilter(Config.TextFilterContext.ACCOUNT_NAME, textFilterRequest.Text).Trim()
                                     });
                                     break;
                                 }
@@ -686,7 +716,7 @@ namespace Server.Medius
                         // Check the client isn't already logged in
                         if (Program.Manager.GetClientByAccountName(ticketLoginRequest.Username)?.IsLoggedIn ?? false)
                         {
-                            data.ClientObject.Queue(new MediusAccountLoginResponse()
+                            data.ClientObject.Queue(new MediusTicketLoginResponse()
                             {
                                 MessageID = ticketLoginRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusAccountLoggedIn
@@ -694,7 +724,7 @@ namespace Server.Medius
                         }
                         else
                         {
-                            Program.Database.GetAccountByName(ticketLoginRequest.Username).ContinueWith((r) =>
+                            Program.Database.GetAccountByName(ticketLoginRequest.Username, data.ClientObject.ApplicationId).ContinueWith((r) =>
                             {
                                 if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                     return;
@@ -708,7 +738,7 @@ namespace Server.Medius
 
                                         // Account is banned
                                         // Temporary solution is to tell the client the login failed
-                                        data?.ClientObject?.Queue(new MediusAccountLoginResponse()
+                                        data?.ClientObject?.Queue(new MediusTicketLoginResponse()
                                         {
                                             MessageID = ticketLoginRequest.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusAccountBanned
@@ -718,34 +748,25 @@ namespace Server.Medius
                                     else if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && Program.Settings.Beta.RestrictSignin && !Program.Settings.Beta.PermittedAccounts.Contains(r.Result.AccountName))
                                     {
                                         // Account not allowed to sign in
-                                        data?.ClientObject?.Queue(new MediusAccountLoginResponse()
+                                        data?.ClientObject?.Queue(new MediusTicketLoginResponse()
                                         {
                                             MessageID = ticketLoginRequest.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusFail
                                         });
                                     }
-                                    else if (Utils.ComputeSHA256(ticketLoginRequest.Password) == r.Result.AccountPassword)
-                                    {
-                                        
-                                    }
                                     else
                                     {
-                                        // Incorrect password
-                                        data?.ClientObject?.Queue(new MediusAccountLoginResponse()
-                                        {
-                                            MessageID = ticketLoginRequest.MessageID,
-                                            StatusCode = MediusCallbackStatus.MediusInvalidPassword
-                                        });
+                                        Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
                                     }
                                 }
-                                else if (Program.Settings.CreateAccountOnNotFound)
+                                else
                                 {
                                     // Account not found, create new and login
                                     // Check that account creation is enabled
                                     if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && !Program.Settings.Beta.AllowAccountCreation)
                                     {
                                         // Reply error
-                                        data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                        data.ClientObject.Queue(new MediusTicketLoginResponse()
                                         {
                                             MessageID = ticketLoginRequest.MessageID,
                                             StatusCode = MediusCallbackStatus.MediusFail,
@@ -757,7 +778,7 @@ namespace Server.Medius
                                     {
                                         AccountName = ticketLoginRequest.Username,
                                         AccountPassword = Utils.ComputeSHA256(ticketLoginRequest.Password),
-                                        MachineId = null,
+                                        MachineId = data.MachineId,
                                         MediusStats = Convert.ToBase64String(new byte[Constants.ACCOUNTSTATS_MAXLEN]),
                                         AppId = data.ClientObject.ApplicationId
                                     }).ContinueWith((r) =>
@@ -769,21 +790,12 @@ namespace Server.Medius
                                         else
                                         {
                                             // Reply error
-                                            data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                            data.ClientObject.Queue(new MediusTicketLoginResponse()
                                             {
                                                 MessageID = ticketLoginRequest.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusInvalidPassword
                                             });
                                         }
-                                    });
-                                }
-                                else
-                                {
-                                    // Account not found
-                                    data.ClientObject.Queue(new MediusAccountLoginResponse()
-                                    {
-                                        MessageID = ticketLoginRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusAccountNotFound,
                                     });
                                 }
                             });
@@ -804,7 +816,7 @@ namespace Server.Medius
                             Request = getAllAnnouncementsRequest
                         });
 
-                        Program.Database.GetLatestAnnouncements().ContinueWith((r) =>
+                        Program.Database.GetLatestAnnouncements(data.ApplicationId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -851,7 +863,7 @@ namespace Server.Medius
                             Request = getAnnouncementsRequest
                         });
 
-                        Program.Database.GetLatestAnnouncement().ContinueWith((r) =>
+                        Program.Database.GetLatestAnnouncement(data.ApplicationId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -1004,6 +1016,8 @@ namespace Server.Medius
 
             // Update db ip
             _ = Program.Database.PostAccountIp(accountDto.AccountId, (clientChannel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString());
+            if (!String.IsNullOrEmpty(data.MachineId))
+                _ = Program.Database.PostMachineId(data.ClientObject.AccountId, data.MachineId);
 
             // Add to logged in clients
             Program.Manager.AddClient(data.ClientObject);
@@ -1013,7 +1027,6 @@ namespace Server.Medius
 
             // Put client in default channel
             data.ClientObject.JoinChannel(Program.Manager.GetDefaultLobbyChannel(data.ApplicationId));
-
 
 
             // Tell client

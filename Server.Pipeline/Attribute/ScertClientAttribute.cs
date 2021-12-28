@@ -14,6 +14,7 @@ namespace Server.Pipeline.Attribute
         public int MediusVersion { get; set; }
         public bool IsPS3Client => MediusVersion >= 112;
         public CipherService CipherService { get; set; } = null;
+        public RsaKeyPair RsaAuthKey { get; set; } = null;
 
         public ScertClientAttribute()
         {
@@ -45,12 +46,12 @@ namespace Server.Pipeline.Attribute
             if (IsPS3Client)
             {
                 CipherService = new CipherService(new PS3CipherFactory());
-                CipherService.SetCipher(CipherContext.RSA_AUTH, DefaultRsaAuthKey.ToPS3());
+                CipherService.SetCipher(CipherContext.RSA_AUTH, (RsaAuthKey ?? DefaultRsaAuthKey).ToPS3());
             }
             else
             {
                 CipherService = new CipherService(new PS2CipherFactory());
-                CipherService.SetCipher(CipherContext.RSA_AUTH, DefaultRsaAuthKey.ToPS2());
+                CipherService.SetCipher(CipherContext.RSA_AUTH, (RsaAuthKey ?? DefaultRsaAuthKey).ToPS2());
             }
         }
     }

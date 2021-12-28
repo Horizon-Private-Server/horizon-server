@@ -32,7 +32,7 @@ namespace Server.Database.Models
 
     public class ClanInvitationDTO
     {
-        public int Id { get; set; }
+        public int InvitationId { get; set; }
         public int ClanId { get; set; }
         public string ClanName { get; set; }
         public int TargetAccountId { get; set; }

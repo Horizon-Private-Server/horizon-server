@@ -31,10 +31,5 @@ namespace Server.Database.Config
         /// Database password.
         /// </summary>
         public string DatabasePassword { get; set; } = null;
-
-        /// <summary>
-        /// Number of seconds that a given cached get request will remain valid.
-        /// </summary>
-        public int CacheDuration { get; set; } = 15;
     }
 }

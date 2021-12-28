@@ -32,6 +32,15 @@ namespace RT.Cryptography
                 _ciphers[context] = _factory.CreateNew(context, publicKey);
         }
 
+        public void GenerateCipher(RsaKeyPair rsaKeyPair)
+        {
+            var context = CipherContext.RSA_AUTH;
+            if (!_ciphers.ContainsKey(context))
+                _ciphers.Add(context, _factory.CreateNew(rsaKeyPair));
+            else
+                _ciphers[context] = _factory.CreateNew(rsaKeyPair);
+        }
+
         public void SetCipher(CipherContext context, ICipher cipher)
         {
             if (!_ciphers.ContainsKey(context))

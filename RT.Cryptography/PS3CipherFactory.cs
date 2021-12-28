@@ -29,6 +29,11 @@ namespace RT.Cryptography
             return CreateSymFromPublicKey(context, publicKey);
         }
 
+        public ICipher CreateNew(RsaKeyPair rsaKeyPair)
+        {
+            return rsaKeyPair?.ToPS3();
+        }
+
         private ICipher CreateSym(CipherContext context)
         {
             // generate random series of bytes

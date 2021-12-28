@@ -7,20 +7,19 @@ using System.Text;
 
 namespace Server.Medius.PluginArgs
 {
-    public class OnMessageArgs
+    public class OnMediusMessageArgs
     {
         public ClientObject Player { get; set; } = null;
 
         public IChannel Channel { get; set; } = null;
 
-        public BaseScertMessage Message { get; set; } = null;
+        public BaseMediusMessage Message { get; set; } = null;
 
         public bool IsIncoming { get; }
 
         public bool Ignore { get; set; } = false;
 
-
-        public OnMessageArgs(bool isIncoming)
+        public OnMediusMessageArgs(bool isIncoming)
         {
             IsIncoming = isIncoming;
         }

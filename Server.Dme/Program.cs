@@ -215,6 +215,8 @@ namespace Server.Dme
         /// </summary>
         static void RefreshConfig()
         {
+            var usePublicIp = Settings.UsePublicIp;
+
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
@@ -244,13 +246,16 @@ namespace Server.Dme
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
 
             // Determine server ip
-            if (!Settings.UsePublicIp)
+            if (usePublicIp != Settings.UsePublicIp)
             {
-                SERVER_IP = Utils.GetLocalIPAddress();
-            }
-            else
-            {
-                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                if (!Settings.UsePublicIp)
+                {
+                    SERVER_IP = Utils.GetLocalIPAddress();
+                }
+                else
+                {
+                    SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                }
             }
         }
 

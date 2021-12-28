@@ -53,6 +53,7 @@ namespace Server.Medius
         {
             public int ApplicationId { get; set; } = 0;
             public ClientObject ClientObject { get; set; } = null;
+            public string MachineId { get; set; } = null;
             public ConcurrentQueue<BaseScertMessage> RecvQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
             public ConcurrentQueue<BaseScertMessage> SendQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
 
@@ -99,6 +100,9 @@ namespace Server.Medius
                 };
                 _channelDatas.TryAdd(key, data);
 
+                //
+                OnConnected(channel);
+
                 // Check if IP is banned
                 Program.Database.GetIsIpBanned((channel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString()).ContinueWith((r) =>
                 {
@@ -141,6 +145,8 @@ namespace Server.Medius
                     data.ClientObject?.OnDisconnected();
                 }
 
+                //
+                OnDisconnected(channel);
             };
 
             // Queue all incoming messages
@@ -249,6 +255,16 @@ namespace Server.Medius
             }
         }
 
+        protected virtual Task OnConnected(IChannel clientChannel)
+        {
+            return Task.CompletedTask;
+        }
+
+        protected virtual Task OnDisconnected(IChannel clientChannel)
+        {
+            return Task.CompletedTask;
+        }
+
         protected virtual async Task Tick(IChannel clientChannel)
         {
             if (clientChannel == null)
@@ -280,16 +296,8 @@ namespace Server.Medius
                         try
                         {
                             // Send to plugins
-                            var onMsg = new OnMessageArgs()
-                            {
-                                Player = data.ClientObject,
-                                Message = message,
-                                Channel = clientChannel
-                            };
-                            Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_RECV, onMsg);
-
                             // Ignore if ignored
-                            if (!onMsg.Ignore && data.State != ClientState.DISCONNECTED)
+                            if (!PassMessageToPlugins(clientChannel, data, message, true) && data.State != ClientState.DISCONNECTED)
                                 await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
@@ -308,16 +316,8 @@ namespace Server.Medius
                         while (data.SendQueue.TryDequeue(out var message))
                         {
                             // Send to plugins
-                            var onMsg = new OnMessageArgs()
-                            {
-                                Player = data.ClientObject,
-                                Channel = clientChannel,
-                                Message = message
-                            };
-                            Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_SEND, onMsg);
-
                             // Ignore if ignored
-                            if (!onMsg.Ignore)
+                            if (!PassMessageToPlugins(clientChannel, data, message, false))
                                 responses.Add(message);
                         }
 
@@ -331,16 +331,8 @@ namespace Server.Medius
                             while (data.ClientObject.SendMessageQueue.TryDequeue(out var message))
                             {
                                 // Send to plugins
-                                var onMsg = new OnMessageArgs()
-                                {
-                                    Player = data.ClientObject,
-                                    Message = message,
-                                    Channel = clientChannel
-                                };
-                                Program.Plugins.OnEvent(Plugins.PluginEvent.MEDIUS_ON_SEND, onMsg);
-
                                 // Ignore if ignored
-                                if (!onMsg.Ignore)
+                                if (!PassMessageToPlugins(clientChannel, data, message, false))
                                     responses.Add(message);
                             }
                         }
@@ -432,6 +424,55 @@ namespace Server.Medius
                     if (_channelDatas.TryGetValue(clientChannel.Id.AsLongText(), out var data))
                         foreach (var message in messages)
                             data.SendQueue.Enqueue(message);
+        }
+
+        #endregion
+
+        #region Plugins
+
+        protected bool PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
+        {
+            var onMsg = new OnMessageArgs(isIncoming)
+            {
+                Player = data.ClientObject,
+                Channel = clientChannel,
+                Message = message
+            };
+
+            // Send to plugins
+            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            if (onMsg.Ignore)
+                return true;
+
+
+
+            // Send medius message to plugins
+            if (message is RT_MSG_CLIENT_APP_TOSERVER clientApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = data.ClientObject,
+                    Channel = clientChannel,
+                    Message = clientApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+            else if (message is RT_MSG_SERVER_APP serverApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = data.ClientObject,
+                    Channel = clientChannel,
+                    Message = serverApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+
+            return false;
         }
 
         #endregion

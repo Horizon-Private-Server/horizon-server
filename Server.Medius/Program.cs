@@ -27,6 +27,7 @@ using Server.Plugins;
 using System.Net.NetworkInformation;
 using Server.Common;
 using Haukcode.HighResolutionTimer;
+using System.Text.RegularExpressions;
 
 namespace Server.Medius
 {
@@ -111,11 +112,13 @@ namespace Server.Medius
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
 
+#if !DEBUG
                         if (!_hasPurgedAccountStatuses)
                         {
                             _hasPurgedAccountStatuses = await Database.ClearAccountStatuses();
                             await Database.ClearActiveGames();
                         }
+#endif
                     }
                 }
 
@@ -268,6 +271,8 @@ namespace Server.Medius
         /// </summary>
         static void RefreshConfig()
         {
+            var usePublicIp = Settings.UsePublicIp;
+
             // 
             var serializerSettings = new JsonSerializerSettings()
             {
@@ -290,13 +295,16 @@ namespace Server.Medius
             LogSettings.Singleton = Settings.Logging;
 
             // Determine server ip
-            if (!Settings.UsePublicIp)
+            if (usePublicIp != Settings.UsePublicIp)
             {
-                SERVER_IP = Utils.GetLocalIPAddress();
-            }
-            else
-            {
-                SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                if (!Settings.UsePublicIp)
+                {
+                    SERVER_IP = Utils.GetLocalIPAddress();
+                }
+                else
+                {
+                    SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                }
             }
 
             // Update NAT Ip with server ip if null
@@ -323,6 +331,37 @@ namespace Server.Medius
             {
                 return (++_sessionKeyCounter).ToString();
             }
+        }
+
+        private static string GetTextFilterRegexExpression(TextFilterContext context)
+        {
+            if (Settings.TextBlacklistFilters.TryGetValue(context, out var rExp) && !String.IsNullOrEmpty(rExp))
+                return rExp;
+
+            if (Settings.TextBlacklistFilters.TryGetValue(TextFilterContext.DEFAULT, out rExp) && !String.IsNullOrEmpty(rExp))
+                return rExp;
+
+            return null;
+        }
+
+        public static bool PassTextFilter(TextFilterContext context, string text)
+        {
+            var rExp = GetTextFilterRegexExpression(context);
+            if (String.IsNullOrEmpty(rExp))
+                return true;
+
+            Regex r = new Regex(rExp, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            return !r.IsMatch(text);
+        }
+
+        public static string FilterTextFilter(TextFilterContext context, string text)
+        {
+            var rExp = GetTextFilterRegexExpression(context);
+            if (String.IsNullOrEmpty(rExp))
+                return text;
+
+            Regex r = new Regex(rExp, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            return r.Replace(text, "");
         }
     }
 }

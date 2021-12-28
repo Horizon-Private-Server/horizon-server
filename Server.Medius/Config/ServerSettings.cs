@@ -128,6 +128,11 @@ namespace Server.Medius.Config
         public bool EncryptMessages { get; set; } = true;
 
         /// <summary>
+        /// Regex text filters for 
+        /// </summary>
+        public Dictionary<TextFilterContext, string> TextBlacklistFilters { get; set; } = new Dictionary<TextFilterContext, string>();
+
+        /// <summary>
         /// Logging settings.
         /// </summary>
         public LogSettings Logging { get; set; } = new LogSettings();
@@ -167,5 +172,15 @@ namespace Server.Medius.Config
         /// Accounts that can be logged into with RestrictSignIn set.
         /// </summary>
         public string[] PermittedAccounts { get; set; } = null;
+    }
+
+    public enum TextFilterContext
+    {
+        DEFAULT,
+        ACCOUNT_NAME,
+        CLAN_NAME,
+        CLAN_MESSAGE,
+        CHAT,
+        GAME_NAME
     }
 }

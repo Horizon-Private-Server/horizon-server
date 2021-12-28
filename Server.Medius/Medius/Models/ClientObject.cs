@@ -62,7 +62,7 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        public int? ClanId { get; protected set; } = null;
+        public int? ClanId { get; set; } = null;
 
         /// <summary>
         /// 

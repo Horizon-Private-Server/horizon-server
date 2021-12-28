@@ -34,12 +34,24 @@ namespace Server.Medius
 
         }
 
+        protected override Task OnConnected(IChannel clientChannel)
+        {
+            // Get ScertClient data
+            if (!clientChannel.HasAttribute(Server.Pipeline.Constants.SCERT_CLIENT))
+                clientChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Set(new ScertClientAttribute());
+            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            scertClient.RsaAuthKey = Program.Settings.MPSKey;
+            scertClient.CipherService.GenerateCipher(Program.Settings.MPSKey);
+
+
+            return base.OnConnected(clientChannel);
+        }
+
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
             scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
-
 
             // 
             switch (message)

@@ -30,59 +30,6 @@ namespace Server.Database
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
         private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
 
-        #region Cache
-
-        private class GetDbCache
-        {
-            static ConcurrentDictionary<string, GetDbCache> _getCache = new ConcurrentDictionary<string, GetDbCache>();
-
-            public DateTime LastUpdate;
-
-            public int Lifetime = 0;
-
-            public object Value;
-
-            public bool IsValid => Value != null && (DateTime.UtcNow - LastUpdate).TotalSeconds < Lifetime;
-
-
-            public GetDbCache(int lifetime)
-            {
-                this.Lifetime = lifetime;
-            }
-
-            public static bool TryGetCache<T>(string route, out T value)
-            {
-                if (_getCache.TryGetValue(route, out var cache) && cache != null && cache.IsValid && cache.Value is T cacheAsT)
-                {
-                    value = cacheAsT;
-                    return true;
-                }
-
-                value = default(T);
-                return false;
-            }
-
-            public static void UpdateCache(string route, object value, int lifetime)
-            {
-                if (_getCache.TryGetValue(route, out var cache))
-                {
-                    cache.Value = value;
-                    cache.LastUpdate = DateTime.UtcNow;
-                }
-                else
-                {
-                    _getCache.TryAdd(route, new GetDbCache(lifetime)
-                    {
-                        LastUpdate = DateTime.UtcNow,
-                        Value = value
-                    });
-                }
-            }
-        }
-
-        #endregion
-
-
         public DbController(string configPath)
         {
             // Load db settings
@@ -130,7 +77,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="name">Case insensitive name of player.</param>
         /// <returns>Returns account.</returns>
-        public async Task<AccountDTO> GetAccountByName(string name)
+        public async Task<AccountDTO> GetAccountByName(string name, int appId)
         {
             AccountDTO result = null;
 
@@ -138,11 +85,11 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedAccounts.FirstOrDefault(x => x.AccountName.ToLower() == name.ToLower());
+                    result = _simulatedAccounts.FirstOrDefault(x => x.AppId == appId && x.AccountName.ToLower() == name.ToLower());
                 }
                 else
                 {
-                    result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}");
+                    result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -194,7 +141,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var checkExisting = await GetAccountByName(createAccount.AccountName);
+                    var checkExisting = await GetAccountByName(createAccount.AccountName, createAccount.AppId);
                     if (checkExisting == null)
                     {
                         _simulatedAccounts.Add(result = new AccountDTO()
@@ -203,6 +150,8 @@ namespace Server.Database
                             AccountName = createAccount.AccountName,
                             AccountPassword = createAccount.AccountPassword,
                             AccountWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
+                            AppId = createAccount.AppId,
+                            MachineId = createAccount.MachineId,
                             MediusStats = createAccount.MediusStats,
                             Friends = new AccountRelationDTO[0],
                             Ignored = new AccountRelationDTO[0],
@@ -842,7 +791,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId}");
+                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId+1}");
                 }
             }
             catch (Exception e)
@@ -881,7 +830,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
+                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId+1}&StartIndex={startIndex}&Size={size}");
                 }
             }
             catch (Exception e)
@@ -969,28 +918,34 @@ namespace Server.Database
         /// </summary>
         /// <param name="statPost">Model containing clan id and ladder stats collection.</param>
         /// <returns>Success or failure.</returns>
-        public async Task<bool> PostClanLadderStats(StatPostDTO statPost)
+        public async Task<bool> PostClanLadderStats(int accountId, int? clanId, int[] stats)
         {
             bool result = false;
+            if (!clanId.HasValue)
+                return false;
 
             try
             {
                 if (_settings.SimulatedMode)
                 {
-                    var account = await GetAccountById(statPost.AccountId);
-                    if (!account.ClanId.HasValue)
+                    var account = await GetAccountById(accountId);
+                    if (account.ClanId != clanId)
                         return false;
 
                     var clan = await GetClanById(account.ClanId.Value);
                     if (clan == null)
                         return false;
 
-                    clan.ClanWideStats = statPost.Stats;
+                    clan.ClanWideStats = stats;
                     result = true;
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Stats/postClanStats", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Stats/postClanStats", JsonConvert.SerializeObject(new ClanStatPostDTO()
+                    {
+                        ClanId = clanId.Value,
+                        Stats = stats
+                    }))).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1041,7 +996,7 @@ namespace Server.Database
         /// <param name="clanId">Clan id to post stats to.</param>
         /// <param name="stats">Stats to post encoded as a Base64 string.</param>
         /// <returns>Success or failure.</returns>
-        public async Task<bool> PostClanMediusStatus(int clanId, string stats)
+        public async Task<bool> PostClanMediusStats(int clanId, string stats)
         {
             bool result = false;
 
@@ -1058,7 +1013,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Account/postClanMediusStats?ClanId={clanId}", $"\"{stats}\""))?.IsSuccessStatusCode ?? false;
+                    result = (await PostDbAsync($"Clan/postClanMediusStats?ClanId={clanId}", $"\"{stats}\""))?.IsSuccessStatusCode ?? false;
                 }
             }
             catch (Exception e)
@@ -1078,7 +1033,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="name">Case insensitive name of clan.</param>
         /// <returns>Returns clan.</returns>
-        public async Task<ClanDTO> GetClanByName(string name)
+        public async Task<ClanDTO> GetClanByName(string name, int appId)
         {
             ClanDTO result = null;
 
@@ -1086,11 +1041,11 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedClans.FirstOrDefault(x => x.ClanName.ToLower() == name.ToLower());
+                    result = _simulatedClans.FirstOrDefault(x => x.AppId == appId && x.ClanName.ToLower() == name.ToLower());
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanDTO>($"Clan/searchClanByName?ClanName={name}");
+                    result = await GetDbAsync<ClanDTO>($"Clan/searchClanByName?clanName={name}&appId={appId}");
                 }
             }
             catch (Exception e)
@@ -1118,7 +1073,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanDTO>($"Account/getClan?ClanId={id}");
+                    result = await GetDbAsync<ClanDTO>($"Clan/getClan?clanId={id}");
                 }
             }
             catch (Exception e)
@@ -1134,7 +1089,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="createClan">Clan creation parameters.</param>
         /// <returns>Returns created clan.</returns>
-        public async Task<ClanDTO> CreateClan(CreateClanDTO createClan)
+        public async Task<ClanDTO> CreateClan(int creatorAccountId, string clanName, int appId, string mediusStats)
         {
             ClanDTO result = null;
 
@@ -1142,21 +1097,21 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var checkExisting = await GetClanByName(createClan.ClanName);
+                    var checkExisting = await GetClanByName(clanName, appId);
                     if (checkExisting == null)
                     {
-                        var creatorAccount = await GetAccountById(createClan.AccountId);
+                        var creatorAccount = await GetAccountById(creatorAccountId);
                         _simulatedClans.Add(result = new ClanDTO()
                         {
                             ClanId = _simulatedClanIdCounter++,
-                            ClanName = createClan.ClanName,
+                            ClanName = clanName,
                             ClanLeaderAccount = creatorAccount,
                             ClanMemberAccounts = new List<AccountDTO>(new AccountDTO[] { creatorAccount }),
                             ClanMemberInvitations = new List<ClanInvitationDTO>(),
                             ClanMessages = new List<ClanMessageDTO>(),
                             ClanMediusStats = Convert.ToBase64String(new byte[Constants.CLANSTATS_MAXLEN]),
                             ClanWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
-                            AppId = createClan.AppId
+                            AppId = appId
                         });
 
                         creatorAccount.ClanId = result.ClanId;
@@ -1168,7 +1123,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    var response = await PostDbAsync($"Clan/createClan", JsonConvert.SerializeObject(createClan));
+                    var response = await PostDbAsync($"Clan/createClan?accountId={creatorAccountId}&clanName={clanName}&appId={appId}&mediusStats={mediusStats}", null);
 
                     // Deserialize on success
                     if (response.IsSuccessStatusCode)
@@ -1214,7 +1169,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await GetDbAsync($"Clan/deleteClan?AccountId={accountId}&ClanId={clanId}")).IsSuccessStatusCode;
+                    result = (await GetDbAsync($"Clan/deleteClan?accountId={accountId}&clanId={clanId}")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1274,6 +1229,55 @@ namespace Server.Database
         }
 
         /// <summary>
+        /// Transfers leadership of a clan to a new leader.
+        /// </summary>
+        /// <param name="leaderAccountId">Account id of leader.</param>
+        /// <param name="clanId">Id of clan.</param>
+        /// <param name="newLeaderAccountId">Account id of new leader.</param>
+        /// <returns>Returns created clan.</returns>
+        public async Task<bool> ClanLeave(int fromAccountId, int clanId, int accountId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var clan = await GetClanById(clanId);
+                    if (clan == null)
+                        return false;
+
+                    // only allow leader or player remove player
+                    if (fromAccountId != accountId && clan.ClanLeaderAccount.AccountId != fromAccountId)
+                        return false;
+                    
+                    // prevent leader from leaving -- must transfer or disband
+                    if (clan.ClanLeaderAccount.AccountId == accountId)
+                        return false;
+
+                    var account = clan.ClanMemberAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    if (account != null)
+                    {
+                        account.ClanId = null;
+                        clan.ClanMemberAccounts.Remove(account);
+                    }
+
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Clan/leaveClan?fromAccountId={fromAccountId}&clanId={clanId}&accountId={accountId}", null))?.IsSuccessStatusCode ?? false;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Creates a new clan invitation for the given player.
         /// </summary>
         /// <param name="fromAccountId">Id of account sending invite.</param>
@@ -1310,7 +1314,7 @@ namespace Server.Database
                     // add
                     clan.ClanMemberInvitations.Add(new ClanInvitationDTO()
                     {
-                        Id = _simulatedClanInvitationIdCounter++,
+                        InvitationId = _simulatedClanInvitationIdCounter++,
                         AppId = clan.AppId,
                         ClanId = clanId,
                         ClanName = clan.ClanName,
@@ -1323,7 +1327,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Clan/createInvitation?FromAccountId={fromAccountId}", new ClanInvitationDTO()
+                    result = (await PostDbAsync($"Clan/createInvitation?accountId={fromAccountId}", new ClanInvitationDTO()
                     {
                         ClanId = clanId,
                         TargetAccountId = accountId,
@@ -1369,7 +1373,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await GetDbAsync<List<AccountClanInvitationDTO>>($"Clan/invitations?AccountId={accountId}"));
+                    result = (await GetDbAsync<List<AccountClanInvitationDTO>>($"Clan/invitations?accountId={accountId}"));
                 }
             }
             catch (Exception e)
@@ -1397,7 +1401,7 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     // find invitation
-                    var invite = _simulatedClans.Select(x => x.ClanMemberInvitations.FirstOrDefault(y => y.Id == inviteId)).FirstOrDefault(x => x != null);
+                    var invite = _simulatedClans.Select(x => x.ClanMemberInvitations.FirstOrDefault(y => y.InvitationId == inviteId)).FirstOrDefault(x => x != null);
                     if (invite == null)
                         return false;
 
@@ -1493,7 +1497,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Clan/revokeInvitation?FromAccountId={fromAccountId}&ClanId={clanId}&TargetAccountId={targetAccountId}", null)).IsSuccessStatusCode;
+                    result = (await PostDbAsync($"Clan/revokeInvitation?fromAccountId={fromAccountId}&clanId={clanId}&targetAccountId={targetAccountId}", null)).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -1530,7 +1534,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await GetDbAsync<List<ClanMessageDTO>>($"Clan/messages?AccountId={accountId}&ClanId={clanId}&start={startIndex}&pageSize={pageSize}"));
+                    result = (await GetDbAsync<List<ClanMessageDTO>>($"Clan/messages?accountId={accountId}&clanId={clanId}&start={startIndex}&pageSize={pageSize}"));
                 }
             }
             catch (Exception e)
@@ -1576,7 +1580,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Clan/addMessage?AccountId={accountId}&ClanId={clanId}", new ClanMessageDTO()
+                    result = (await PostDbAsync($"Clan/addMessage?accountId={accountId}&clanId={clanId}", new ClanMessageDTO()
                     {
                         Message = message
                     })).IsSuccessStatusCode;
@@ -1627,8 +1631,9 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = (await PostDbAsync($"Clan/addMessage?AccountId={accountId}&ClanId={clanId}", new ClanMessageDTO()
+                    result = (await PutDbAsync($"Clan/editMessage?accountId={accountId}&clanId={clanId}", new ClanMessageDTO()
                     {
+                        Id = messageId,
                         Message = message
                     })).IsSuccessStatusCode;
                 }
@@ -1648,7 +1653,7 @@ namespace Server.Database
         /// <summary>
         /// Gets the latest announcement.
         /// </summary>
-        public async Task<DimAnnouncements> GetLatestAnnouncement()
+        public async Task<DimAnnouncements> GetLatestAnnouncement(int appId)
         {
             DimAnnouncements result = null;
 
@@ -1665,7 +1670,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<DimAnnouncements>($"api/Keys/getAnnouncements?fromDt={DateTime.UtcNow}");
+                    result = await GetDbAsync<DimAnnouncements>($"api/Keys/getAnnouncements?fromDt={DateTime.UtcNow}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -1679,7 +1684,7 @@ namespace Server.Database
         /// <summary>
         /// Gets the latest announcements.
         /// </summary>
-        public async Task<DimAnnouncements[]> GetLatestAnnouncements(int size = 10)
+        public async Task<DimAnnouncements[]> GetLatestAnnouncements(int appId, int size = 10)
         {
             DimAnnouncements[] result = null;
 
@@ -1699,7 +1704,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<DimAnnouncements[]>($"api/Keys/getAnnouncementsList?Dt={DateTime.UtcNow}&TakeSize={size}");
+                    result = await GetDbAsync<DimAnnouncements[]>($"api/Keys/getAnnouncementsList?Dt={DateTime.UtcNow}&TakeSize={size}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -2017,10 +2022,6 @@ namespace Server.Database
 
         private async Task<HttpResponseMessage> GetDbAsync(string route)
         {
-            // Try to get a cached result first
-            if (GetDbCache.TryGetCache(route, out HttpResponseMessage value))
-                return value;
-
             // 
             HttpResponseMessage result = null;
 
@@ -2042,9 +2043,6 @@ namespace Server.Database
                     try
                     {
                         result = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
-
-                        // Update cached value
-                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
                     }
                     catch (Exception e)
                     {
@@ -2059,10 +2057,6 @@ namespace Server.Database
 
         private async Task<T> GetDbAsync<T>(string route)
         {
-            // Try to get a cached result first
-            if (GetDbCache.TryGetCache(route, out T value))
-                return value;
-
             // 
             T result = default(T);
 
@@ -2088,9 +2082,6 @@ namespace Server.Database
                         // Deserialize on success
                         if (response.IsSuccessStatusCode)
                             result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
-
-                        // Update cached value
-                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
                     }
                     catch (Exception e)
                     {
@@ -2200,9 +2191,6 @@ namespace Server.Database
                         // Deserialize on success
                         if (response.IsSuccessStatusCode)
                             result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
-
-                        // Update cached value
-                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
                     }
                     catch (Exception e)
                     {
@@ -2312,9 +2300,6 @@ namespace Server.Database
                         // Deserialize on success
                         if (response.IsSuccessStatusCode)
                             result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
-
-                        // Update cached value
-                        GetDbCache.UpdateCache(route, result, _settings.CacheDuration);
                     }
                     catch (Exception e)
                     {

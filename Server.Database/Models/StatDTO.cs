@@ -82,4 +82,17 @@ namespace Server.Database.Models
         /// </summary>
         public int[] Stats { get; set; }
     }
+
+    public class ClanStatPostDTO
+    {
+        /// <summary>
+        /// Unique clan id of clan.
+        /// </summary>
+        public int ClanId { get; set; }
+
+        /// <summary>
+        /// Collection of ladder stats to be saved to the database.
+        /// </summary>
+        public int[] Stats { get; set; }
+    }
 }

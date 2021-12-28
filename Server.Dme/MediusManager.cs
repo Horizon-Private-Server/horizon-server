@@ -18,6 +18,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Server.Pipeline.Attribute;
 
 namespace Server.Dme
 {
@@ -249,6 +250,14 @@ namespace Server.Dme
 
             _mpsState = MPSConnectionState.CONNECTED;
 
+            // 
+            if (!_mpsChannel.HasAttribute(Server.Pipeline.Constants.SCERT_CLIENT))
+                _mpsChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Set(new ScertClientAttribute());
+            var scertClient = _mpsChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            scertClient.RsaAuthKey = Program.Settings.MPS.Key;
+            scertClient.CipherService.GenerateCipher(scertClient.RsaAuthKey);
+
+            //
             var clientHello = new RT_MSG_CLIENT_HELLO()
             {
                 Parameters = new ushort[]
