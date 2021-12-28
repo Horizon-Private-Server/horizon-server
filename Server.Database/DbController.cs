@@ -448,7 +448,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    var response = await GetDbAsync($"Account/getActiveClanCountByAppId?AppId={appId}");
+                    var response = await GetDbAsync($"Clan/getActiveClanCountByAppId?AppId={appId}");
 
                     // Deserialize on success
                     if (response.IsSuccessStatusCode && int.TryParse(await response.Content.ReadAsStringAsync(), out int r))
@@ -809,7 +809,7 @@ namespace Server.Database
         /// <param name="startIndex">Position to start gathering results from. Starts at 0.</param>
         /// <param name="size">Max number of items to retrieve.</param>
         /// <returns>Collection of leaderboard results for each player in page.</returns>
-        public async Task<ClanLeaderboardDTO[]> GetClanLeaderboard(int statId, int startIndex, int size)
+        public async Task<ClanLeaderboardDTO[]> GetClanLeaderboard(int statId, int startIndex, int size, int appId)
         {
             ClanLeaderboardDTO[] result = null;
 
@@ -817,7 +817,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedClans.Where(x=>!x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedClans.Where(x => x.AppId == appId).Where(x=>!x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new ClanLeaderboardDTO()
                     {
                         ClanId = x.ClanId,
@@ -830,7 +830,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId+1}&StartIndex={startIndex}&Size={size}");
+                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId+1}&StartIndex={startIndex}&Size={size}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -848,7 +848,7 @@ namespace Server.Database
         /// <param name="startIndex">Position to start gathering results from. Starts at 0.</param>
         /// <param name="size">Max number of items to retrieve.</param>
         /// <returns>Collection of leaderboard results for each player in page.</returns>
-        public async Task<LeaderboardDTO[]> GetLeaderboard(int statId, int startIndex, int size)
+        public async Task<LeaderboardDTO[]> GetLeaderboard(int statId, int startIndex, int size, int appId)
         {
             LeaderboardDTO[] result = null;
 
@@ -856,7 +856,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedAccounts.OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedAccounts.Where(x=>x.AppId == appId).OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new LeaderboardDTO()
                     {
                         AccountId = x.AccountId,
@@ -869,7 +869,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}");
+                    result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}&AppId={appId}");
                 }
             }
             catch (Exception e)
