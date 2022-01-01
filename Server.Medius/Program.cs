@@ -303,7 +303,10 @@ namespace Server.Medius
                 }
                 else
                 {
-                    SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                    if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
+                        SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                    else
+                        SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
                 }
             }
 

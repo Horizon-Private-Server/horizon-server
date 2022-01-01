@@ -36,6 +36,12 @@ namespace Server.Medius.Config
         public bool UsePublicIp { get; set; } = false;
 
         /// <summary>
+        /// If UsePublicIp is set to true, allow overriding and skipping using dyndns's dynamic
+        /// ip address finder, since it goes down often enough to throw exceptions
+        /// </summary>
+        public string PublicIpOverride { get; set; } = string.Empty;
+
+        /// <summary>
         /// When a client attempts to log into a non-existent account,
         /// instead of returning account not found,
         /// create the account and log them in.
