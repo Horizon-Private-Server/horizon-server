@@ -50,6 +50,12 @@ namespace Server.Dme.Config
         public bool UsePublicIp { get; set; } = false;
 
         /// <summary>
+        /// If UsePublicIp is set to true, allow overriding and skipping using dyndns's dynamic
+        /// ip address finder, since it goes down often enough to throw exceptions
+        /// </summary>
+        public string PublicIpOverride { get; set; } = string.Empty;
+
+        /// <summary>
         /// Time since last echo response before timing the client out.
         /// </summary>
         public int ClientTimeoutSeconds { get; set; } = 30;
