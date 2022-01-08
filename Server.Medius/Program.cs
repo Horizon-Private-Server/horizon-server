@@ -238,6 +238,7 @@ namespace Server.Medius
 
         static void Initialize()
         {
+            RefreshServerIp();
             RefreshConfig();
 
             // 
@@ -310,6 +311,10 @@ namespace Server.Medius
                 }
             }
 
+            // Determine server ip
+            if (usePublicIp != Settings.UsePublicIp)
+                RefreshServerIp();
+
             // Update NAT Ip with server ip if null
             if (string.IsNullOrEmpty(Settings.NATIp))
                 Settings.NATIp = SERVER_IP.ToString();
@@ -326,6 +331,21 @@ namespace Server.Medius
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;
+        }
+
+        static void RefreshServerIp()
+        {
+            if (!Settings.UsePublicIp)
+            {
+                SERVER_IP = Utils.GetLocalIPAddress();
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
+                    SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                else
+                    SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
+            }
         }
 
         public static string GenerateSessionKey()

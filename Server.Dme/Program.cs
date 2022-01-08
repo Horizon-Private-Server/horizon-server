@@ -207,6 +207,7 @@ namespace Server.Dme
 
         static void Initialize()
         {
+            RefreshServerIp();
             RefreshConfig();
         }
 
@@ -247,18 +248,21 @@ namespace Server.Dme
 
             // Determine server ip
             if (usePublicIp != Settings.UsePublicIp)
+                RefreshServerIp();
+        }
+
+        static void RefreshServerIp()
+        {
+            if (!Settings.UsePublicIp)
             {
-                if (!Settings.UsePublicIp)
-                {
-                    SERVER_IP = Utils.GetLocalIPAddress();
-                }
+                SERVER_IP = Utils.GetLocalIPAddress();
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
+                    SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
                 else
-                {
-                    if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
-                        SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
-                    else
-                        SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
-                }
+                    SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
             }
         }
 
