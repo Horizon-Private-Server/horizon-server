@@ -23,6 +23,8 @@ namespace Server.Medius.Models
         public class GameClient
         {
             public ClientObject Client;
+
+            public int DmeId;
             public bool InGame;
         }
 
@@ -237,7 +239,8 @@ namespace Server.Medius.Models
 
             Clients.Add(new GameClient()
             {
-                Client = client
+                Client = client,
+                DmeId = client.DmeClientId ?? -1
             });
 
             // Inform the client of any custom game mode

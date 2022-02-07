@@ -235,7 +235,7 @@ namespace Server.Medius
                         else
                         {
                             // Join game
-                            rClient?.JoinGame(game);
+                            rClient?.JoinGame(game, joinGameResponse.DmeClientIndex);
 
                             // 
                             rClient?.Queue(new MediusJoinGameResponse()

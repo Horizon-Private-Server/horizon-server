@@ -82,6 +82,11 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
+        public int? DmeClientId { get; protected set; } = null;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public ConcurrentQueue<BaseScertMessage> SendMessageQueue { get; } = new ConcurrentQueue<BaseScertMessage>();
 
         /// <summary>
@@ -308,12 +313,13 @@ namespace Server.Medius.Models
 
         #region Game
 
-        public void JoinGame(Game game)
+        public void JoinGame(Game game, int dmeClientIndex)
         {
             // Leave current game
             LeaveCurrentGame();
 
             CurrentGame = game;
+            DmeClientId = dmeClientIndex;
             CurrentGame.AddPlayer(this);
 
             // Tell database
@@ -338,6 +344,7 @@ namespace Server.Medius.Models
                 CurrentGame.RemovePlayer(this);
                 CurrentGame = null;
             }
+            DmeClientId = null;
         }
 
         #endregion

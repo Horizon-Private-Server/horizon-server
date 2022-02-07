@@ -49,8 +49,16 @@ namespace Server.NAT
                 if (message.Content.ReadableBytes == 4 && message.Content.GetByte(message.Content.ReaderIndex + 3) != 0xD4)
                 {
                     var buffer = channel.Allocator.Buffer(6);
-                    buffer.WriteBytes((message.Sender as IPEndPoint).Address.MapToIPv4().GetAddressBytes());
-                    buffer.WriteUnsignedShort((ushort)(message.Sender as IPEndPoint).Port);
+                    if (Program.Settings.OverridePort.HasValue)
+                    {
+                        buffer.WriteBytes((message.Recipient as IPEndPoint).Address.MapToIPv4().GetAddressBytes());
+                        buffer.WriteUnsignedShort((ushort)Program.Settings.OverridePort.Value);
+                    }
+                    else
+                    {
+                        buffer.WriteBytes((message.Sender as IPEndPoint).Address.MapToIPv4().GetAddressBytes());
+                        buffer.WriteUnsignedShort((ushort)(message.Sender as IPEndPoint).Port);
+                    }
                     channel.WriteAndFlushAsync(new DatagramPacket(buffer, message.Sender));
                 }
             };
