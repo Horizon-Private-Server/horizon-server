@@ -242,28 +242,68 @@ namespace Server.Medius
             RefreshConfig();
 
             // 
+            if (Settings.Locations != null)
+            {
+                foreach (var location in Settings.Locations)
+                {
+                    if (location.AppIds == null || location.AppIds.Length == 0)
+                    {
+                        Manager.AddChannel(new Channel()
+                        {
+                            ApplicationId = 0,
+                            MaxPlayers = 256,
+                            Name = location.ChannelName ?? location.Name,
+                            GenericFieldLevel = location.GenericFieldLevel,
+                            Id = location.Id,
+                            Type = ChannelType.Lobby
+                        });
+                    }
+                    else
+                    {
+                        foreach (var appId in location.AppIds)
+                        {
+                            Manager.AddChannel(new Channel()
+                            {
+                                ApplicationId = appId,
+                                MaxPlayers = 256,
+                                Name = location.ChannelName ?? location.Name,
+                                GenericFieldLevel = location.GenericFieldLevel,
+                                Id = location.Id,
+                                Type = ChannelType.Lobby
+                            });
+                        }
+                    }
+                }
+            }
+
             if (Settings.ApplicationIds != null)
             {
                 foreach (var appId in Settings.ApplicationIds)
                 {
+                    if (Manager.GetDefaultLobbyChannel(appId) == null)
+                    {
+                        Manager.AddChannel(new Channel()
+                        {
+                            ApplicationId = appId,
+                            MaxPlayers = 256,
+                            Name = "Default",
+                            Type = ChannelType.Lobby
+                        });
+                    }
+                }
+            }
+            else
+            {
+                if (Manager.GetDefaultLobbyChannel(0) == null)
+                {
                     Manager.AddChannel(new Channel()
                     {
-                        ApplicationId = appId,
+                        ApplicationId = 0,
                         MaxPlayers = 256,
                         Name = "Default",
                         Type = ChannelType.Lobby
                     });
                 }
-            }
-            else
-            {
-                Manager.AddChannel(new Channel()
-                {
-                    ApplicationId = 0,
-                    MaxPlayers = 256,
-                    Name = "Default",
-                    Type = ChannelType.Lobby
-                });
             }
         }
 
@@ -283,6 +323,8 @@ namespace Server.Medius
             // Load settings
             if (File.Exists(CONFIG_FILE))
             {
+                Settings.Locations?.Clear();
+
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }

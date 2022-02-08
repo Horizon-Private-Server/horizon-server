@@ -22,7 +22,7 @@ namespace Server.Medius
         private Dictionary<string, DMEObject> _accessTokenToDmeClient = new Dictionary<string, DMEObject>();
         private Dictionary<string, DMEObject> _sessionKeyToDmeClient = new Dictionary<string, DMEObject>();
 
-        private Dictionary<int, Channel> _channelIdToChannel = new Dictionary<int, Channel>();
+        private List<Channel> _channels = new List<Channel>();
         private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
 
         private Dictionary<int, Clan> _clanIdToClan = new Dictionary<int, Clan>();
@@ -141,7 +141,7 @@ namespace Server.Medius
                             .Select(x => x.Value)
                             .Where(x => x.ApplicationId == appId &&
                                         (x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging) &&
-                                        !filters.Any(y => !y.IsMatch(x)))
+                                        filters.Any(y => y.IsMatch(x)))
                             .Skip((pageIndex - 1) * pageSize)
                             .Take(pageSize);
         }
@@ -263,48 +263,43 @@ namespace Server.Medius
 
         #region Channels
 
-        public Channel GetChannelByChannelId(int channelId)
+        public Channel GetChannelByChannelId(int channelId, int appId)
         {
-            lock (_channelIdToChannel)
+            lock (_channels)
             {
-                if (_channelIdToChannel.TryGetValue(channelId, out var result))
-                    return result;
+                return _channels.FirstOrDefault(x => x.Id == channelId && x.ApplicationId == appId);
             }
-
-            return null;
         }
 
         public Channel GetChannelByChannelName(string channelName, int appId)
         {
-            lock (_channelIdToChannel)
+            lock (_channels)
             {
-                return _channelIdToChannel.FirstOrDefault(x => x.Value.Name == channelName && x.Value.ApplicationId == appId).Value;
+                return _channels.FirstOrDefault(x => x.Name == channelName && x.ApplicationId == appId);
             }
         }
 
-        public uint GetChannelCount(ChannelType type)
+        public uint GetChannelCount(ChannelType type, int appId)
         {
-            lock (_channelIdToChannel)
+            lock (_channels)
             {
-                return (uint)_channelIdToChannel.Count(x => x.Value.Type == type);
+                return (uint)_channels.Count(x => x.Type == type && x.ApplicationId == appId);
             }
         }
 
         public Channel GetDefaultLobbyChannel(int appId)
         {
-            lock (_channelIdToChannel)
+            lock (_channels)
             {
                 // If all app ids are compatible then return the default
                 if (Program.Settings.ApplicationIds == null)
                 {
-                    return _channelIdToChannel
-                        .Select(x => x.Value)
+                    return _channels
                         .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == 0);
                 }
                 else
                 {
-                    return _channelIdToChannel
-                        .Select(x => x.Value)
+                    return _channels
                         .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == appId);
                 }
             }
@@ -312,19 +307,21 @@ namespace Server.Medius
 
         public void AddChannel(Channel channel)
         {
-            lock (_channelIdToChannel)
+            lock (_channels)
             {
-                _channelIdToChannel.Add(channel.Id, channel);
+                _channels.Add(channel);
             }
         }
 
         public IEnumerable<Channel> GetChannelList(int appId, int pageIndex, int pageSize, ChannelType type)
         {
-            return _channelIdToChannel
-                .Select(x => x.Value)
-                .Where(x => x.ApplicationId == appId && x.Type == type)
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize);
+            lock (_channels)
+            {
+                return _channels
+                    .Where(x => x.ApplicationId == appId && x.Type == type)
+                    .Skip((pageIndex - 1) * pageSize)
+                    .Take(pageSize);
+            }
         }
 
         #endregion
@@ -369,25 +366,25 @@ namespace Server.Medius
 
         private void TickChannels()
         {
-            Queue<int> channelsToRemove = new Queue<int>();
+            Queue<Channel> channelsToRemove = new Queue<Channel>();
 
             // Tick channels
-            foreach (var channelKeyPair in _channelIdToChannel)
+            foreach (var channel in _channels)
             {
-                if (channelKeyPair.Value.ReadyToDestroy)
+                if (channel.ReadyToDestroy)
                 {
-                    Logger.Info($"Destroying Channel {channelKeyPair.Value}");
-                    channelsToRemove.Enqueue(channelKeyPair.Key);
+                    Logger.Info($"Destroying Channel {channel}");
+                    channelsToRemove.Enqueue(channel);
                 }
                 else
                 {
-                    channelKeyPair.Value.Tick();
+                    channel.Tick();
                 }
             }
 
             // Remove channels
-            while (channelsToRemove.TryDequeue(out var channelId))
-                _channelIdToChannel.Remove(channelId);
+            while (channelsToRemove.TryDequeue(out var channel))
+                _channels.Remove(channel);
         }
 
         private void TickGames()

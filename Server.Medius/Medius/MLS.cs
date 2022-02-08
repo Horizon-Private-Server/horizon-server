@@ -101,7 +101,27 @@ namespace Server.Medius
                             // Update our client object to use existing one
                             data.ClientObject.ApplicationId = clientConnectTcp.AppId;
 
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0, Contents = Utils.FromString("4802") }, clientChannel);
+
+                            if (scertClient.IsPS3Client)
+                            {
+                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                            }
+                            else if (scertClient.MediusVersion > 108)
+                            {
+                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
+                            }
+                            else
+                            {
+                                Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                                {
+                                    UNK_00 = 0,
+                                    UNK_02 = GenerateNewScertClientId(),
+                                    UNK_06 = 0x0001,
+                                    IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                                }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
+                            }
                         }
 
                         break;
@@ -146,7 +166,8 @@ namespace Server.Medius
                         break;
                     }
 
-                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
+                case RT_MSG_CLIENT_DISCONNECT _:
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
                         data.State = ClientState.DISCONNECTED;
                         _ = clientChannel.CloseAsync();
@@ -1344,7 +1365,7 @@ namespace Server.Medius
                                 data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
                                 {
                                     MessageID = playerInfoRequest.MessageID,
-                                    StatusCode = MediusCallbackStatus.MediusAccountNotFound
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
                                 });
                             }
                         });
@@ -2705,6 +2726,21 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusWorldReport0 worldReport0:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {worldReport0} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {worldReport0} without a being logged in.");
+
+                        data.ClientObject.CurrentGame?.OnWorldReport(worldReport0);
+
+                        break;
+                    }
+
                 case MediusWorldReport worldReport:
                     {
                         // ERROR - Need a session
@@ -2948,7 +2984,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinChannelRequest} without a being logged in.");
 
-                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID);
+                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID, data.ClientObject.ApplicationId);
                         if (channel == null)
                         {
                             // Log
@@ -3013,7 +3049,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelInfoRequest} without a being logged in.");
 
                         // Find channel
-                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID);
+                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID, data.ClientObject.ApplicationId);
 
                         if (channel == null)
                         {
@@ -3105,8 +3141,72 @@ namespace Server.Medius
                         {
                             MessageID = getTotalChannelsRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                            Total = Program.Manager.GetChannelCount(ChannelType.Lobby)
+                            Total = Program.Manager.GetChannelCount(ChannelType.Lobby, data.ClientObject.ApplicationId)
                         });
+
+                        break;
+                    }
+
+                case MediusChannelList_ExtraInfoRequest1 channelList_ExtraInfoRequest1:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelList_ExtraInfoRequest1} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelList_ExtraInfoRequest1} without a being logged in.");
+
+                        List<MediusChannelList_ExtraInfoResponse> channelResponses = new List<MediusChannelList_ExtraInfoResponse>();
+
+                        // Deadlocked only uses this to connect to a non-game channel (lobby)
+                        // So we'll filter by lobby here
+                        var channels = Program.Manager.GetChannelList(
+                            data.ClientObject.ApplicationId,
+                            channelList_ExtraInfoRequest1.PageID,
+                            channelList_ExtraInfoRequest1.PageSize,
+                            ChannelType.Lobby);
+
+                        foreach (var channel in channels)
+                        {
+                            channelResponses.Add(new MediusChannelList_ExtraInfoResponse()
+                            {
+                                MessageID = channelList_ExtraInfoRequest1.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                MediusWorldID = channel.Id,
+                                LobbyName = channel.Name,
+                                GameWorldCount = (ushort)channel.GameCount,
+                                PlayerCount = (ushort)channel.PlayerCount,
+                                MaxPlayers = (ushort)channel.MaxPlayers,
+                                GenericField1 = channel.GenericField1,
+                                GenericField2 = channel.GenericField2,
+                                GenericField3 = channel.GenericField3,
+                                GenericField4 = channel.GenericField4,
+                                GenericFieldLevel = channel.GenericFieldLevel,
+                                SecurityLevel = channel.SecurityLevel,
+                                EndOfList = false
+                            });
+                        }
+
+                        if (channelResponses.Count == 0)
+                        {
+                            // Return none
+                            data.ClientObject.Queue(new MediusChannelList_ExtraInfoResponse()
+                            {
+                                MessageID = channelList_ExtraInfoRequest1.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                EndOfList = true
+                            });
+                        }
+                        else
+                        {
+                            // Ensure the end of list flag is set
+                            channelResponses[channelResponses.Count - 1].EndOfList = true;
+
+                            // Add to responses
+                            data.ClientObject.Queue(channelResponses);
+                        }
+
 
                         break;
                     }
@@ -3177,6 +3277,50 @@ namespace Server.Medius
 
                 #endregion
 
+                #region Locations
+
+                case MediusGetLocationsRequest getLocationsRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLocationsRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLocationsRequest} without a being logged in.");
+
+                        var locations = Program.Settings?.Locations
+                            ?.Where(x => x.AppIds == null || x.AppIds.Contains(data.ClientObject.ApplicationId))
+                            ?.ToList()
+                            ;
+
+                        if (locations == null || locations.Count == 0)
+                        {
+                            data.ClientObject.Queue(new MediusGetLocationsResponse()
+                            {
+                                MessageID = getLocationsRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusFail,
+                                EndOfList = true
+                            });
+                        }
+                        else
+                        {
+                            var responses = locations.Select(x => new MediusGetLocationsResponse()
+                            {
+                                MessageID = getLocationsRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                LocationId = x.Id,
+                                LocationName = x.Name
+                            }).ToList();
+
+                            responses[responses.Count - 1].EndOfList = true;
+                            data.ClientObject.Queue(responses);
+                        }
+                        break;
+                    }
+
+                #endregion
+
                 #region File
 
                 case MediusFileCreateRequest fileCreateRequest:
@@ -3222,6 +3366,25 @@ namespace Server.Medius
                 #endregion
 
                 #region Chat / Binary Message
+
+                case MediusChatToggleRequest chatToggleRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {chatToggleRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {chatToggleRequest} without a being logged in.");
+
+                        data.ClientObject.Queue(new MediusChatToggleResponse()
+                        {
+                            MessageID = chatToggleRequest.MessageID,
+                            StatusCode = MediusCallbackStatus.MediusSuccess
+                        });
+
+                        break;
+                    }
 
                 case MediusGenericChatSetFilterRequest genericChatSetFilterRequest:
                     {
@@ -3524,7 +3687,7 @@ namespace Server.Medius
                 case MediusChatMessageType.Broadcast:
                     {
                         // Relay
-                        foreach (var target in allPlayers)
+                        foreach (var target in allButSender)
                         {
                             target.Queue(new MediusChatFwdMessage()
                             {

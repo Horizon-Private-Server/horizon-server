@@ -334,6 +334,39 @@ namespace Server.Medius.Models
             }
         }
 
+        public void OnWorldReport(MediusWorldReport0 report)
+        {
+            // Ensure report is for correct game world
+            if (report.MediusWorldID != Id)
+                return;
+
+            GameName = report.GameName;
+            MinPlayers = report.MinPlayers;
+            MaxPlayers = report.MaxPlayers;
+            GameLevel = report.GameLevel;
+            PlayerSkillLevel = report.PlayerSkillLevel;
+            RulesSet = report.RulesSet;
+            GenericField1 = report.GenericField1;
+            GenericField2 = report.GenericField2;
+            GenericField3 = report.GenericField3;
+
+            // Once the world has been closed then we force it closed.
+            // This is because when the host hits 'Play Again' they tell the server the world has closed (EndGameReport)
+            // but the existing clients tell the server the world is still active.
+            // This gives the host a "Game Name Already Exists" when they try to remake with the same name.
+            // This just fixes that. At the cost of the game not showing after a host leaves a game.
+            if (WorldStatus != MediusWorldStatus.WorldClosed && WorldStatus != report.WorldStatus)
+            {
+                SetWorldStatus(report.WorldStatus);
+            }
+            else
+            {
+                // Update db
+                if (!utcTimeEnded.HasValue)
+                    _ = Program.Database.UpdateGame(this.ToGameDTO());
+            }
+        }
+
         public void EndGame()
         {
             // 

@@ -65,13 +65,25 @@ namespace Server.Medius
                         }
 
                         data.ApplicationId = clientConnectTcp.AppId;
-                        if (!scertClient.IsPS3Client)
+                        if (scertClient.IsPS3Client)
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                        }
+                        else if (scertClient.MediusVersion > 108)
                         {
                             Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
                         }
                         else
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                            {
+                                UNK_00 = 0,
+                                UNK_02 = GenerateNewScertClientId(),
+                                UNK_06 = 0x0001,
+                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                            }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
                         }
                         break;
                     }
@@ -111,8 +123,8 @@ namespace Server.Medius
                         ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
-
-                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
+                case RT_MSG_CLIENT_DISCONNECT _:
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
                         data.State = ClientState.DISCONNECTED;
                         _ = clientChannel.CloseAsync();

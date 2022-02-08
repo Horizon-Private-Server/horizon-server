@@ -30,7 +30,11 @@ namespace RT.Models
             // 
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
-            FilterID = reader.ReadUInt32();
+
+            if (reader.MediusVersion > 108)
+            {
+                FilterID = reader.ReadUInt32();
+            }
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -44,7 +48,11 @@ namespace RT.Models
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
-            writer.Write(FilterID);
+
+            if (writer.MediusVersion > 108)
+            {
+                writer.Write(FilterID);
+            }
         }
 
 

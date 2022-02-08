@@ -17,6 +17,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DotNetty.Handlers.Timeout;
+using Server.Dme.PluginArgs;
 
 namespace Server.Dme
 {
@@ -212,7 +213,8 @@ namespace Server.Dme
                     {
                         try
                         {
-                            await ProcessMessage(message, clientChannel, data);
+                            if (!PassMessageToPlugins(clientChannel, data, message, true))
+                                await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
                         {
@@ -225,7 +227,7 @@ namespace Server.Dme
                     if (clientChannel.IsWritable)
                     {
                         // Add send queue to responses
-                        while (data.SendQueue.TryDequeue(out var message))
+                        while (data.SendQueue.TryDequeue(out var message) && !PassMessageToPlugins(clientChannel, data, message, false))
                             responses.Add(message);
 
                         if (data.ClientObject != null)
@@ -233,14 +235,16 @@ namespace Server.Dme
                             // Echo
                             if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
                             {
-                                responses.Add(new RT_MSG_SERVER_ECHO());
+                                var message = new RT_MSG_SERVER_ECHO();
+                                if (!PassMessageToPlugins(clientChannel, data, message, false))
+                                    responses.Add(message);
                                 data.ClientObject.UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
                             }
 
                             // Add client object's send queue to responses
                             // But only if not in a world
                             if (data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.Destroyed)
-                                while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
+                                while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message) && !PassMessageToPlugins(clientChannel, data, message, false))
                                     responses.Add(message);
                         }
 
@@ -295,7 +299,37 @@ namespace Server.Dme
                         data.ClientObject.ScertId = GenerateNewScertClientId();
                         if (!_scertIdToClient.TryAdd(data.ClientObject.ScertId, data.ClientObject))
                             throw new Exception($"Duplicate scert client id");
-                        Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("0648024802") }, clientChannel);
+
+
+                        if (scertClient.IsPS3Client)
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("0648024802") }, clientChannel);
+                        }
+                        else if (scertClient.MediusVersion > 108)
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("0648024802") }, clientChannel);
+                        }
+                        else
+                        {
+                            data.ClientObject?.OnConnectionCompleted();
+                            data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
+
+                            if (scertClient.CipherService.HasKey(CipherContext.RC_CLIENT_SESSION))
+                            {
+                                Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                            }
+                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                            {
+                                UNK_00 = (ushort)data.ClientObject.DmeId,
+                                UNK_02 = data.ClientObject.ScertId,
+                                UNK_06 = (ushort)data.ClientObject.DmeWorld.Clients.Count,
+                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                            }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
+                            {
+                                ARG1 = (ushort)data.ClientObject.DmeWorld.Clients.Count
+                            }, clientChannel);
+                        }
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
@@ -410,7 +444,8 @@ namespace Server.Dme
                         break;
                     }
 
-                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
+                case RT_MSG_CLIENT_DISCONNECT _:
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
                         _ = clientChannel.CloseAsync();
                         break;
@@ -491,6 +526,56 @@ namespace Server.Dme
                     if (_channelDatas.TryGetValue(clientChannel.Id.AsLongText(), out var data))
                         foreach (var message in messages)
                             data.SendQueue.Enqueue(message);
+        }
+
+        #endregion
+
+
+        #region Plugins
+
+        protected bool PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
+        {
+            var onMsg = new OnMessageArgs(isIncoming)
+            {
+                Player = data.ClientObject,
+                Channel = clientChannel,
+                Message = message
+            };
+
+            // Send to plugins
+            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            if (onMsg.Ignore)
+                return true;
+
+
+
+            // Send medius message to plugins
+            if (message is RT_MSG_CLIENT_APP_TOSERVER clientApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = data.ClientObject,
+                    Channel = clientChannel,
+                    Message = clientApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+            else if (message is RT_MSG_SERVER_APP serverApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = data.ClientObject,
+                    Channel = clientChannel,
+                    Message = serverApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+
+            return false;
         }
 
         #endregion

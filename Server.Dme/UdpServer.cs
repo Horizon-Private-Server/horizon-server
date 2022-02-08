@@ -211,7 +211,8 @@ namespace Server.Dme
                         break;
                     }
 
-                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
+                case RT_MSG_CLIENT_DISCONNECT _:
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
                         
                         break;

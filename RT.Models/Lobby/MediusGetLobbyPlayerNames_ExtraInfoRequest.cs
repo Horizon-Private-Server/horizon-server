@@ -8,7 +8,7 @@ using System.Text;
 namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetLobbyPlayerNames_ExtraInfo)]
-    public class MediusGetLobbyPlayerNames_ExtraInfoRequest : BaseLobbyExtMessage, IMediusRequest
+    public class MediusGetLobbyPlayerNames_ExtraInfoRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.GetLobbyPlayerNames_ExtraInfo;
 

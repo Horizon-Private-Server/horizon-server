@@ -134,6 +134,11 @@ namespace Server.Medius.Config
         public bool EncryptMessages { get; set; } = true;
 
         /// <summary>
+        /// Collection of locations.
+        /// </summary>
+        public List<Location> Locations { get; set; }
+
+        /// <summary>
         /// Regex text filters for 
         /// </summary>
         public Dictionary<TextFilterContext, string> TextBlacklistFilters { get; set; } = new Dictionary<TextFilterContext, string>();
@@ -178,6 +183,34 @@ namespace Server.Medius.Config
         /// Accounts that can be logged into with RestrictSignIn set.
         /// </summary>
         public string[] PermittedAccounts { get; set; } = null;
+    }
+
+    public class Location
+    {
+        /// <summary>
+        /// Id of location.
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Name of location.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Name of respective channel.
+        /// </summary>
+        public string ChannelName { get; set; }
+
+        /// <summary>
+        /// Collection of all compatible app ids.
+        /// </summary>
+        public int[] AppIds { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public MediusWorldGenericFieldLevelType GenericFieldLevel { get; set; }
     }
 
     public enum TextFilterContext
