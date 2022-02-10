@@ -3333,15 +3333,198 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileCreateRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusFileCreateResponse()
+                        var path = Program.GetFileSystemPath(fileCreateRequest.MediusFileToCreate.Filename);
+                        if (path == null)
                         {
-                            MessageID = fileCreateRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusDBError,
-                            MediusFileInfo = new MediusFile()
+                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
                             {
+                                MessageID = fileCreateRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusDBError,
+                                iXferStatus = MediusFileXferStatus.Error
+                            });
+                            break;
+                        }
 
+                        if (File.Exists(path))
+                        {
+                            data.ClientObject.Queue(new MediusFileCreateResponse()
+                            {
+                                MessageID = fileCreateRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusFileAlreadyExists
+                            });
+                        }
+                        else
+                        {
+                            using (var fs = File.Create(path))
+                            {
+                                fs.Write(new byte[fileCreateRequest.MediusFileToCreate.FileSize]);
                             }
-                        });
+
+                            data.ClientObject.Queue(new MediusFileCreateResponse()
+                            {
+                                MessageID = fileCreateRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                MediusFileInfo = new MediusFile()
+                                {
+                                    CreationTimeStamp = Utils.GetUnixTime(),
+                                    FileID = 1,
+                                    Filename = fileCreateRequest.MediusFileToCreate.Filename
+                                }
+                            });
+                        }
+                        break;
+                    }
+
+                case MediusFileUploadRequest fileUploadRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileUploadRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileUploadRequest} without a being logged in.");
+
+                        //Task.Run(async () =>
+                        //{
+                        //    int j = 0;
+                        //    var totalSize = fileUploadRequest.MediusFileInfo.FileSize;
+                        //    for (int i = 0; i < totalSize; )
+                        //    {
+
+
+                        //        i += Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE;
+                        //    }
+                        //});
+
+                        try
+                        {
+                            var path = Program.GetFileSystemPath(fileUploadRequest.MediusFileInfo.Filename);
+                            if (path == null)
+                            {
+                                data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                                {
+                                    MessageID = fileUploadRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusDBError,
+                                    iXferStatus = MediusFileXferStatus.Error
+                                });
+                                break;
+                            }
+
+                            var stream = File.Open(path, FileMode.OpenOrCreate);
+                            data.ClientObject.Upload = new UploadState()
+                            {
+                                FileId = fileUploadRequest.MediusFileInfo.FileID,
+                                Stream = stream,
+                                TotalSize = fileUploadRequest.UiDataSize
+                            };
+                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                            {
+                                iPacketNumber = 0,
+                                iReqStartByteIndex = 0,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                iXferStatus = MediusFileXferStatus.Initial
+                            });
+                        }
+                        catch
+                        {
+                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                            {
+                                MessageID = fileUploadRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusDBError,
+                                iXferStatus = MediusFileXferStatus.Error
+                            });
+                        }
+                        break;
+                    }
+
+                case MediusFileUploadResponse fileUploadResponse:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileUploadResponse} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileUploadResponse} without a being logged in.");
+
+                        if (fileUploadResponse.iXferStatus >= MediusFileXferStatus.End)
+                            break;
+
+                        try
+                        {
+                            var uploadState = data.ClientObject.Upload;
+                            uploadState.Stream.Seek(fileUploadResponse.iStartByteIndex, SeekOrigin.Begin);
+                            uploadState.Stream.Write(fileUploadResponse.Data, 0, fileUploadResponse.iDataSize);
+                            uploadState.BytesReceived += fileUploadResponse.iDataSize;
+                            uploadState.PacketNumber++;
+
+                            if (uploadState.BytesReceived < uploadState.TotalSize)
+                            {
+                                data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                                {
+                                    MessageID = fileUploadResponse.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    iPacketNumber = uploadState.PacketNumber,
+                                    iReqStartByteIndex = uploadState.BytesReceived,
+                                    iXferStatus = MediusFileXferStatus.Mid
+                                });
+                            }
+                            else
+                            {
+                                data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                                {
+                                    MessageID = fileUploadResponse.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                    iPacketNumber = 0,
+                                    iReqStartByteIndex = 0,
+                                    iXferStatus = MediusFileXferStatus.End
+                                });
+                            }
+                        }
+                        catch
+                        {
+                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                            {
+                                MessageID = fileUploadResponse.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusDBError,
+                                iXferStatus = MediusFileXferStatus.Error
+                            });
+                        }
+
+                        break;
+                    }
+
+                case MediusFileCloseRequest fileCloseRequest:
+                    {
+                        // ERROR - Need a session
+                        if (data.ClientObject == null)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileCloseRequest} without a session.");
+
+                        // ERROR -- Need to be logged in
+                        if (!data.ClientObject.IsLoggedIn)
+                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileCloseRequest} without a being logged in.");
+
+                        if (data.ClientObject.Upload?.FileId == fileCloseRequest.MediusFileInfo.FileID)
+                        {
+                            data.ClientObject.Upload.Stream?.Close();
+                            data.ClientObject.Upload = null;
+
+                            data.ClientObject.Queue(new MediusFileCloseResponse()
+                            {
+                                MessageID = fileCloseRequest.MessageID,
+                                MediusFileInfo = fileCloseRequest.MediusFileInfo,
+                                StatusCode = MediusCallbackStatus.MediusSuccess
+                            });
+                        }
+                        else
+                        {
+                            data.ClientObject.Queue(new MediusFileDownloadResponse()
+                            {
+                                MessageID = fileCloseRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusDBError
+                            });
+                        }
                         break;
                     }
 
@@ -3355,11 +3538,51 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileDownloadRequest} without a being logged in.");
 
-                        data.ClientObject.Queue(new MediusFileDownloadResponse()
+                        var path = Program.GetFileSystemPath(fileDownloadRequest.MediusFileInfo.Filename);
+                        if (path == null)
                         {
-                            MessageID = fileDownloadRequest.MessageID,
-                            StatusCode = MediusCallbackStatus.MediusDBError
-                        });
+                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                            {
+                                MessageID = fileDownloadRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusDBError,
+                                iXferStatus = MediusFileXferStatus.Error
+                            });
+                            break;
+                        }
+
+                        if (File.Exists(path))
+                        {
+                            var bytes = File.ReadAllBytes(path);
+                            int j = 0;
+                            for (int i = 0; i < bytes.Length; i += Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE)
+                            {
+                                var len = bytes.Length - i;
+                                if (len > Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE)
+                                    len = Constants.MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE;
+
+                                var msg = new MediusFileDownloadResponse()
+                                {
+                                    MessageID = fileDownloadRequest.MessageID,
+                                    iDataSize = len,
+                                    iPacketNumber = j,
+                                    iXferStatus = j == 0 ? MediusFileXferStatus.Initial : ((len + i) >= bytes.Length ? MediusFileXferStatus.End : MediusFileXferStatus.Mid),
+                                    iStartByteIndex = i,
+                                    StatusCode = MediusCallbackStatus.MediusSuccess
+                                };
+                                Array.Copy(bytes, i, msg.Data, 0, len);
+
+                                data.ClientObject.Queue(msg);
+                                ++j;
+                            }
+                        }
+                        else
+                        {
+                            data.ClientObject.Queue(new MediusFileDownloadResponse()
+                            {
+                                MessageID = fileDownloadRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusFileDoesNotExist
+                            });
+                        }
                         break;
                     }
 

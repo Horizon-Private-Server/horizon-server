@@ -428,5 +428,24 @@ namespace Server.Medius
             Regex r = new Regex(rExp, RegexOptions.IgnoreCase | RegexOptions.Multiline);
             return r.Replace(text, "");
         }
+
+        public static string? GetFileSystemPath(string filename)
+        {
+            if (!Settings.AllowMediusFileServices)
+                return null;
+            if (String.IsNullOrEmpty(Settings.MediusFileServerRootPath))
+                return null;
+            if (String.IsNullOrEmpty(filename))
+                return null;
+
+            var rootPath = Path.GetFullPath(Settings.MediusFileServerRootPath);
+            var path = Path.GetFullPath(Path.Combine(Settings.MediusFileServerRootPath, filename));
+
+            // prevent filename from moving up directories
+            if (!path.StartsWith(rootPath))
+                return null;
+
+            return path;
+        }
     }
 }

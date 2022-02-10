@@ -111,6 +111,16 @@ namespace Server.Medius.Config
         public byte BanSystemMessageSeverity { get; set; } = 200;
 
         /// <summary>
+        /// When true, will allow messages like MediusCreateFile, MediusUploadFile, MediusDownloadFile
+        /// </summary>
+        public bool AllowMediusFileServices { get; set; } = false;
+
+        /// <summary>
+        /// Root path of the medius file service directory.
+        /// </summary>
+        public string MediusFileServerRootPath { get; set; } = "files";
+
+        /// <summary>
         /// Key used to authenticate dme servers.
         /// </summary>
         public RsaKeyPair MPSKey { get; set; } = new RsaKeyPair(

@@ -14,6 +14,7 @@ using Server.Common;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Server.Medius.Models
 {
@@ -113,6 +114,11 @@ namespace Server.Medius.Models
         /// 
         /// </summary>
         public Dictionary<int, string> FriendsList { get; protected set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public UploadState Upload { get; set; }
 
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
@@ -481,5 +487,15 @@ namespace Server.Medius.Models
             return $"({AccountId}:{AccountName})";
         }
 
+    }
+
+    public class UploadState
+    {
+        public FileStream Stream { get; set; }
+        public uint FileId { get; set; }
+        public int PacketNumber { get; set; }
+        public uint TotalSize { get; set; }
+        public int BytesReceived { get; set; }
+        public DateTime TimeBegan { get; set; } = DateTime.UtcNow;
     }
 }

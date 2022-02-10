@@ -141,7 +141,7 @@ namespace Server.Medius
                             .Select(x => x.Value)
                             .Where(x => x.ApplicationId == appId &&
                                         (x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging) &&
-                                        filters.Any(y => y.IsMatch(x)))
+                                        (filters.Count() == 0 || filters.Any(y => y.IsMatch(x))))
                             .Skip((pageIndex - 1) * pageSize)
                             .Take(pageSize);
         }
