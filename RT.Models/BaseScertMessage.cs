@@ -23,6 +23,11 @@ namespace RT.Models
         /// </summary>
         public abstract RT_MSG_TYPE Id { get; }
 
+        /// <summary>
+        /// Overrides encryption, enabling or disabling encryption on this particular message instance.
+        /// </summary>
+        public bool? EncryptOverride { get; set; } = null;
+
         public BaseScertMessage()
         {
 
@@ -82,7 +87,7 @@ namespace RT.Models
 
                             var data = new byte[length];
                             Array.Copy(buffer, data, length);
-                            if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                            if ((this.EncryptOverride == true || this.EncryptOverride == null) && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                             {
                                 totalHeaderSize += HASH_SIZE;
 
@@ -114,7 +119,7 @@ namespace RT.Models
             {
                 var data = new byte[length];
                 Array.Copy(buffer, data, length);
-                if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                if ((this.EncryptOverride == true || this.EncryptOverride == null) && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                 {
                     totalHeaderSize += HASH_SIZE;
 
