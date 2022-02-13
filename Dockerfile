@@ -2,6 +2,8 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.1
 
 COPY . /src
 
+RUN chmod a+x /src/entrypoint.sh
+
 # -- DME
 WORKDIR /src/Server.Dme
 RUN dotnet publish -c Release -o out
@@ -17,4 +19,4 @@ WORKDIR /src/Server.Medius/out
 RUN timeout 1s dotnet Server.Medius.dll; exit 0
 
 # -- 
-CMD "dotnet Server.Medius.dll"
+CMD "/src/entrypoint.sh"
