@@ -2,10 +2,16 @@
 
 # Start DME
 echo "Starting DME ..."
-cd /src/Server.Dme/out/
+cd /dme/
 dotnet Server.Dme.dll &
+
+# Start MUIS
+echo "Starting MUIS ..."
+cd /muis/
+dotnet Server.UniverseInformation.dll &
 
 # Start MAS/MLS/NAT
 echo "Starting Medius ..."
-cd /src/Server.Medius/out/
+cd /medius/
 dotnet Server.Medius.dll
+
