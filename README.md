@@ -7,4 +7,9 @@ This repository contains a Medius server emulator that works for a variety of ga
 3. Check the ports in `run.sh` to ensure you're exposing the same ports that are set in the config
 4. Run `run.sh` (change `-it` to `-d` to run it in the background)
 
+Generally, for local development, change:
+- `dme.json`: `PublicIpOverride`, `ApplicationIds`
+- `medius.json`: `PublicIpOverride`, `ApplicationIds`, `NATIp`, ports if MUIS is not enabled and MAS default is not 10075
+- `muis.json`: `Universes`
+
 The default configs in the `docker/` folder were last generated 13 Feb 2022.
