@@ -316,6 +316,7 @@ namespace Server.Medius.Models
             GenericField6 = report.GenericField6;
             GenericField7 = report.GenericField7;
             GenericField8 = report.GenericField8;
+            GameStats = report.GameStats;
 
             // Once the world has been closed then we force it closed.
             // This is because when the host hits 'Play Again' they tell the server the world has closed (EndGameReport)
