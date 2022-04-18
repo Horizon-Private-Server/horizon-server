@@ -1,9 +1,9 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Microsoft.Extensions.Logging;
-using Microsoft.Scripting.Ast;
 using RT.Common;
 using RT.Models;
 using Server.Dme.PluginArgs;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -262,7 +262,7 @@ namespace Server.Dme.Models
         public void OnPlayerJoined(ClientObject player)
         {
             // Plugin
-            Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
+            Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this
@@ -294,7 +294,7 @@ namespace Server.Dme.Models
         public void OnPlayerLeft(ClientObject player)
         {
             // Plugin
-            Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
+            Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this

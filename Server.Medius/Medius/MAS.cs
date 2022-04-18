@@ -8,6 +8,7 @@ using Server.Database;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Generic;
 using System.IO;

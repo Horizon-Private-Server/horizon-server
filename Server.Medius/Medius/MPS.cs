@@ -8,6 +8,7 @@ using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Pipeline.Attribute;
 using Server.Plugins;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

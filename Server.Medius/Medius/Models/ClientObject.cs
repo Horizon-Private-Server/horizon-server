@@ -1,5 +1,4 @@
 ﻿using DotNetty.Common.Internal.Logging;
-using Microsoft.Scripting.Ast;
 using RT.Common;
 using RT.Models;
 using Server.Database;
@@ -14,6 +13,7 @@ using Server.Common;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Server.Plugins.Interface;
 
 namespace Server.Medius.Models
 {

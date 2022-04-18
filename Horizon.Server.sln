@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server.Test", "Server.Test\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HighResolutionTimer", "HighResolutionTimer\HighResolutionTimer.csproj", "{67D7D8B1-11F8-468B-AD73-7AB5A3362866}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Plugins.Interface", "Server.Plugins.Interface\Server.Plugins.Interface.csproj", "{E642F8EA-AB1D-4871-88B3-4C57E2C26908}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{67D7D8B1-11F8-468B-AD73-7AB5A3362866}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67D7D8B1-11F8-468B-AD73-7AB5A3362866}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{67D7D8B1-11F8-468B-AD73-7AB5A3362866}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E642F8EA-AB1D-4871-88B3-4C57E2C26908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E642F8EA-AB1D-4871-88B3-4C57E2C26908}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E642F8EA-AB1D-4871-88B3-4C57E2C26908}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E642F8EA-AB1D-4871-88B3-4C57E2C26908}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -19,6 +19,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Server.Dme.PluginArgs;
+using Server.Plugins.Interface;
 
 namespace Server.Dme
 {
@@ -89,7 +90,7 @@ namespace Server.Dme
                 };
 
                 // Plugin
-                Program.Plugins.OnEvent(Plugins.PluginEvent.DME_GAME_ON_RECV_UDP, pluginArgs);
+                Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_UDP, pluginArgs);
 
                 if (!pluginArgs.Ignore)
                     _recvQueue.Enqueue(message);

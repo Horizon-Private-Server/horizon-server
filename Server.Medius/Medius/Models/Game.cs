@@ -11,6 +11,7 @@ using Server.Common;
 using Server.Database.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
+using Server.Plugins.Interface;
 
 namespace Server.Medius.Models
 {
