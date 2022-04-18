@@ -37,6 +37,11 @@ namespace Server.Database.Models
         public int[] AccountWideStats { get; set; }
 
         /// <summary>
+        /// Collection of custom ladder stats.
+        /// </summary>
+        public int[] AccountCustomWideStats { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
         public int? ClanId { get; set; }

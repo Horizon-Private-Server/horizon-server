@@ -54,7 +54,7 @@ namespace RT.Models
                 {
                     Address = (uint)(address + i),
                     Payload = new byte[len],
-                    EncryptOverride = false
+                    SkipEncryption = true
                 };
 
                 // 

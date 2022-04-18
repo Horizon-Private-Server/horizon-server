@@ -150,6 +150,7 @@ namespace Server.Database
                             AccountName = createAccount.AccountName,
                             AccountPassword = createAccount.AccountPassword,
                             AccountWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
+                            AccountCustomWideStats = new int[1000],
                             AppId = createAccount.AppId,
                             MachineId = createAccount.MachineId,
                             MediusStats = createAccount.MediusStats,
@@ -914,6 +915,39 @@ namespace Server.Database
         }
 
         /// <summary>
+        /// Posts custom ladder stats to account id.
+        /// </summary>
+        /// <param name="statPost">Model containing account id and ladder stats collection.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> PostAccountLadderCustomStats(StatPostDTO statPost)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(statPost.AccountId);
+                    if (account == null)
+                        return false;
+
+                    account.AccountCustomWideStats = statPost.Stats;
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Stats/postStatsCustom", JsonConvert.SerializeObject(statPost))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Posts ladder stats to clan id.
         /// </summary>
         /// <param name="statPost">Model containing clan id and ladder stats collection.</param>
@@ -942,6 +976,48 @@ namespace Server.Database
                 else
                 {
                     result = (await PostDbAsync($"Stats/postClanStats", JsonConvert.SerializeObject(new ClanStatPostDTO()
+                    {
+                        ClanId = clanId.Value,
+                        Stats = stats
+                    }))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Posts custom ladder stats to clan id.
+        /// </summary>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> PostClanLadderCustomStats(int accountId, int? clanId, int[] stats)
+        {
+            bool result = false;
+            if (!clanId.HasValue)
+                return false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(accountId);
+                    if (account.ClanId != clanId)
+                        return false;
+
+                    var clan = await GetClanById(account.ClanId.Value);
+                    if (clan == null)
+                        return false;
+
+                    clan.ClanCustomWideStats = stats;
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"Stats/postClanStatsCustom", JsonConvert.SerializeObject(new ClanStatPostDTO()
                     {
                         ClanId = clanId.Value,
                         Stats = stats

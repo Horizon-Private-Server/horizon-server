@@ -114,6 +114,16 @@ namespace Server.Medius.Models
         /// </summary>
         public Dictionary<int, string> FriendsList { get; protected set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public int[] WideStats { get; set; } = new int[100];
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int[] CustomWideStats { get; set; } = new int[0];
+
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
@@ -282,6 +292,8 @@ namespace Server.Medius.Models
             AccountName = account.AccountName;
             Metadata = account.Metadata;
             ClanId = account.ClanId;
+            WideStats = account.AccountWideStats;
+            CustomWideStats = account.AccountCustomWideStats;
 
             //
             FriendsList = account.Friends?.ToDictionary(x => x.AccountId, x => x.AccountName) ?? new Dictionary<int, string>();

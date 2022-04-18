@@ -54,12 +54,12 @@ namespace Server.Plugins
             OnEvent(PluginEvent.TICK, null);
         }
 
-        public void OnEvent(PluginEvent eventType, object data)
+        public Task OnEvent(PluginEvent eventType, object data)
         {
             if (!_pluginCallbackInstances.ContainsKey(eventType))
-                return;
+                return Task.CompletedTask;
 
-            Task.Run(() =>
+            return Task.Run(() =>
             {
                 foreach (var callbacks in _pluginCallbackInstances[eventType])
                 {

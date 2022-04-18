@@ -55,7 +55,11 @@ namespace Server.Medius.Models
         public DMEObject DMEServer;
         public Channel ChatChannel;
         public ClientObject Host;
-        public bool AcceptStats = true;
+
+        public string AccountIdsAtStart => accountIdsAtStart;
+        public DateTime UtcTimeCreated => utcTimeCreated;
+        public DateTime? UtcTimeStarted => utcTimeStarted;
+        public DateTime? UtcTimeEnded => utcTimeEnded;
 
         private MediusWorldStatus _worldStatus = MediusWorldStatus.WorldPendingCreation;
         private bool hasHostJoined = false;
@@ -169,7 +173,7 @@ namespace Server.Medius.Models
             Attributes = createGame.Attributes;
         }
 
-        private string GetActivePlayerList()
+        public string GetActivePlayerList()
         {
             return String.Join(",", this.Clients?.Select(x => x.Client.AccountId.ToString()).Where(x => x != null));
         }

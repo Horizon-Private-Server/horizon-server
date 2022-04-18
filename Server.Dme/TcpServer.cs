@@ -17,6 +17,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DotNetty.Handlers.Timeout;
+using Server.Dme.PluginArgs;
 
 namespace Server.Dme
 {
@@ -116,7 +117,7 @@ namespace Server.Dme
                 .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
                     IChannelPipeline pipeline = channel.Pipeline;
-
+                    
                     pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
@@ -212,7 +213,8 @@ namespace Server.Dme
                     {
                         try
                         {
-                            await ProcessMessage(message, clientChannel, data);
+                            if (!PassMessageToPlugins(clientChannel, data, message, true))
+                                await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
                         {
@@ -226,7 +228,8 @@ namespace Server.Dme
                     {
                         // Add send queue to responses
                         while (data.SendQueue.TryDequeue(out var message))
-                            responses.Add(message);
+                            if (!PassMessageToPlugins(clientChannel, data, message, false))
+                                responses.Add(message);
 
                         if (data.ClientObject != null)
                         {
@@ -241,7 +244,8 @@ namespace Server.Dme
                             // But only if not in a world
                             if (data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.Destroyed)
                                 while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
-                                    responses.Add(message);
+                                    if (!PassMessageToPlugins(clientChannel, data, message, false))
+                                        responses.Add(message);
                         }
 
                         //
@@ -491,6 +495,56 @@ namespace Server.Dme
                     if (_channelDatas.TryGetValue(clientChannel.Id.AsLongText(), out var data))
                         foreach (var message in messages)
                             data.SendQueue.Enqueue(message);
+        }
+
+        #endregion
+
+        #region Plugins
+
+
+        protected bool PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
+        {
+            var onMsg = new OnMessageArgs(isIncoming)
+            {
+                Player = data.ClientObject,
+                Channel = clientChannel,
+                Message = message
+            };
+
+            // Send to plugins
+            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            if (onMsg.Ignore)
+                return true;
+
+
+
+            // Send medius message to plugins
+            if (message is RT_MSG_CLIENT_APP_TOSERVER clientApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = data.ClientObject,
+                    Channel = clientChannel,
+                    Message = clientApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+            else if (message is RT_MSG_SERVER_APP serverApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = data.ClientObject,
+                    Channel = clientChannel,
+                    Message = serverApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+
+            return false;
         }
 
         #endregion

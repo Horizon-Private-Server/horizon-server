@@ -846,7 +846,18 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateLadderStatsWideRequest} without a being logged in.");
 
-                        if (data.ClientObject.CurrentGame != null && !data.ClientObject.CurrentGame.AcceptStats)
+                        // pass to plugins
+                        var pluginMessage = new OnPlayerWideStatsArgs()
+                        {
+                            Game = data.ClientObject.CurrentGame,
+                            Player = data.ClientObject,
+                            IsClan = updateLadderStatsWideRequest.LadderType == MediusLadderType.MediusLadderTypeClan,
+                            WideStats = updateLadderStatsWideRequest.Stats
+                        };
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_POST_WIDE_STATS, pluginMessage);
+
+                        // reject
+                        if (pluginMessage.Reject)
                         {
                             data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
                             {
@@ -864,7 +875,7 @@ namespace Server.Medius
                                     _ = Program.Database.PostAccountLadderStats(new StatPostDTO()
                                     {
                                         AccountId = data.ClientObject.AccountId,
-                                        Stats = updateLadderStatsWideRequest.Stats
+                                        Stats = pluginMessage.WideStats
                                     }).ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -872,6 +883,7 @@ namespace Server.Medius
 
                                         if (r.IsCompletedSuccessfully && r.Result)
                                         {
+                                            data.ClientObject.WideStats = pluginMessage.WideStats;
                                             data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
                                             {
                                                 MessageID = updateLadderStatsWideRequest.MessageID,
@@ -893,7 +905,7 @@ namespace Server.Medius
                                 }
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-                                    _ = Program.Database.PostClanLadderStats(data.ClientObject.AccountId, data.ClientObject.ClanId, updateLadderStatsWideRequest.Stats).ContinueWith((r) =>
+                                    _ = Program.Database.PostClanLadderStats(data.ClientObject.AccountId, data.ClientObject.ClanId, pluginMessage.WideStats).ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                             return;
@@ -948,6 +960,7 @@ namespace Server.Medius
 
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
+                                            data.ClientObject.WideStats = r.Result.AccountWideStats;
                                             data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
                                             {
                                                 MessageID = getLadderStatsWideRequest.MessageID,

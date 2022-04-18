@@ -281,7 +281,8 @@ namespace Server.Dme
                 {
                     try
                     {
-                        ProcessMessage(message);
+                        if (!PassMessageToPlugins(_boundChannel, ClientObject, message.Message, true))
+                            ProcessMessage(message);
                     }
                     catch (Exception e)
                     {
@@ -294,7 +295,8 @@ namespace Server.Dme
                 {
                     // Add send queue to responses
                     while (_sendQueue.TryDequeue(out var message))
-                        responses.Add(message);
+                        if (!PassMessageToPlugins(_boundChannel, ClientObject, message.Message, false))
+                            responses.Add(message);
 
                     //
                     if (responses.Count > 0)
@@ -308,6 +310,51 @@ namespace Server.Dme
         }
 
         #endregion
+
+        protected bool PassMessageToPlugins(IChannel clientChannel, ClientObject clientObject, BaseScertMessage message, bool isIncoming)
+        {
+            var onMsg = new OnMessageArgs(isIncoming)
+            {
+                Player = clientObject,
+                Channel = clientChannel,
+                Message = message
+            };
+
+            // Send to plugins
+            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            if (onMsg.Ignore)
+                return true;
+
+
+
+            // Send medius message to plugins
+            if (message is RT_MSG_CLIENT_APP_TOSERVER clientApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = clientObject,
+                    Channel = clientChannel,
+                    Message = clientApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+            else if (message is RT_MSG_SERVER_APP serverApp)
+            {
+                var onMediusMsg = new OnMediusMessageArgs(isIncoming)
+                {
+                    Player = clientObject,
+                    Channel = clientChannel,
+                    Message = serverApp.Message
+                };
+                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                if (onMediusMsg.Ignore)
+                    return true;
+            }
+
+            return false;
+        }
 
     }
 }

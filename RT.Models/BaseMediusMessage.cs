@@ -53,6 +53,11 @@ namespace RT.Models
         /// </summary>
         public abstract byte PacketType { get; }
 
+        /// <summary>
+        /// When true, skips encryption when sending this particular message instance.
+        /// </summary>
+        public virtual bool SkipEncryption { get; set; } = false;
+
         public BaseMediusMessage()
         {
 

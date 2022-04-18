@@ -27,6 +27,8 @@ namespace Server.Plugins
         MEDIUS_GAME_ON_ENDED,
         MEDIUS_GAME_ON_HOST_LEFT,
 
+        MEDIUS_PLAYER_POST_WIDE_STATS,
+
 
         DME_PLAYER_ON_JOINED,
         DME_PLAYER_ON_LEFT,

@@ -67,7 +67,7 @@ namespace RT.Common
         public const int MEDIUS_FILE_CHECKSUM_NUMBYTES = 16;
         public const int MEDIUS_FILE_MAX_DESCRIPTION_LENGTH = 256;
 
-        public const int DME_FRAGMENT_MAX_PAYLOAD_SIZE = MEDIUS_FILE_MAX_DOWNLOAD_DATA_SIZE + 24;
+        public const int DME_FRAGMENT_MAX_PAYLOAD_SIZE = 484;
         public const int DME_VERSION_LENGTH = 16;
 
         public const int BUFFER_SIZE = 1500;

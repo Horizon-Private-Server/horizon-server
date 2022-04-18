@@ -21,6 +21,11 @@ namespace Server.Database.Models
         /// Collection of ladder stats.
         /// </summary>
         public int[] ClanWideStats { get; set; }
+
+        /// <summary>
+        /// Collection of ladder stats.
+        /// </summary>
+        public int[] ClanCustomWideStats { get; set; }
     }
 
     public class CreateClanDTO
