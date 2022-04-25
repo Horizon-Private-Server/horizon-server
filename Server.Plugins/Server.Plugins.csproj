@@ -6,12 +6,11 @@
 
   <ItemGroup>
     <PackageReference Include="DotNetty.Common" Version="0.7.1" />
-    <PackageReference Include="IronPython" Version="2.7.10" />
-    <PackageReference Include="IronPython.StdLib" Version="2.7.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RT.Common\RT.Common.csproj" />
+    <ProjectReference Include="..\Server.Plugins.Interface\Server.Plugins.Interface.csproj" />
   </ItemGroup>
 
 </Project>

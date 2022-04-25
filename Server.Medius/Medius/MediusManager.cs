@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Server.Medius
 {
@@ -358,16 +359,16 @@ namespace Server.Medius
 
         #region Tick
 
-        public void Tick()
+        public async Task Tick()
         {
-            TickClients();
+            await TickClients();
 
-            TickChannels();
+            await TickChannels ();
 
-            TickGames();
+            await TickGames();
         }
 
-        private void TickChannels()
+        private async Task TickChannels()
         {
             Queue<int> channelsToRemove = new Queue<int>();
 
@@ -381,7 +382,7 @@ namespace Server.Medius
                 }
                 else
                 {
-                    channelKeyPair.Value.Tick();
+                    await channelKeyPair.Value.Tick();
                 }
             }
 
@@ -390,7 +391,7 @@ namespace Server.Medius
                 _channelIdToChannel.Remove(channelId);
         }
 
-        private void TickGames()
+        private async Task TickGames()
         {
             Queue<int> gamesToRemove = new Queue<int>();
 
@@ -400,12 +401,12 @@ namespace Server.Medius
                 if (gameKeyPair.Value.ReadyToDestroy)
                 {
                     Logger.Info($"Destroying Game {gameKeyPair.Value}");
-                    gameKeyPair.Value.EndGame();
+                    await gameKeyPair.Value.EndGame();
                     gamesToRemove.Enqueue(gameKeyPair.Key);
                 }
                 else
                 {
-                    gameKeyPair.Value.Tick();
+                    await gameKeyPair.Value.Tick();
                 }
             }
 
@@ -414,7 +415,7 @@ namespace Server.Medius
                 _gameIdToGame.Remove(gameId);
         }
 
-        private void TickClients()
+        private async Task TickClients()
         {
             Queue<string> clientsToRemove = new Queue<string>();
 
@@ -459,7 +460,7 @@ namespace Server.Medius
                         Logger.Info($"Destroying Client {clientKeyPair.Value}");
 
                     // Logout and end session
-                    clientKeyPair.Value.Logout();
+                    await clientKeyPair.Value.Logout();
                     clientKeyPair.Value.EndSession();
 
                     clientsToRemove.Enqueue(clientKeyPair.Key);

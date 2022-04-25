@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Server.Plugins
+namespace Server.Plugins.Interface
 {
     public enum PluginEvent
     {

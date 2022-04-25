@@ -213,7 +213,7 @@ namespace Server.Dme
                     {
                         try
                         {
-                            if (!PassMessageToPlugins(clientChannel, data, message, true))
+                            if (!await PassMessageToPlugins(clientChannel, data, message, true))
                                 await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
@@ -228,7 +228,7 @@ namespace Server.Dme
                     {
                         // Add send queue to responses
                         while (data.SendQueue.TryDequeue(out var message))
-                            if (!PassMessageToPlugins(clientChannel, data, message, false))
+                            if (!await PassMessageToPlugins(clientChannel, data, message, false))
                                 responses.Add(message);
 
                         if (data.ClientObject != null)
@@ -244,7 +244,7 @@ namespace Server.Dme
                             // But only if not in a world
                             if (data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.Destroyed)
                                 while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
-                                    if (!PassMessageToPlugins(clientChannel, data, message, false))
+                                    if (!await PassMessageToPlugins(clientChannel, data, message, false))
                                         responses.Add(message);
                         }
 
@@ -410,7 +410,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
-                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
+                        await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
 
@@ -430,10 +430,12 @@ namespace Server.Dme
             return;
         }
 
-        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
+        protected virtual Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             if (message == null)
-                return;
+                return Task.CompletedTask;
+
+            return Task.CompletedTask;
         }
 
         #endregion
@@ -502,7 +504,7 @@ namespace Server.Dme
         #region Plugins
 
 
-        protected bool PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
+        protected async Task<bool> PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
         {
             var onMsg = new OnMessageArgs(isIncoming)
             {
@@ -512,7 +514,7 @@ namespace Server.Dme
             };
 
             // Send to plugins
-            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            await Program.Plugins.OnMessageEvent(message.Id, onMsg);
             if (onMsg.Ignore)
                 return true;
 
@@ -527,7 +529,7 @@ namespace Server.Dme
                     Channel = clientChannel,
                     Message = clientApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                await Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }
@@ -539,7 +541,7 @@ namespace Server.Dme
                     Channel = clientChannel,
                     Message = serverApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                await Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }

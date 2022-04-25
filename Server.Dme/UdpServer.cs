@@ -19,6 +19,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Server.Dme.PluginArgs;
+using Server.Plugins.Interface;
 
 namespace Server.Dme
 {
@@ -80,7 +81,7 @@ namespace Server.Dme
             _scertHandler = new ScertDatagramHandler();
 
             // Queue all incoming messages
-            _scertHandler.OnChannelMessage += (channel, message) =>
+            _scertHandler.OnChannelMessage += async (channel, message) =>
             {
                 var pluginArgs = new OnUdpMsg()
                 {
@@ -89,7 +90,7 @@ namespace Server.Dme
                 };
 
                 // Plugin
-                Program.Plugins.OnEvent(Plugins.PluginEvent.DME_GAME_ON_RECV_UDP, pluginArgs);
+                await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_UDP, pluginArgs);
 
                 if (!pluginArgs.Ignore)
                     _recvQueue.Enqueue(message);
@@ -281,7 +282,7 @@ namespace Server.Dme
                 {
                     try
                     {
-                        if (!PassMessageToPlugins(_boundChannel, ClientObject, message.Message, true))
+                        if (!await PassMessageToPlugins(_boundChannel, ClientObject, message.Message, true))
                             ProcessMessage(message);
                     }
                     catch (Exception e)
@@ -295,7 +296,7 @@ namespace Server.Dme
                 {
                     // Add send queue to responses
                     while (_sendQueue.TryDequeue(out var message))
-                        if (!PassMessageToPlugins(_boundChannel, ClientObject, message.Message, false))
+                        if (!await PassMessageToPlugins(_boundChannel, ClientObject, message.Message, false))
                             responses.Add(message);
 
                     //
@@ -311,7 +312,7 @@ namespace Server.Dme
 
         #endregion
 
-        protected bool PassMessageToPlugins(IChannel clientChannel, ClientObject clientObject, BaseScertMessage message, bool isIncoming)
+        protected async Task<bool> PassMessageToPlugins(IChannel clientChannel, ClientObject clientObject, BaseScertMessage message, bool isIncoming)
         {
             var onMsg = new OnMessageArgs(isIncoming)
             {
@@ -321,7 +322,7 @@ namespace Server.Dme
             };
 
             // Send to plugins
-            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            await Program .Plugins.OnMessageEvent(message.Id, onMsg);
             if (onMsg.Ignore)
                 return true;
 
@@ -336,7 +337,7 @@ namespace Server.Dme
                     Channel = clientChannel,
                     Message = clientApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                await Program .Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }
@@ -348,7 +349,7 @@ namespace Server.Dme
                     Channel = clientChannel,
                     Message = serverApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                await Program .Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }

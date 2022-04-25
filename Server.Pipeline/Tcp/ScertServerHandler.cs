@@ -36,6 +36,10 @@ namespace Server.Pipeline.Tcp
                     {
                         Group = g = new DefaultChannelGroup(ctx.Executor);
                     }
+                    else
+                    {
+                        g = Group;
+                    }
                 }
             }
 
