@@ -103,7 +103,7 @@ namespace Server.Dme
                 if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
                 {
                     _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
-                    Plugins.Tick();
+                    await Plugins.Tick();
                 }
 
                 await Task.WhenAll(tasks);

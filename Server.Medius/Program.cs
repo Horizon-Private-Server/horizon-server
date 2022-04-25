@@ -126,10 +126,10 @@ namespace Server.Medius
                 await Task.WhenAll(AuthenticationServer.Tick(), LobbyServer.Tick(), ProxyServer.Tick());
 
                 // Tick manager
-                Manager.Tick();
+                await Manager.Tick();
 
                 // Tick plugins
-                Plugins.Tick();
+                await Plugins.Tick();
 
                 // 
                 if ((Utils.GetHighPrecisionUtcTime() - _lastComponentLog).TotalSeconds > 15f)

@@ -8,7 +8,7 @@ namespace Server.Plugins.Interface
     public interface IPlugin
     {
 
-        Task Start(IPluginHost host);
+        Task Start(string workingDirectory, IPluginHost host);
 
     }
 }

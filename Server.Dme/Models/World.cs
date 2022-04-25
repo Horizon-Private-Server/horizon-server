@@ -124,7 +124,7 @@ namespace Server.Dme.Models
                 {
                     if (client.Destroy || ForceDestruct || Destroyed)
                     {
-                        OnPlayerLeft(client);
+                        await OnPlayerLeft(client);
                         Manager.RemoveClient(client);
                         _ = client.Stop();
                         Clients.TryRemove(i, out _);
@@ -259,10 +259,10 @@ namespace Server.Dme.Models
             ForceDestruct = request.BrutalFlag;
         }
 
-        public void OnPlayerJoined(ClientObject player)
+        public async Task OnPlayerJoined(ClientObject player)
         {
             // Plugin
-            Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
+            await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this
@@ -291,10 +291,10 @@ namespace Server.Dme.Models
             });
         }
 
-        public void OnPlayerLeft(ClientObject player)
+        public async Task OnPlayerLeft(ClientObject player)
         {
             // Plugin
-            Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
+            await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this

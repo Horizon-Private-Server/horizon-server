@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Server.Medius.Models
 {
@@ -33,13 +34,13 @@ namespace Server.Medius.Models
         public uint GenericField4 = 0;
         public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
 
-        public bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((Utils.GetHighPrecisionUtcTime() - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds) && GameCount == 0);
-        public int PlayerCount => Clients.Count;
+        public virtual bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((Utils.GetHighPrecisionUtcTime() - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds) && GameCount == 0);
+        public virtual int PlayerCount => Clients.Count;
         public int GameCount => _games.Count;
 
-        private List<Game> _games = new List<Game>();
-        private bool _removeChannel = false;
-        private DateTime _timeCreated = Utils.GetHighPrecisionUtcTime();
+        protected List<Game> _games = new List<Game>();
+        protected bool _removeChannel = false;
+        protected DateTime _timeCreated = Utils.GetHighPrecisionUtcTime();
 
         public Channel()
         {
@@ -62,7 +63,7 @@ namespace Server.Medius.Models
             GenericFieldLevel = request.GenericFieldLevel;
         }
 
-        public void Tick()
+        public virtual Task Tick()
         {
             // Remove inactive clients
             for (int i = 0; i < Clients.Count; ++i)
@@ -73,25 +74,27 @@ namespace Server.Medius.Models
                     --i;
                 }
             }
+
+            return Task.CompletedTask;
         }
 
-        public void OnPlayerJoined(ClientObject client)
+        public virtual void OnPlayerJoined(ClientObject client)
         {
             Clients.Add(client);
         }
 
-        public void OnPlayerLeft(ClientObject client)
+        public virtual void OnPlayerLeft(ClientObject client)
         {
             Clients.RemoveAll(x => x == client);
         }
 
 
-        public void RegisterGame(Game game)
+        public virtual void RegisterGame(Game game)
         {
             _games.Add(game);
         }
 
-        public void UnregisterGame(Game game)
+        public virtual void UnregisterGame(Game game)
         {
             // Remove game
             _games.Remove(game);

@@ -16,9 +16,9 @@ namespace Server.Plugins
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<PluginsManager>();
 
-        private ConcurrentDictionary<PluginEvent, List<Action<PluginEvent, object>>> _pluginCallbackInstances = new ConcurrentDictionary<PluginEvent, List<Action<PluginEvent, object>>>();
-        private ConcurrentDictionary<RT_MSG_TYPE, List<Action<RT_MSG_TYPE, object>>> _pluginScertMessageCallbackInstances = new ConcurrentDictionary<RT_MSG_TYPE, List<Action<RT_MSG_TYPE, object>>>();
-        private ConcurrentDictionary<(NetMessageTypes, byte), List<Action<NetMessageTypes, byte, object>>> _pluginMediusMessageCallbackInstances = new ConcurrentDictionary<(NetMessageTypes, byte), List<Action<NetMessageTypes, byte, object>>>();
+        private ConcurrentDictionary<PluginEvent, List<OnRegisterActionHandler>> _pluginCallbackInstances = new ConcurrentDictionary<PluginEvent, List<OnRegisterActionHandler>>();
+        private ConcurrentDictionary<RT_MSG_TYPE, List<OnRegisterMessageActionHandler>> _pluginScertMessageCallbackInstances = new ConcurrentDictionary<RT_MSG_TYPE, List<OnRegisterMessageActionHandler>>();
+        private ConcurrentDictionary<(NetMessageTypes, byte), List<OnRegisterMediusMessageActionHandler>> _pluginMediusMessageCallbackInstances = new ConcurrentDictionary<(NetMessageTypes, byte), List<OnRegisterMediusMessageActionHandler>>();
         private bool _reload = false;
         private DirectoryInfo _pluginDir = null;
         private FileSystemWatcher _watcher = null;
@@ -42,7 +42,7 @@ namespace Server.Plugins
             reloadPlugins();
         }
 
-        public void Tick()
+        public async Task Tick()
         {
             if (this._reload)
             {
@@ -50,34 +50,38 @@ namespace Server.Plugins
                 reloadPlugins();
             }
 
-            OnEvent(PluginEvent.TICK, null);
+            try
+            {
+                await OnEvent(PluginEvent.TICK, null);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message, ex);
+            }
         }
 
         #region On Event
 
-        public Task OnEvent(PluginEvent eventType, object data)
+        public async Task OnEvent(PluginEvent eventType, object data)
         {
             if (!_pluginCallbackInstances.ContainsKey(eventType))
-                return Task.CompletedTask;
+                return;
 
-            return Task.Run(() =>
+            foreach (var callback in _pluginCallbackInstances[eventType])
             {
-                foreach (var callback in _pluginCallbackInstances[eventType])
+                try
                 {
-                    try
-                    {
-                        callback.Invoke(eventType, data);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error($"PLUGIN OnEvent Exception. {callback}({eventType}, {data})");
-                        Logger.Error(e);
-                    }
+                    await callback.Invoke(eventType, data);
                 }
-            });
+                catch (Exception e)
+                {
+                    Logger.Error($"PLUGIN OnEvent Exception. {callback}({eventType}, {data})");
+                    Logger.Error(e);
+                }
+            }
         }
 
-        public void OnMessageEvent(RT_MSG_TYPE msgId, object data)
+        public async Task OnMessageEvent(RT_MSG_TYPE msgId, object data)
         {
             if (!_pluginScertMessageCallbackInstances.ContainsKey(msgId))
                 return;
@@ -86,7 +90,7 @@ namespace Server.Plugins
             {
                 try
                 {
-                    callback.Invoke(msgId, data);
+                    await callback.Invoke(msgId, data);
                 }
                 catch (Exception e)
                 {
@@ -96,7 +100,7 @@ namespace Server.Plugins
             }
         }
 
-        public void OnMediusMessageEvent(NetMessageTypes msgClass, byte msgType, object data)
+        public async Task OnMediusMessageEvent(NetMessageTypes msgClass, byte msgType, object data)
         {
             var key = (msgClass, msgType);
             if (!_pluginMediusMessageCallbackInstances.ContainsKey(key))
@@ -106,7 +110,7 @@ namespace Server.Plugins
             {
                 try
                 {
-                    callback.Invoke(msgClass, msgType, data);
+                    await callback.Invoke(msgClass, msgType, data);
                 }
                 catch (Exception e)
                 {
@@ -120,11 +124,11 @@ namespace Server.Plugins
 
         #region Register Event
 
-        public void RegisterAction(PluginEvent eventType, Action<PluginEvent, object> callback)
+        public void RegisterAction(PluginEvent eventType, OnRegisterActionHandler callback)
         {
-            List<Action<PluginEvent, object>> callbacks;
+            List<OnRegisterActionHandler> callbacks;
             if (!_pluginCallbackInstances.ContainsKey(eventType))
-                _pluginCallbackInstances.TryAdd(eventType, callbacks = new List<Action<PluginEvent, object>>());
+                _pluginCallbackInstances.TryAdd(eventType, callbacks = new List<OnRegisterActionHandler>());
             else
                 callbacks = _pluginCallbackInstances[eventType];
 
@@ -132,11 +136,11 @@ namespace Server.Plugins
             callbacks.Add(callback);
         }
 
-        public void RegisterMessageAction(RT_MSG_TYPE msgId, Action<RT_MSG_TYPE, object> callback)
+        public void RegisterMessageAction(RT_MSG_TYPE msgId, OnRegisterMessageActionHandler callback)
         {
-            List<Action<RT_MSG_TYPE, object>> callbacks;
+            List<OnRegisterMessageActionHandler> callbacks;
             if (!_pluginScertMessageCallbackInstances.ContainsKey(msgId))
-                _pluginScertMessageCallbackInstances.TryAdd(msgId, callbacks = new List<Action<RT_MSG_TYPE, object>>());
+                _pluginScertMessageCallbackInstances.TryAdd(msgId, callbacks = new List<OnRegisterMessageActionHandler>());
             else
                 callbacks = _pluginScertMessageCallbackInstances[msgId];
 
@@ -144,12 +148,12 @@ namespace Server.Plugins
             callbacks.Add(callback);
         }
 
-        public void RegisterMediusMessageAction(NetMessageTypes msgClass, byte msgType, Action<NetMessageTypes, byte, object> callback)
+        public void RegisterMediusMessageAction(NetMessageTypes msgClass, byte msgType, OnRegisterMediusMessageActionHandler callback)
         {
-            List<Action<NetMessageTypes, byte, object>> callbacks;
+            List<OnRegisterMediusMessageActionHandler> callbacks;
             var key = (msgClass, msgType);
             if (!_pluginMediusMessageCallbackInstances.ContainsKey(key))
-                _pluginMediusMessageCallbackInstances.TryAdd(key, callbacks = new List<Action<NetMessageTypes, byte, object>>());
+                _pluginMediusMessageCallbackInstances.TryAdd(key, callbacks = new List<OnRegisterMediusMessageActionHandler>());
             else
                 callbacks = _pluginMediusMessageCallbackInstances[key];
 
@@ -195,16 +199,23 @@ namespace Server.Plugins
             // Add assemblies
             foreach (var file in this._pluginDir.GetFiles("*.dll", SearchOption.AllDirectories))
             {
-                Assembly pluginAssembly = Assembly.LoadFile(file.FullName);
-                Type pluginInterface = typeof(IPlugin);
-                var plugins = pluginAssembly.GetTypes()
-                    .Where(type => pluginInterface.IsAssignableFrom(type));
-
-                foreach (var plugin in plugins)
+                try
                 {
-                    IPlugin instance = (IPlugin)Activator.CreateInstance(plugin);
+                    Assembly pluginAssembly = Assembly.LoadFile(file.FullName);
+                    Type pluginInterface = typeof(IPlugin);
+                    var plugins = pluginAssembly.GetTypes()
+                        .Where(type => pluginInterface.IsAssignableFrom(type));
 
-                    _ = instance.Start(this);
+                    foreach (var plugin in plugins)
+                    {
+                        IPlugin instance = (IPlugin)Activator.CreateInstance(plugin);
+
+                        _ = instance.Start(file.Directory.FullName, this);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex);
                 }
             }
         }
