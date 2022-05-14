@@ -186,7 +186,7 @@ namespace Server.Database
         /// </summary>
         /// <param name="accountName">Case insensitive name of account.</param>
         /// <returns>Success or failure.</returns>
-        public async Task<bool> DeleteAccount(string accountName)
+        public async Task<bool> DeleteAccount(string accountName, int appId)
         {
             bool result = false;
 
@@ -194,11 +194,11 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedAccounts.RemoveAll(x => x.AccountName.ToLower() == accountName.ToLower()) > 0;
+                    result = _simulatedAccounts.RemoveAll(x => x.AccountName.ToLower() == accountName.ToLower() && x.AppId == appId) > 0;
                 }
                 else
                 {
-                    result = (await GetDbAsync($"Account/deleteAccount?AccountName={accountName}")).IsSuccessStatusCode;
+                    result = (await GetDbAsync($"Account/deleteAccount?AccountName={accountName}&AppId={appId}")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -479,7 +479,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", $"\"{ip}\"");
+                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", $"{ip}");
                 }
             }
             catch (Exception e)
@@ -506,7 +506,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", $"\"{mac}\"");
+                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", $"{mac}");
                 }
             }
             catch (Exception e)
