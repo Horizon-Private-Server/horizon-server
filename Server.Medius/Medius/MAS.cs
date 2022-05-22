@@ -515,7 +515,6 @@ namespace Server.Medius
                     }
                 #endregion
 
-
                 #region AccessLevel (PS3)
 
                 case MediusGetAccessLevelInfoRequest getAccessLevelInfoRequest:
@@ -671,6 +670,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {pickLocationRequest} without a session.");
 
 
+                        data.ClientObject.LocationId = pickLocationRequest.LocationID;
                         data.ClientObject.Queue(new MediusPickLocationResponse()
                         {
                             MessageID = pickLocationRequest.MessageID,
@@ -785,7 +785,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without being logged in.");
 
-                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName, data.ClientObject.ApplicationId).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result)
                             {

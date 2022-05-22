@@ -67,6 +67,11 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
+        public int LocationId { get; set; } = 0;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public int MediusVersion { get; set; } = 0;
 
         /// <summary>

@@ -474,7 +474,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without being logged in.");
 
-                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName, data.ClientObject.ApplicationId).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result)
                             {
