@@ -7,6 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
+    /*
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.RevokeClanTeamChallenge)]
     public class MediusRevokeClanTeamChallengeRequest : BaseLobbyMessage, IMediusRequest
     {
@@ -51,4 +52,5 @@ namespace RT.Models
                 $"ClanChallengeID:{ClanChallengeID}";
         }
     }
+    */
 }

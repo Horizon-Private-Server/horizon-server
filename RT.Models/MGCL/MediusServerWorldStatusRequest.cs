@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerWorldStatusRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerWorldStatusRequest)]
     public class MediusServerWorldStatusRequest : BaseMGCLMessage, IMediusRequest
     {
 
@@ -38,12 +34,11 @@ namespace RT.Models
             writer.Write(WorldID);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"WorldID:{WorldID}";
+                $"MessageID: {MessageID} " +
+                $"WorldID: {WorldID}";
         }
     }
 }

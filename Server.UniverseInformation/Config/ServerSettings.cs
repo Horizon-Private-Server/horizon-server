@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Server.UnivereInformation.Config
+namespace Server.UniverseInformation.Config
 {
     public class ServerSettings
     {
@@ -15,9 +15,31 @@ namespace Server.UnivereInformation.Config
         public int RefreshConfigInterval = 5000;
 
         /// <summary>
-        /// Port of the MUIS server.
+        /// Ports of the MUIS server.
         /// </summary>
-        public int[] Ports { get; set; } = new int[] { 10071 };
+        public int[] Ports { get; set; } = new int[] { 10071, 10080 };
+
+        #region NAT SCE-RT Service Location
+        /// <summary>
+        /// Ip address of the NAT server.
+        /// Provide the IP of the SCE-RT NAT Service
+        /// Default is: natservice.pdonline.scea.com:10070
+        /// </summary>
+        public string NATIp { get; set; } = null;
+        /// <summary>
+        /// Port of the NAT server.
+        /// Provide the Port of the SCE-RT NAT Service
+        /// </summary>
+        public int NATPort { get; set; } = 10070;
+        #endregion
+
+        #region Remote Log Viewer Port To Listen
+        /// <summary>
+        /// Any value greater than 0 will enable remote logging with the SCE-RT logviewer
+        /// on that port, which must not be in use by other applications (default 0)
+        /// </summary>
+        public int RemoteLogViewPort = 0;
+        #endregion
 
         /// <summary>
         /// Key used to authenticate clients.
@@ -48,10 +70,16 @@ namespace Server.UnivereInformation.Config
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        public int Status { get; set; }
+        public int UserCount { get; set; }
+        public int MaxUsers { get; set; }
         public string Endpoint { get; set; }
         public string SvoURL { get; set; }
         public string ExtendedInfo { get; set; }
+        public string UniverseBilling { get; set; }
+        public string BillingSystemName { get; set; }
         public int Port { get; set; }
         public uint UniverseId { get; set; }
+        
     }
 }

@@ -4,6 +4,7 @@ using System.Text;
 
 namespace RT.Common
 {
+    #region RT_MSG_TYPE
     public enum RT_MSG_TYPE : byte
     {
         RT_MSG_CLIENT_CONNECT_TCP,
@@ -63,8 +64,12 @@ namespace RT.Common
         RT_MSG_SERVER_MAX_MSGLEN,
         RT_MSG_CLIENT_MULTI_APP_TOSERVER = 59,
         RT_MSG_SERVER_MULTI_APP_TOCLIENT,
+        RT_MSG_CLIENT_APP_TO_PLUGIN,
+        RT_MSG_SERVER_PLUGIN_TO_APP,
     }
+    #endregion
 
+    #region MediusCallbackStatus
     public enum MediusCallbackStatus : int
     {
         MediusBeginSessionFailed = -1000,
@@ -133,17 +138,90 @@ namespace RT.Common
         MediusSubscriptionAborted = -937,
         MediusSubscriptionInvalid = -936,
         MediusNotAMember = -935,
+        MediusBillingVerificationRequired = -934,
+        MediusAccessLevelInsufficient = -933,
+        MediusWorldClosed = -932,
+        MediusTransactionTimedOut = -931,
+     // MediusCASError = -931 //Zipper Interactive
+        MediusStepSendFailed = -930,
+        MediusMatchTypeNoMatch_DEPRECATED = -929,
+        MediusMatchServerNotFound = -928,
+        MediusMatchGameCreationFailed = -927,
+        MediusGameListSortOperationFailed = -926,
+        MediusNumSortCriteriaAtMax = -925,
+        MediusSortCriteriaNotFound = -924,
+        MediusEntitlementCheckFailed = -923,
+        ExtraMediusCallbackStatus = -1,
         MediusSuccess = 0,
         MediusNoResult = 1,
         MediusRequestAccepted = 2,
         MediusWorldCreatedSizeReduced = 3,
         MediusPass = 4,
+        MediusInQueue = 5,
+        MediusJoinAssignedGame = 6,
+        MediusMatchTypeHostGame = 7,
+        MediusMatchTyoeReferral = 8,
+        MediusAlreadyInLeastPopulatedChannel = 9,
+        MediusVulgarityFound = 10,
+        MediusMatchingInProgress = 11,
+    }
+    #endregion
+
+    public enum MediusAccessLevelType : int
+    {
+        MEDIUS_ACCESSLEVEL_DEFAULT,
+        MEDIUS_ACCESSLEVEL_PRIVILEGED,
+        MEDIUS_ACCESSLEVEL_BILLING_VERIFIED,
+        MEDIUS_ACCESSLEVEL_MODERATOR = 4,
+        MEDIUS_ACCESSLEVEL_RESERVED_3 = 8,
+        MEDIUS_ACCESSLEVEL_RESERVED_4 = 16,
+        MEDIUS_ACCESSLEVEL_RESERVED_5 = 32,
+        MEDIUS_ACCESSLEVEL_RESERVED_6 = 64,
+        MEDIUS_ACCESSLEVEL_RESERVED_7 = 128,
+        MEDIUS_ACCESSLEVEL_RESERVED_8 = 256,
+        MEDIUS_ACCESSLEVEL_RESERVED_9 = 512,
+        MEDIUS_ACCESSLEVEL_RESERVED_10 = 1024,
+        MEDIUS_ACCESSLEVEL_RESERVED_11 = 2048,
+        MEDIUS_ACCESSLEVEL_RESERVED_12 = 4096,
+        MEDIUS_ACCESSLEVEL_RESERVED_13 = 8192,
+        MEDIUS_ACCESSLEVEL_RESERVED_14 = 16384,
+        MEDIUS_ACCESSLEVEL_RESERVED_16 = 65536,
+        MEDIUS_ACCESSLEVEL_RESERVED_17 = 131072,
+        MEDIUS_ACCESSLEVEL_RESERVED_18 = 262144,
+        MEDIUS_ACCESSLEVEL_RESERVED_20 = 1048576,
+        MEDIUS_ACCESSLEVEL_RESERVED_21 = 2097152,
+        MEDIUS_ACCESSLEVEL_RESERVED_24 = 16777216,
+        MEDIUS_ACCESSLEVEL_RESERVED_28 = 268435456,
+        //MEDIUS_ACCESSLEVEL_ADMIN
+    }
+
+    public enum MediusPasswordType : int
+    {
+        MediusPasswordNotSet,
+        MediusPasswordSet,
     }
 
     public enum MediusAccountType : int
     {
         MediusChildAccount,
         MediusMasterAccount,
+    }
+
+    public enum MediusBuddyAddType : int
+    {
+        /// <summary>
+        /// Add User to your Buddy List,
+        /// but without the requirement that the buddy see you on their list
+        /// </summary>
+        AddSingle,
+        /// <summary>
+        /// Request that each person appears on the other's buddy list.
+        /// </summary>
+        AddSymmetric,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers.
+        /// </summary>
+        ExtraMediusAddType = 0xffffff
     }
 
     public enum MediusLadderType : int
@@ -161,13 +239,27 @@ namespace RT.Common
         MediusPlayerInOtherUniverse,
         LastMediusPLayerStatus,
     }
-
+    #region MediusCharacterEncodingType
     public enum MediusCharacterEncodingType : int
     {
+        /// <summary>
+        /// No change to current encoding.
+        /// </summary>
         MediusCharacterEncoding_NoUpdate,
+        /// <summary>
+        /// ISO-8859-1 single byte encoding 0x00 - 0xFF.
+        /// </summary>
         MediusCharacterEncoding_ISO8859_1,
+        /// <summary>
+        /// UTF-8 Multibyte Encoding.
+        /// </summary>
         MediusCharacterEncoding_UTF8,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusCharacterEncodingType = 0xffffff
     }
+    #endregion
 
     public enum MediusLanguageType : int
     {
@@ -188,25 +280,161 @@ namespace RT.Common
         MediusLanguage_Norwegian,
     }
 
+    #region MediusClanStatus
+    /// <summary>
+    /// Whether or not a clan is active
+    /// </summary>
     public enum MediusClanStatus : int
     {
+        /// <summary>
+        /// The clan is active
+        /// </summary>
         ClanActive,
+        /// <summary>
+        /// The chan has been disbanded
+        /// </summary>
         ClanDisbanded = -1,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusClanStatus = 0xffffff
     }
+    #endregion
 
+    /// <summary>
+    /// Specify which type of network connection is being used
+    /// Note, the connection type is set during the initial session begin request.
+    /// </summary>
     public enum MediusConnectionType : int
     {
+        /// <summary>
+        /// The connection is on a modem.
+        /// </summary>
         Modem = 0,
+        /// <summary>
+        /// The connection is on a Ethernet.
+        /// </summary>
         Ethernet = 1,
+        /// <summary>
+        /// The connection is wireless
+        /// </summary>
         Wireless = 2,
     }
 
+    /// <summary>
+    /// Post the dnas signature for this application
+    /// The DNAS category must correspond with the type of auth.dat file requested from SCEI.
+    /// </summary>
     public enum MediusDnasCategory : int
     {
+        /// <summary>
+        /// DNAS Console ID
+        /// </summary>
         DnasConsoleID,
+        /// <summary>
+        /// DNAS title ID
+        /// </summary>
         DnasTitleID,
+        /// <summary>
+        /// DNAS disk ID
+        /// </summary>
         DnasDiskID,
     }
+
+    #region Medius Device Type
+    /// <summary>
+    /// Specifies a device type for Account I/O operations
+    /// </summary>
+    public enum MediusDeviceType : int
+    {
+        /// <summary>
+        /// Use a Memory Card as the target
+        /// </summary>
+        MEDIUS_MEMCARD,
+        /// <summary>
+        /// Use the HDD as the target
+        /// </summary>
+        MEDIUS_HDD,
+        /// <summary>
+        /// Use Host0 as the target
+        /// </summary>
+        MEDIUS_HOST0,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusDeviceType = 0xffffff
+    }
+    #endregion
+
+    #region MediusSCETerritory
+    /// <summary>
+    /// Identifies the appropriate TRC territory for this title, for memory card, and HDD-related operations
+    /// </summary>
+    public enum MediusSCETerritory : int
+    {
+        /// <summary>
+        /// Sony Computer Entertainment, America
+        /// </summary>
+        SCEA,
+        /// <summary>
+        /// Sony Computer Entertainment, Europe
+        /// </summary>
+        SCEE,
+        /// <summary>
+        /// Sony Computer Entertainment, Japan
+        /// </summary>
+        SCEI,
+        /// <summary>
+        /// Third Party SCEA
+        /// </summary>
+        SCEA_THIRDPARTY,
+        /// <summary>
+        /// Third Party SCEE
+        /// </summary>
+        SCEE_THIRDPARTY,
+        /// <summary>
+        /// Third Party SCEI
+        /// </summary>
+        SCEI_THIRDPARTY,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraSCETerritoryType = 0xffffff
+    }
+    #endregion
+
+    #region MediusStoredConfirmationType
+    /// <summary>
+    /// Error Codes related to storage functions
+    /// </summary>
+    public enum MediusStoredConfirmationType : int
+    {
+        /// <summary>
+        /// Stored Successfully
+        /// </summary>
+        MediusStoredSuccess,
+        /// <summary>
+        /// File not found
+        /// </summary>
+        MediusStoredFileNotFound = -1,
+        /// <summary>
+        /// Device not found
+        /// </summary>
+        MediusStoredDeviceNotFound = -2,
+        /// <summary>
+        /// Directory Not Found
+        /// </summary>
+        MediusStoredDirectoryNotFound = -3,
+        /// <summary>
+        /// File already exists
+        /// </summary>
+        MediusStoredItemAlreadyExists = -4,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusStoredConfirmationType = 0xffffff
+    }
+    #endregion
 
     public enum MediusPlayerSearchType : int
     {
@@ -219,6 +447,9 @@ namespace RT.Common
         BroadcastBinaryMsg,
         TargetBinaryMsg,
         BroadcastBinaryMsgAcrossEntireUniverse,
+        BroadcastBinaryMsgDeprecated0,
+        TargetBinaryMsgDeprecated0,
+        BroadcastBinaryMsgAcrossEntireUniverseDeprecated0
     }
 
     [Flags]
@@ -243,10 +474,23 @@ namespace RT.Common
         LobbyChatChannel,
     }
 
+    /// <summary>
+    /// Whether a text string submitted to a MediusTextFilter() call should be pass/fail or search-and-replace
+    /// </summary>
     public enum MediusTextFilterType : int
-    {
+    {   
+        /// <summary>
+        /// Type of Filtering: Pass or fail.
+        /// </summary>
         MediusTextFilterPassFail = 0,
+        /// <summary>
+        /// Type of filtering: replace text with strike-out characters.
+        /// </summary>
         MediusTextFilterReplace = 1,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusTextFilter = 0xffffff
     }
 
     public enum MediusSortOrder : int
@@ -283,17 +527,45 @@ namespace RT.Common
         MediusJoinAsMassSpectator = 2,
     }
 
+    /// <summary>
+    /// Medius Time Zones
+    /// </summary>
     public enum MediusTimeZone : int
     {
+        /// <summary>
+        /// [GMT-12] IDLW International Date Line - West
+        /// </summary>
         MediusTimeZone_IDLW = -1200,
+        /// <summary>
+        /// [GMT-10] Hawaiian Standard Time
+        /// </summary>
         MediusTimeZone_HST = -1000,
         MediusTimeZone_AKST = -900,
         MediusTimeZone_AKDT = -800,
+        /// <summary>
+        /// [GMT-8] Pacific Standard Time
+        /// </summary>
         MediusTimeZone_PST = -801,
+        /// <summary>
+        /// [GMT-7] Pacific Daylight Time
+        /// </summary>
         MediusTimeZone_PDT = -700,
+        /// <summary>
+        /// [GMT-7] Mountain Standard Time
+        /// </summary>
         MediusTimeZone_MST = -701,
+        /// <summary>
+        /// [GMT-6] Mountain Daylight Time
+        /// </summary>
         MediusTimeZone_MDT = -600,
+        /// <summary>
+        /// [GMT-6] Central Standard Time
+        /// </summary>
         MediusTimeZone_CST = -601,
+
+        /// <summary>
+        /// [GMT-5] Central Daylight Time
+        /// </summary>
         MediusTimeZone_CDT = -500,
         MediusTimeZone_EST = -501,
         MediusTimeZone_EDT = -400,
@@ -340,14 +612,103 @@ namespace RT.Common
         MediusTimeZone_NZDT = 1300,
     }
 
+    #region MediusFindWorldType
+    /// <summary>
+    /// Search types for finding chat channels and/or game worlds.
+    /// </summary>
+    public enum MediusFindWorldType : int
+    {
+        /// <summary>
+        /// Search for a game world with these parameters
+        /// </summary>
+        FindGameWorld,
+        /// <summary>
+        /// Search for a lobby chat world with these parameters
+        /// </summary>
+        FindLobbyWorld,
+        /// <summary>
+        /// Search for either a game or lobby world with these parameters
+        /// </summary>
+        FIndAllWorlds,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusFindWorldType
+    }
+    #endregion
+
+    #region MediusGameHostType
+    /// <summary>
+    /// Defines which host type of game is being described
+    /// </summary>
     public enum MediusGameHostType : int
     {
+        /// <summary>
+        /// Create a client-server based game.
+        /// </summary>
         MediusGameHostClientServer = 0,
+
+        /// <summary>
+        /// Create a integrated server game where the game server and a client are on the same host.
+        /// </summary>
         MediusGameHostIntegratedServer = 1,
+
+        /// <summary>
+        /// Host a peer-to-peer game.
+        /// </summary>
         MediusGameHostPeerToPeer = 2,
+
+        /// <summary>
+        /// Host a LAN based game.
+        /// </summary>
         MediusGameHostLANPlay = 3,
+
+        /// <summary>
+        /// Host a client-server, auxiliary UDP game.
+        /// </summary>
         MediusGameHostClientServerAuxUDP = 4,
+
+        /// <summary>
+        /// Host a client-server, primary UDP game.
+        /// </summary>
+        MediusGameHostClientServerUDP = 5,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        MediusGameHostIndependent = 6,
+
+        /// <summary>
+        /// Game Hosts are at Max
+        /// </summary>
+        MediusGameHostMax = 7,
     }
+    #endregion
+
+    #region MediusVoteActionType
+    /// <summary>
+    /// Enumeration used to identify action of MediusVoteToBanPlayer Request (add/remove)
+    /// </summary>
+    public enum MediusVoteActionType : int
+    {
+        /// <summary>
+        /// Invalid Vote Action
+        /// </summary>
+        MediusInvalidVoteAction,
+        /// <summary>
+        /// Add a vote to ban a player
+        /// </summary>
+        MediusAddVote,
+        /// <summary>
+        /// Remove a vote to ban a player
+        /// </summary>
+        MediusRemoveVote,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusVoteActionType = 0xffffff
+    }
+    #endregion
 
     public enum MediusWorldAttributesType : int
     {
@@ -357,15 +718,40 @@ namespace RT.Common
         GAME_WORLD_INTERNAL = (1 << 2),
     }
 
+    #region MediusChatMessageType
+    /// <summary>
+    /// As of 2.10, MediusBuddyChatType is not supported yet. BroadcastAcrossEntireUniverse is usable, but highly discouraged.
+    /// Special server side flags needed to enable this type of chat message due to the high load it represents
+    /// </summary>
     public enum MediusChatMessageType : int
     {
+        /// <summary>
+        /// Sends to all in given chat channel
+        /// </summary>
         Broadcast,
+        /// <summary>
+        /// Sends directly to another player
+        /// </summary>
         Whisper,
+        /// <summary>
+        /// Sends to all given chat channels
+        /// </summary>
         BroadcastAcrossEntireUniverse,
+        /// <summary>
+        /// Sends to all members of a clan
+        /// </summary>
         MediusClanChatType,
+        /// <summary>
+        /// Sends chat to all members in your buddy list
+        /// </summary>
         MediusBuddyChatType,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusChatMessageType = 0xffffff
     }
-
+    #endregion
+    
     public enum MediusWorldStatus : int
     {
         WorldInactive,
@@ -395,14 +781,57 @@ namespace RT.Common
         MEDIUS_FILTER_GENERIC_FIELD_8 = 15,
     }
 
+    #region MediusGenerateRandomSelection
+    /// <summary>
+    /// Generate / Do not generate flags for random name generation during acccount logins.
+    /// NOTES: Deprecated as of 2.10, will be removed in a future release of the API.
+    /// </summary>
+    public enum MediusGenerateRandomSelection : int
+    {
+        /// <summary>
+        /// Do Not generate a random name on login.
+        /// </summary>
+        NotGenerate = 0,
+        /// <summary>
+        /// Generate a random name for login.
+        /// </summary>
+        GenerateRandom = 100,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusGenerateRandomSelection
+    }
+    #endregion
+
+    #region MediusWorldSecurityLevelType
+    /// <summary>
+    /// Security level for a world. Determines if passwords are needed.
+    /// </summary>
     [Flags]
     public enum MediusWorldSecurityLevelType : int
     {
+        /// <summary>
+        /// No security on world
+        /// </summary>
         WORLD_SECURITY_NONE = 0,
+        /// <summary>
+        /// Password required to join as a player
+        /// </summary>
         WORLD_SECURITY_PLAYER_PASSWORD = (1 << 0),
+        /// <summary>
+        /// World is closed to new players
+        /// </summary>
         WORLD_SECURITY_CLOSED = (1 << 1),
+        /// <summary>
+        /// Password is required to join as a spectator
+        /// </summary>
         WORLD_SECURITY_SPECTATOR_PASSWORD = (1 << 2),
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        WORLD_SECURITY_EXTRA = 0xFFFFFF
     }
+    #endregion
 
     public enum MediusLobbyFilterType : int
     {
@@ -436,14 +865,56 @@ namespace RT.Common
         NOT_EQUALS,
     }
 
+    #region NetConnectionType
     public enum NetConnectionType : int
     {
+        /// <summary>
+        /// This value is used to specify that no information is present
+        /// </summary>
         NetConnectionNone = 0,
+
+        /// <summary>
+        /// This specifies a connection to a Server via TCP
+        /// </summary>
         NetConnectionTypeClientServerTCP = 1,
+
+        /// <summary>
+        /// This specifies a connection to another peer via UDP
+        /// </summary>
         NetConnectionTypePeerToPeerUDP = 2,
+
+        /// <summary>
+        /// This specifies a connection to a Server via TCP and UDP.  The UDP connection is normal UDP: 
+        /// there is no reliability or in-order guarantee.
+        /// </summary>
         NetConnectionTypeClientServerTCPAuxUDP = 3,
-        NetConnectionTypeClientListenerTCP = 4
+
+        /// <summary>
+        /// This specifies a connection to a Server via TCP.  This is reserved for SCE-RT "Spectator" functionality.
+        /// </summary>
+        NetConnectionTypeClientListenerTCP = 4,
+
+        /// <summary>
+        /// This specifies a connection to a Server via UDP
+        /// </summary>
+        NetConnectionTypeClientServerUDP = 5,
+
+        /// <summary>
+        /// This specifies a connection to a Server via TCP and UDP.  This is reserved for SCE-RT "Spectator" functionality.
+        /// </summary>
+        NetConnectionTypeClientListenerTCPAuxUDP = 6,
+
+        /// <summary>
+        ///  This specifies a connection to a Server via UDP.  This is reserved for SCE-RT "Spectator" functionality.
+        /// </summary>
+        NetConnectionTypeClientListenerUDP = 7,
+
+        /// <summary>
+        /// Ensures that all values are stored as 32-bit integers on all compilers.
+        /// </summary>
+        ExtraNetConnectionType = 0xffffff
     }
+    #endregion
 
     public enum SERVER_FORCE_DISCONNECT_REASON : byte
     {
@@ -510,6 +981,7 @@ namespace RT.Common
         NetAddressTypeBinaryNATServices = 8
     }
 
+    #region NetMessageTypes
     public enum NetMessageTypes : byte
     {
         MessageClassDME,
@@ -520,7 +992,9 @@ namespace RT.Common
         MessageClassLobbyAuthentication,
         MaxMessageClasses,
     }
+    #endregion
 
+    #region MediusDmeMessageIds
     public enum MediusDmeMessageIds : byte
     {
         ServerVersion = 0x00,
@@ -533,9 +1007,14 @@ namespace RT.Common
         LANFindPacket = 0x19,
         LANFindResultsPacket = 0x1A,
         LANTextMessage = 0x21,
-        LANRawMessage = 0x22
-    }
+        LANRawMessage = 0x22,
 
+        //
+        ClientUpdate = 0x15,
+    }
+    #endregion
+
+    #region MediusMGCLMessageIds
     public enum MediusMGCLMessageIds : byte
     {
         ServerReport = 0x00,
@@ -553,7 +1032,7 @@ namespace RT.Common
         ServerEndGameResponse = 0x0C,
         ServerWorldStatusRequest = 0x0D,
         ServerWorldStatusResponse = 0x0E,
-        ServerCreateGameOnMeRequest = 0x1F,
+        ServerCreateGameOnSelfRequest0 = 0x0F,
         ServerCreateGameOnMeResponse = 0x10,
         ServerEndGameOnMeRequest = 0x11,
         ServerEndGameOnMeResponse = 0x12,
@@ -563,13 +1042,19 @@ namespace RT.Common
         ServerSetAttributesResponse = 0x17,
         ServerCreateGameWithAttributesRequest = 0x18,
         ServerCreateGameWithAttributesResponse = 0x19,
+        ServerSessionBeginRequest1 = 0x21,
+        ServerSessionBeginResponse1 = 0x22,
         ServerConnectGamesRequest = 0x1A,
         ServerConnectGamesResponse = 0x1B,
         ServerConnectNotification = 0x1C,
+        ServerCreateGameOnSelfRequest = 0x1D,
         ServerDisconnectPlayerRequest = 0x1E,
+        ServerCreateGameOnMeRequest = 0x1F,
         ServerWorldReportOnMe = 0x20,
     }
+    #endregion
 
+    #region MediusLobbyMessageIds
     public enum MediusLobbyMessageIds : byte
     {
         WorldReport0 = 0x00,
@@ -588,6 +1073,7 @@ namespace RT.Common
         AccountUpdateProfile = 0x0D,
         AccountUpdateProfileResponse = 0x0E,
         AccountUpdatePassword = 0x0F,
+        AccountUpdatePasswordStatusResponse = 0x10,
         AccountUpdateStats = 0x11,
         AccountUpdateStatsResponse = 0x12,
         AccountDelete = 0x13,
@@ -735,7 +1221,7 @@ namespace RT.Common
         GetTotalUsers = 0xA1,
         GetTotalUsersResponse = 0xA2,
         SetLocalizationParams = 0xA3,
-        SetLocalizationParamsResponse = 0xA4,
+        StatusResponse0 = 0xA4,
         FileCreate = 0xA5,
         FileCreateResponse = 0xA6,
         FileUpload = 0xA7,
@@ -818,14 +1304,16 @@ namespace RT.Common
         CreateGame1 = 0xF4,
         UtilAddLobbyWorld = 0xF5,
         UtilAddLobbyWorldResponse = 0xF6,
-        UtilAddGameWorld = 0xF7,
+        UtilAddGameWorldRequest = 0xF7,
         UtilAddGameWorldResponse = 0xF8,
-        UtilUpdateLobbyWorld = 0xF9,
+        UtilUpdateLobbyWorldRequest = 0xF9,
         UtilUpdateLobbyWorldResponse = 0xFA,
-        UtilUpdateGameWorld = 0xFB,
-        UtilUpdateGameWorldResponse = 0xFC,
+        UtilUpdateGameWorldRequest = 0xFB,
+        UtilUpdateGameWorldStatusResponse = 0xFC,
     }
+    #endregion
 
+    #region MediusLobbyExtMessageIds
     public enum MediusLobbyExtMessageIds : byte
     {
         CreateChannel1 = 0x00,
@@ -869,14 +1357,15 @@ namespace RT.Common
         VoteToBanPlayerRequest = 0x2C,
         GetServerTimeRequest = 0x2A,
         GetServerTimeResponse = 0x2B,
+        VoteToBanPlayer = 0x2C,
         SetAutoChatHistoryRequest = 0x2D,
         SetAutoChatHistoryResponse = 0x2E,
         CreateGame = 0x2F,
+        WorldReport = 0x30,
+        ClearGameListFilter = 0x31,
         GetGameListFilterResponse = 0x32,
         SetGameListFilter = 0x33,
         SetGameListFilterResponse = 0x34,
-        ClearGameListFilter = 0x31,
-        WorldReport = 0x30,
         GameInfo = 0x35,
         GameInfoResponse = 0x36,
         GameList_ExtraInfo = 0x37,
@@ -885,18 +1374,98 @@ namespace RT.Common
         AccountUpdateStats_OpenAccessResponse = 0x3A,
         AddPlayerToClan_ByClanOfficer = 0x3B,
         AddPlayerToClan_ByClanOfficerResponse = 0x3C,
-		// PS3
+
+        // PS3
+        CrossChatMessage = 0x3D,
+        CroxxChatFwdMessage = 0x3E,
+        QueueUpdateMessage = 0x3F,
+        QueueCompleteMessage = 0x40,
+        GetAccessLevelInfoRequest = 0x41,
+        GetAccessLevelInfoResponse = 0x42,
+        AccessLevelInfoUnsolicitedResponse = 0x43,
+
+        UtilGetTotalGamesFilteredRequest = 0x48,
+        UtilGetTotalGamesFilteredResponse = 0x49,
+        AccountLoginRequest1 = 0x4A,
+        AccountLoginResponse1 = 0x4B,
+        AccountLoginRequest2 = 0x4C,
+        AccountLoginResponse2 = 0x4D,
+        AddAliasRequest = 0x4E,
+        AddAliasResponse = 0x4F,
+        DeleteAliasRequest = 0x50,
+        DeleteAliasResponse = 0x51,
+        GetMyAliasesRequest = 0x52,
+        GetMyAliasesResponse = 0x53,
+        BuddySetListRequest = 0x54,
+        BuddySetListResponse = 0x55,
+        IgnoreSetListRequest = 0x56,
+        IgnoreSetListResponse = 0x57,
         TicketLogin = 0x58,
         TicketLoginResponse = 0x59,
+        SetLocalizationParamsRequest2 = 0x5A,
+        BinaryMessage1 = 0x5B,
+        BinaryFwdMessage1 = 0x5C,
+        MatchGetSupersetListRequest = 0x5D,
+        MatchGetSupersetListResponse = 0x5E,
+        GetBuddyInvitationsSentResponse = 0x61,
+        GetBuddyInvitationsSentResponse1 = 0x62,
+        AddToBuddyListConfirmationRequest = 0x63,
+        AddToBuddyListConfirmationResponse = 0x64,
+        PartyCreateRequest = 0x65,
+        PartyCreateResponse = 0x66,
+
+        GameListRequest = 0x69,
+        PartyListResponse = 0x6A,
+        PlayerIgnoresMeRequest = 0x6B,
+        PlayerIgnoresMeResponse = 0x6C,
+        NpIdPostRequest = 0x6D,
+        StatusResponse_0 = 0x6E,
+        MediusNpIdsGetByAccountNamesRequest = 0x6F,
+        MediusNpIdsGetByAccountNamesResponse = 0x70,
+        JoinLeastPopulatedChannelRequest = 0x71,
+        JoinLeastPopulatedChannelResponse = 0x72,
         GenericChatMessage1 = 0x73,
         GenericChatFwdMessage1 = 0x74,
         MediusTextFilter1 = 0x75,
         MediusTextFilterResponse1 = 0x76,
-        SetLocalizationParams1 = 0x7B,
+        GetMyClanMessagesResponse = 0x77,
+        MatchPartyRequest = 0x78,
+        MatchSetGameStateRequest = 0x79,
+        MatchSetGameStateStatusResponse = 0x7A,
+        SetLocalizationParamsRequest1 = 0x7B,
+        ClanRenameRequest = 0x7C,
+        ClanRenameStatusResponse = 0x7D,
+        SetGameListSortRequest = 0x7E,
+        SetGameListSortResponse = 0x7F,
+        GetGameListSortRequest = 0x80,
+        GetGameListSortResponse = 0x81,
+        ClearGameListSortRequest = 0x82,
+        ClearGameListSortStatusResponse = 0x83,
+        SetGameListSortPriorityRequest = 0x84,
+        SetGameListSortPriorityStatusResponse = 0x85,
         SetLobbyWorldFilter1 = 0x86,
-        SetLobbyWorldFilterResponse1 = 0x87,
+        SetLobbyWorldFilterResponse1 = 0x87, //PartyJoinByIndexRequest
+        MatchFindGameRequest = 0x88,
+        MatchFindGameStatusResponse = 0x89,
+        AssignedGameToJoinMessage = 0x8A,
         SessionBegin1 = 0x8B,
+        UpdateChannelRequest = 0x8C,
+        UpdateChannelResponse = 0x8D,
+        PartyJoinByIndexResponse = 0x8E,
+        PartyPlayerReport = 0x8F,
+        GroupJoinChannelRequest = 0x90,
+        AssignedLobbyToJoinMessage = 0x91,
+        MatchCancelRequest = 0x92,
+        MatchCancelStatusResponse = 0x93,
+        MatchCreateGameRequest = 0x94,
+        MatchCreateGameResponse = 0x95,
+        PartyList_ExtraInfoRequest = 0x96,
+        PartyList_ExtraInfoResponse = 0x97,
+        UnkR2Request = 0xA1,
+        UnkR2Response = 0xA2,
+        SetLocalizationParamsStatusResponse1 = 0xA4,
     }
+    #endregion
 
     public enum MGCL_TRUST_LEVEL : int
     {
@@ -936,7 +1505,71 @@ namespace RT.Common
         MGCL_CALL_MGCL_CLOSE_BEFORE_REINITIALIZING = -18,
         MGCL_NUM_GAME_WORLDS_PER_LOBBY_WORLD_EXCEEDED = -19,
     }
+    #region Medius Unified Community Gateway
+    public enum MUCG_MessageTypes : byte
+    {
+        MUCG_MsgVersion = 0,
+        MUCG_MsgError = 1,
+        MUCG_MsgLobbyInitialize = 2,
+        MUCG_MsgLobbyAcceptance = 3,
+        MUCG_MsgReqConnectedAccounts = 4,
+        MUCG_MsgAccountAdd = 5,
+        MUCG_MsgAccountConnect = 6,
+        MUCG_MsgAccountDisconnect = 7,
+        MUCG_MsgAccountRemove = 8,
+        MUCG_MsgReqBuddyListPresence = 9,
+        MUCG_MsgReqAccountPresence = 10,
+        MUCG_MsgC, at = 11,
+        MUCG_MsgPresence = 12,
+        MUCG_MsgBuddyAdd = 13,
+        MUCG_MsgBuddyRemove = 14,
+        MUCG_MsgSync = 15,
+        MUCG_MsgRecoverMode = 16,
+        MUCG_MsgRecoverAccount = 17,
+        MUCG_MsgProcessSync = 18,
+        MUCG_MsgEventOnOffline = 19,
+        MUCG_MsgEventBuddyListMod = 20,
+        MUCG_MsgClanAdd = 21,
+        MUCG_MsgClanRemove = 22,
+        MUCG_MsgClanMemberAdd = 23,
+        MUCG_MsgClanMemberRemove = 24,
+        MUCG_MsgClanInviteAdd = 25,
+        MUCG_MsgClanInviteRemove = 26,
+        MUCG_MsgClanChat = 27,
+        MUCG_MsgReqClanInvites = 28,
+        MUCG_MsgClanInvite = 29,
+        MUCG_MsgReqClanMembers = 30,
+        MUCG_MsgEventClanMemberListMod = 31,
+        MUCG_MsgEventClanInviteListMod = 32,
+        MUCG_MsgEventClanDisband = 33,
+        MUCG_MsgIgnoreAdd = 34,
+        MUCG_MsgIgnoreRemove = 35,
+        MUCG_MsgReqIgnoreListIDs = 36,
+        MUCG_MsgReqClanIDs = 37,
+        MUCG_MsgClanID = 38,
+        MUCG_Msg_End = 39,
+    }
 
+    public enum MUCG_RESULT : byte
+    {
+        MUCG_RESULT_OK = 0,
+        MUCG_RESULT_CONNECT_INIT_FAILED = 1,
+        MUCG_RESULT_CONNECT_FAILED = 2,
+        MUCG_RESULT_RT_MSG_ERROR = 3,
+        MUCG_RESULT_DISCONNECT_FAILURE = 4,
+        MUCG_RESULT_UPDATE_FAILURE = 5,
+        MUCG_RESULT_INCOMPATIBLE_VERSION = 6,
+        MUCG_RESULT_PARSE_ERROR = 7,
+        MUCG_RESULT_PACK_ERROR = 8,
+        MUCG_RESULT_INVALID_PARAMETER = 9,
+        MUCG_RESULT_DATA_PERSIST_FAILED = 10,
+        MUCG_RESULT_DATA_NOT_READY = 11,
+        MUCG_RESULT_GATEWAY_ERROR = 12,
+        MAX_MUCG_RESULT = 13
+    }
+    #endregion
+
+    #region Anti-Cheat
     public enum CheatQueryType : byte
     {
         DME_SERVER_CHEAT_QUERY_RAW_MEMORY = 0,
@@ -968,6 +1601,7 @@ namespace RT.Common
         DME_SERVER_CHEAT_QUERY_IOP_MEM_FREE = 27,
         DME_SERVER_CHEAT_QUERY_IOP_MEM_USED = 28
     }
+    #endregion
 
     public enum NetClientStatus : byte
     {
@@ -1020,13 +1654,48 @@ namespace RT.Common
         MediusRemoveToken = 3,
     }
 
+    #region MediusTokenCategoryType
+    /// <summary>
+    /// Enumeration used to identify category of a MediusToken
+    /// </summary>
     public enum MediusTokenCategoryType : int
     {
+        /// <summary>
+        /// Invalid token category
+        /// </summary>
         MediusInvalidToken = 0,
+        /// <summary>
+        /// Generic token category 1
+        /// </summary>
         MediusGenericToken1 = 1,
+        /// <summary>
+        /// Generic token category 2
+        /// </summary>
         MediusGenericToken2 = 2,
+        /// <summary>
+        /// Generic token category 3
+        /// </summary>
         MediusGenericToken3 = 3,
+        /// <summary>
+        /// Token Assosciated with the account
+        /// </summary>
         MediusAccountToken = 4,
+        /// <summary>
+        /// Token associated with a clan
+        /// </summary>
         MediusClanToken = 5,
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusTokenCategoryType = 0xffffff
+    }
+    #endregion
+
+    public enum MediusFileXferStatus : int
+    {
+        Error = 0,
+        Initial = 1,
+        Mid = 2,
+        End = 3
     }
 }

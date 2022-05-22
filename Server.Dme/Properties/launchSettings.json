@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "Server.Dme": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Server.Dme Docker"
+    },
+    "Profile 1": {
+      "commandName": "Executable",
+      "executablePath": "D:\\PC Development\\!Github Repos\\Deadlocked-Server-JumpSuit-WIP\\Server.Dme\\bin\\Debug\\netcoreapp3.1\\Server.Dme.exe"
+    }
+  }
+}

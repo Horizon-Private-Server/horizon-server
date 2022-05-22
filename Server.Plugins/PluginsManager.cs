@@ -31,13 +31,13 @@ namespace Server.Plugins
                 return;
 
             // Add a watcher so we can auto reload the plugins on change
-            this._watcher = new FileSystemWatcher(this._pluginDir.FullName, "*.dll");
-            this._watcher.IncludeSubdirectories = true;
-            this._watcher.Changed += (s, e) => { this._reload = true; };
-            this._watcher.Renamed += (s, e) => { this._reload = true; };
-            this._watcher.Created += (s, e) => { this._reload = true; };
-            this._watcher.Deleted += (s, e) => { this._reload = true; };
-            this._watcher.EnableRaisingEvents = true;
+            _watcher = new FileSystemWatcher(_pluginDir.FullName, "*.dll");
+            _watcher.IncludeSubdirectories = true;
+            _watcher.Changed += (s, e) => { _reload = true; };
+            _watcher.Renamed += (s, e) => { _reload = true; };
+            _watcher.Created += (s, e) => { _reload = true; };
+            _watcher.Deleted += (s, e) => { _reload = true; };
+            _watcher.EnableRaisingEvents = true;
 
             reloadPlugins();
         }
@@ -62,6 +62,7 @@ namespace Server.Plugins
 
         #region On Event
 
+
         public async Task OnEvent(PluginEvent eventType, object data)
         {
             if (!_pluginCallbackInstances.ContainsKey(eventType))
@@ -71,7 +72,7 @@ namespace Server.Plugins
             {
                 try
                 {
-                    await callback.Invoke(eventType, data);
+                    await callback.Invoke((Interface.PluginEvent)eventType, data);
                 }
                 catch (Exception e)
                 {
@@ -124,13 +125,13 @@ namespace Server.Plugins
 
         #region Register Event
 
-        public void RegisterAction(PluginEvent eventType, OnRegisterActionHandler callback)
+        public void RegisterAction(Interface.PluginEvent eventType, OnRegisterActionHandler callback)
         {
             List<OnRegisterActionHandler> callbacks;
-            if (!_pluginCallbackInstances.ContainsKey(eventType))
-                _pluginCallbackInstances.TryAdd(eventType, callbacks = new List<OnRegisterActionHandler>());
+            if (!_pluginCallbackInstances.ContainsKey((PluginEvent)eventType))
+                _pluginCallbackInstances.TryAdd((PluginEvent)eventType, callbacks = new List<OnRegisterActionHandler>());
             else
-                callbacks = _pluginCallbackInstances[eventType];
+                callbacks = _pluginCallbackInstances[(PluginEvent)eventType];
 
 
             callbacks.Add(callback);

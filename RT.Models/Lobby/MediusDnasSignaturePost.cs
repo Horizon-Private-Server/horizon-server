@@ -1,13 +1,10 @@
 using RT.Common;
 using Server.Common;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.DnasSignaturePost)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.DnasSignaturePost)]
     public class MediusDnasSignaturePost : BaseLobbyExtMessage
     {
 
@@ -54,15 +51,14 @@ namespace RT.Models
             writer.Write(new byte[3]);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"SessionKey:{SessionKey} " +
-$"DnasSignatureType:{DnasSignatureType} " +
-$"DnasSignatureLength:{DnasSignatureLength} " +
-$"DnasSignature:{BitConverter.ToString(DnasSignature)}";
+                $"MessageID: {MessageID} " +
+                $"SessionKey: {SessionKey} " +
+                $"DnasSignatureType: {DnasSignatureType} " +
+                $"DnasSignatureLength: {DnasSignatureLength} " +
+                $"DnasSignature: {BitConverter.ToString(DnasSignature)}";
         }
     }
 }

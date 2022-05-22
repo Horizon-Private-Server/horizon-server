@@ -3,9 +3,7 @@ using Server.Common;
 using Server.Common.Stream;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace RT.Models
 {
@@ -51,8 +49,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Targets:{string.Join(",", Targets)} " +
-                $"Payload:{BitConverter.ToString(Payload)}";
+                $"Targets: {string.Join(",", Targets)} " +
+                $"Payload: {BitConverter.ToString(Payload)}";
         }
     }
 }

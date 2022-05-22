@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileCreate)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileCreate)]
     public class MediusFileCreateRequest : BaseLobbyMessage, IMediusRequest
     {
 
@@ -46,13 +42,12 @@ namespace RT.Models
             writer.Write(new byte[3]);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"MediusFileToCreate:{MediusFileToCreate} " +
-$"MediusFileCreateAttributes:{MediusFileCreateAttributes}";
+                $"MessageID: {MessageID} " +
+                $"MediusFileToCreate: {MediusFileToCreate} " +
+                $"MediusFileCreateAttributes: {MediusFileCreateAttributes}";
         }
     }
 }

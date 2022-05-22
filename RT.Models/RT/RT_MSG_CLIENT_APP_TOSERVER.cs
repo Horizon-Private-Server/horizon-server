@@ -1,9 +1,4 @@
 ﻿using RT.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Text;
 using Server.Common;
 
 namespace RT.Models
@@ -38,7 +33,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Message:{Message}";
+                $"Message: {Message}";
         }
     }
 }

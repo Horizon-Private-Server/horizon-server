@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectGamesRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectGamesRequest)]
     public class MediusServerConnectGamesRequest : BaseMGCLMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerConnectGamesRequest;
@@ -46,15 +42,14 @@ namespace RT.Models
             writer.Write(SpectatorWorldID);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"ServerIP:{ServerIP} " +
-                $"ServerPort:{ServerPort} " +
-                $"GameWorldID:{GameWorldID} " +
-                $"SpectatorWorldID:{SpectatorWorldID}";
+                $"MessageID: {MessageID} " +
+                $"ServerIP: {ServerIP} " +
+                $"ServerPort: {ServerPort} " +
+                $"GameWorldID: {GameWorldID} " +
+                $"SpectatorWorldID: {SpectatorWorldID}";
         }
     }
 }

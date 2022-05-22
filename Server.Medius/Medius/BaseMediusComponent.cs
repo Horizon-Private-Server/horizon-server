@@ -109,7 +109,7 @@ namespace Server.Medius
                     data.IsBanned = r.IsCompletedSuccessfully && r.Result;
                     if (data.IsBanned == true)
                     {
-                        QueueBanMessage(data);
+                        QueueBanMessage(data, "Your IP has been banned!");
                     }
                     else
                     {
@@ -133,79 +133,78 @@ namespace Server.Medius
                     }
                 });
             };
-
-            // Remove client on disconnect
-            _scertHandler.OnChannelInactive += async (channel) =>
-            {
-                await Tick(channel);
-                string key = channel.Id.AsLongText();
-                if (_channelDatas.TryRemove(key, out var data))
+                // Remove client on disconnect
+                _scertHandler.OnChannelInactive += async (channel) =>
                 {
-                    data.State = ClientState.DISCONNECTED;
-                    data.ClientObject?.OnDisconnected();
-                }
+                    await Tick(channel);
+                    string key = channel.Id.AsLongText();
+                    if (_channelDatas.TryRemove(key, out var data))
+                    {
+                        data.State = ClientState.DISCONNECTED;
+                        data.ClientObject?.OnDisconnected();
+                    }
 
                 //
                 await OnDisconnected(channel);
-            };
+                };
 
-            // Queue all incoming messages
-            _scertHandler.OnChannelMessage += (channel, message) =>
-            {
-                string key = channel.Id.AsLongText();
-                if (_channelDatas.TryGetValue(key, out var data))
+                // Queue all incoming messages
+                _scertHandler.OnChannelMessage += (channel, message) =>
                 {
+                    string key = channel.Id.AsLongText();
+                    if (_channelDatas.TryGetValue(key, out var data))
+                    {
                     // Don't queue message if client is ignored
                     if (!data.Ignore)
-                    {
+                        {
                         // Don't queue if banned
                         if (data.IsBanned == null || data.IsBanned == false)
-                        {
-                            data.RecvQueue.Enqueue(message);
+                            {
+                                data.RecvQueue.Enqueue(message);
 
-                            if (message is RT_MSG_SERVER_ECHO serverEcho)
-                                data.ClientObject?.OnRecvServerEcho(serverEcho);
+                                if (message is RT_MSG_SERVER_ECHO serverEcho)
+                                    data.ClientObject?.OnRecvServerEcho(serverEcho);
+                            }
                         }
                     }
-                }
 
                 // Log if id is set
                 if (message.CanLog())
-                    Logger.Info($"RECV {data?.ClientObject},{channel}: {message}");
-            };
+                        Logger.Info($"RECV {data?.ClientObject},{channel}: {message}");
+                };
 
-            try
-            {
-                var bootstrap = new ServerBootstrap();
-                bootstrap
-                    .Group(_bossGroup, _workerGroup)
-                    .Channel<TcpServerSocketChannel>()
-                    //.Option(ChannelOption.SoBacklog, 100)
-                    .Handler(new LoggingHandler(LogLevel.INFO))
-                    .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
-                    {
-                        IChannelPipeline pipeline = channel.Pipeline;
+                try
+                {
+                    var bootstrap = new ServerBootstrap();
+                    bootstrap
+                        .Group(_bossGroup, _workerGroup)
+                        .Channel<TcpServerSocketChannel>()
+                        //.Option(ChannelOption.SoBacklog, 100)
+                        .Handler(new LoggingHandler(LogLevel.INFO))
+                        .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
+                        {
+                            IChannelPipeline pipeline = channel.Pipeline;
 
-                        pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
-                        pipeline.AddLast(new ScertEncoder());
-                        pipeline.AddLast(new ScertIEnumerableEncoder());
-                        pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
-                        pipeline.AddLast(new ScertDecoder());
-                        pipeline.AddLast(new ScertMultiAppDecoder());
-                        pipeline.AddLast(_scertHandler);
-                    }));
+                            pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
+                            pipeline.AddLast(new ScertEncoder());
+                            pipeline.AddLast(new ScertIEnumerableEncoder());
+                            pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
+                            pipeline.AddLast(new ScertDecoder());
+                            pipeline.AddLast(new ScertMultiAppDecoder());
+                            pipeline.AddLast(_scertHandler);
+                        }));
 
-                _boundChannel = await bootstrap.BindAsync(Port);
+                    _boundChannel = await bootstrap.BindAsync(Port);
+                }
+                finally
+                {
+
+                }
             }
-            finally
-            {
-
-            }
-        }
 
         public void Log()
         {
-            
+
         }
 
         public virtual async Task Stop()
@@ -323,9 +322,14 @@ namespace Server.Medius
 
                         if (data.ClientObject != null)
                         {
-                            // Echo
-                            if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
-                                data.ClientObject.QueueServerEcho();
+                            if (Program.Settings.ServerEchoUnsupported == true)
+                            {
+                                // Do NOT send Echo
+                            } else {
+                                // Echo
+                                if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
+                                    data.ClientObject.QueueServerEcho();
+                            }
 
                             // Add client object's send queue to responses
                             while (data.ClientObject.SendMessageQueue.TryDequeue(out var message))
@@ -385,13 +389,13 @@ namespace Server.Medius
                 // close channel
                 await channel.CloseAsync();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // Silence exception since the client probably just closed the socket before we could write to it
             }
             finally
             {
-                
+
             }
         }
 
@@ -455,7 +459,7 @@ namespace Server.Medius
                     Channel = clientChannel,
                     Message = clientApp.Message
                 };
-                await Program .Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                await Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }
@@ -467,7 +471,7 @@ namespace Server.Medius
                     Channel = clientChannel,
                     Message = serverApp.Message
                 };
-                await Program .Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                await Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }

@@ -1,9 +1,7 @@
 ﻿using RT.Common;
 using Server.Common;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -55,17 +53,17 @@ namespace RT.Models
 
         public override string ToString()
         {
-            return $"Filename:{Filename} " +
-                $"ServerChecksum:{BitConverter.ToString(ServerChecksum)} " +
-                $"FileID:{FileID} " +
-                $"FileSize:{FileSize} " +
-                $"CreationTimeStamp:{CreationTimeStamp} " +
-                $"OwnerID:{OwnerID} " +
-                $"GroupID:{GroupID} " +
-                $"OwnerPermissionRWX:{OwnerPermissionRWX} " +
-                $"GroupPermissionRWX:{GroupPermissionRWX} " +
-                $"GlobalPermissionRWX:{GlobalPermissionRWX} " +
-                $"ServerOperationID:{ServerOperationID}";
+            return $"Filename: {Filename} " +
+                $"ServerChecksum: {BitConverter.ToString(ServerChecksum)} " +
+                $"FileID: {FileID} " +
+                $"FileSize: {FileSize} " +
+                $"CreationTimeStamp: {CreationTimeStamp} " +
+                $"OwnerID: {OwnerID} " +
+                $"GroupID: {GroupID} " +
+                $"OwnerPermissionRWX: {OwnerPermissionRWX} " +
+                $"GroupPermissionRWX: {GroupPermissionRWX} " +
+                $"GlobalPermissionRWX: {GlobalPermissionRWX} " +
+                $"ServerOperationID: {ServerOperationID}";
         }
     }
 }

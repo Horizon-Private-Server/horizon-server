@@ -1,9 +1,6 @@
 ﻿using RT.Common;
 using Server.Common;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -41,11 +38,11 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"QueryType:{QueryType} " +
-                $"SequenceId:{SequenceId} " +
-                $"Address:{Address:X8} " +
-                $"Length:{Length} " +
-                $"Data:{(Data == null ? "" : BitConverter.ToString(Data))}";
+                $"QueryType: {QueryType} " +
+                $"SequenceId: {SequenceId} " +
+                $"Address: {Address:X8} " +
+                $"Length: {Length} " +
+                $"Data :{(Data == null ? "" : BitConverter.ToString(Data))}";
         }
     }
 }

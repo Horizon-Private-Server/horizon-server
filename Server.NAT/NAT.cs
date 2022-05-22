@@ -33,7 +33,7 @@ namespace Server.NAT
         }
 
         /// <summary>
-        /// Start the Dme Udp Client Server.
+        /// Start the NAT UDP Server.
         /// </summary>
         public async Task Start()
         {

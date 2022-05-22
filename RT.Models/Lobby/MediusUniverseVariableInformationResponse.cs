@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.UniverseVariableInformationResponse)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.UniverseVariableInformationResponse)]
     public class MediusUniverseVariableInformationResponse : BaseLobbyExtMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.UniverseVariableInformationResponse;
@@ -57,10 +53,8 @@ namespace RT.Models
                 Port = reader.ReadInt32();
             }
 
-
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_DESCRIPTION))
                 UniverseDescription = reader.ReadString(Constants.UNIVERSEDESCRIPTION_MAXLEN);
-
 
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_STATUS))
             {
@@ -78,8 +72,8 @@ namespace RT.Models
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_EXTRAINFO))
                 ExtendedInfo = reader.ReadString(Constants.UNIVERSE_EXTENDED_INFO_MAXLEN);
 
-            //if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
-            //    SvoURL = reader.ReadString(Constants.UNIVERSE_SVO_URL_MAXLEN);
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                SvoURL = reader.ReadString(Constants.UNIVERSE_SVO_URL_MAXLEN);
 
             EndOfList = reader.ReadBoolean();
         }
@@ -127,33 +121,31 @@ namespace RT.Models
             if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_EXTRAINFO))
                 writer.Write(ExtendedInfo, Constants.UNIVERSE_EXTENDED_INFO_MAXLEN);
 
-            //if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
-            //    writer.Write(SvoURL, Constants.UNIVERSE_SVO_URL_MAXLEN);
-
+            if (InfoFilter.IsSet(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                writer.Write(SvoURL, Constants.UNIVERSE_SVO_URL_MAXLEN);
 
             writer.Write(EndOfList);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"InfoFilter:{InfoFilter} " +
-$"UniverseID:{UniverseID} " +
-$"UniverseName:{UniverseName} " +
-$"DNS:{DNS} " +
-$"Port:{Port} " +
-$"UniverseDescription:{UniverseDescription} " +
-$"Status:{Status} " +
-$"UserCount:{UserCount} " +
-$"MaxUsers:{MaxUsers} " +
-$"UniverseBilling:{UniverseBilling} " +
-$"BillingSystemName:{BillingSystemName} " +
-$"ExtendedInfo:{ExtendedInfo} " +
-$"SvoURL:{SvoURL} " +
-$"EndOfList:{EndOfList}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode: {StatusCode} " +
+                $"InfoFilter: {InfoFilter} " +
+                $"UniverseID: {UniverseID} " +
+                $"UniverseName: {UniverseName} " +
+                $"DNS: {DNS} " +
+                $"Port: {Port} " +
+                $"UniverseDescription: {UniverseDescription} " +
+                $"Status :{Status} " +
+                $"UserCount: {UserCount} " +
+                $"MaxUsers: {MaxUsers} " +
+                $"UniverseBilling: {UniverseBilling} " +
+                $"BillingSystemName: {BillingSystemName} " +
+                $"ExtendedInfo: {ExtendedInfo} " +
+                $"SvoURL: {SvoURL} " +
+                $"EndOfList: {EndOfList}";
         }
     }
 }

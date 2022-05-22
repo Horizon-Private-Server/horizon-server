@@ -1,10 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Text;
 
 namespace RT.Models
 {
@@ -14,11 +9,16 @@ namespace RT.Models
 
         public override byte PacketType => (byte)MediusLobbyExtMessageIds.TicketLoginResponse;
 
-        public bool IsSuccess => StatusCode >= 0;
+        public bool IsSuccess => StatusCodeTicketLogin >= 0;
 
         public MessageId MessageID { get; set; }
 
-        public MediusCallbackStatus StatusCode;
+        public MediusCallbackStatus StatusCodeTicketLogin;
+        public MediusPasswordType PasswordType;
+
+        //Wrapped Account Login
+        public MessageId MessageID2 { get; set; }
+        public MediusCallbackStatus StatusCodeAccountLogin;
         public int AccountID;
         public MediusAccountType AccountType;
         public int MediusWorldID;
@@ -34,8 +34,12 @@ namespace RT.Models
 
             // 
             reader.ReadBytes(3);
-            StatusCode = reader.Read<MediusCallbackStatus>();
-            reader.ReadBytes(29);
+            StatusCodeTicketLogin = reader.Read<MediusCallbackStatus>();
+            PasswordType = reader.Read<MediusPasswordType>();
+
+            //AccountLoginResponse Wrapped
+            MessageID2 = reader.Read<MessageId>();
+            StatusCodeAccountLogin = reader.Read<MediusCallbackStatus>();
             AccountID = reader.ReadInt32();
             AccountType = reader.Read<MediusAccountType>();
             MediusWorldID = reader.ReadInt32();
@@ -52,8 +56,12 @@ namespace RT.Models
 
             // 
             writer.Write(new byte[3]);
-            writer.Write(StatusCode);
-            writer.Write(new byte[29]);
+            writer.Write(StatusCodeTicketLogin);
+            writer.Write(PasswordType);
+
+            //AccountLoginResponse Wrapped
+            writer.Write(MessageID2);
+            writer.Write(StatusCodeAccountLogin);
             writer.Write(AccountID);
             writer.Write(AccountType);
             writer.Write(MediusWorldID);
@@ -64,12 +72,15 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                    $"MessageID:{MessageID} " +
-                    $"StatusCode:{StatusCode} " +
-                    $"AccountID:{AccountID} " +
-                    $"AccountType:{AccountType} " +
-                    $"MediusWorldID:{MediusWorldID} " +
-                    $"ConnectInfo:{ConnectInfo}";
+                    $"MessageIDTicketLogin: {MessageID} " +
+                    $"StatusCodeTicketLogin: {StatusCodeTicketLogin} " +
+                    $"PasswordType: {PasswordType} " +
+                    $"MessageIDAccountLogin: {MessageID2} " +
+                    $"StatusCodeAccountLogin: {StatusCodeAccountLogin} " +
+                    $"AccountID: {AccountID} " +
+                    $"AccountType: {AccountType} " +
+                    $"MediusWorldID: {MediusWorldID} " +
+                    $"ConnectInfo: {ConnectInfo}";
         }
     }
 }

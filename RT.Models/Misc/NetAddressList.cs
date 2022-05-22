@@ -1,10 +1,8 @@
 ﻿using RT.Common;
 using Server.Common;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace RT.Models
 {
@@ -38,7 +36,7 @@ namespace RT.Models
 
         public override string ToString()
         {
-            return "NetAddresses:<" + String.Join(" ", AddressList?.Select(x => x.ToString())) + "> ";
+            return "NetAddresses:<" + string.Join(" ", AddressList?.Select(x => x.ToString())) + "> ";
         }
     }
 }

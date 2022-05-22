@@ -7,7 +7,10 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetMyIP)]
+    /// <summary>
+    /// Request to get your externally visible IP Address (NOT LAN Address).
+    /// </summary>
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetMyIP)]
     public class MediusGetMyIPRequest : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.GetMyIP;

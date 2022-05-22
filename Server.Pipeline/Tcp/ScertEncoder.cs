@@ -1,5 +1,4 @@
-﻿using DotNetty.Buffers;
-using DotNetty.Codecs;
+﻿using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using RT.Cryptography;
@@ -8,7 +7,6 @@ using RT.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Server.Pipeline.Tcp
 {
@@ -62,6 +60,5 @@ namespace Server.Pipeline.Tcp
             Logger.Error(exception);
             context.CloseAsync();
         }
-
     }
 }

@@ -1,7 +1,4 @@
-﻿using DotNetty.Codecs;
-using DotNetty.Codecs.Json;
-using DotNetty.Common.Internal.Logging;
-using DotNetty.Handlers.Logging;
+﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
@@ -16,7 +13,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using Server.Pipeline.Attribute;
 
@@ -251,9 +247,9 @@ namespace Server.Dme
             _mpsState = MPSConnectionState.CONNECTED;
 
             // 
-            if (!_mpsChannel.HasAttribute(Server.Pipeline.Constants.SCERT_CLIENT))
+            if (!_mpsChannel.HasAttribute(Pipeline.Constants.SCERT_CLIENT))
                 _mpsChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Set(new ScertClientAttribute());
-            var scertClient = _mpsChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            var scertClient = _mpsChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Get();
             scertClient.RsaAuthKey = Program.Settings.MPS.Key;
             scertClient.CipherService.GenerateCipher(scertClient.RsaAuthKey);
 
@@ -279,7 +275,7 @@ namespace Server.Dme
         private async Task ProcessMessage(BaseScertMessage message, IChannel serverChannel)
         {
             // Get ScertClient data
-            var scertClient = serverChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            var scertClient = serverChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Get();
 
             // 
             switch (message)
@@ -403,7 +399,7 @@ namespace Server.Dme
                         {
                             MessageID = createGameWithAttributesRequest.MessageID,
                             Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS,
-                            WorldID = world.WorldId
+                            WorldID = (int)createGameWithAttributesRequest.MediusWorldUID,
                         });
                         break;
                     }
@@ -458,7 +454,6 @@ namespace Server.Dme
         }
 
         #endregion
-
 
         #endregion
 

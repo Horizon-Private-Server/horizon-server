@@ -13,7 +13,7 @@ namespace Server.Dme.Config
     public class ServerSettings
     {
         /// <summary>
-        /// MUM connection information
+        /// MPS connection information
         /// </summary>
         public MPSSettings MPS { get; set; } = new MPSSettings();
 
@@ -42,19 +42,18 @@ namespace Server.Dme.Config
         /// </summary>
         public List<int> ApplicationIds { get; set; } = new List<int>();
 
-
+        #region PublicIp
         /// <summary>
         /// By default the server will grab its local ip.
         /// If this is set, it will use its public ip instead.
         /// </summary>
         public bool UsePublicIp { get; set; } = false;
-
         /// <summary>
         /// If UsePublicIp is set to true, allow overriding and skipping using dyndns's dynamic
         /// ip address finder, since it goes down often enough to throw exceptions
         /// </summary>
         public string PublicIpOverride { get; set; } = string.Empty;
-
+        #endregion
         /// <summary>
         /// Time since last echo response before timing the client out.
         /// </summary>
@@ -101,6 +100,29 @@ namespace Server.Dme.Config
         public int UDPPort { get; set; } = 50000;
 
         /// <summary>
+        /// This configuration setting enables the "auxilary udp" protocol. When enabled
+        /// clients can optionally establish an unreliable udp channel in parallel to 
+        /// their primary tcp channel.
+        /// </summary>
+        public bool EnableAuxUDP = false; // (DEFAULT: 0)
+
+        /// <summary>
+        /// The configuration setting determines whether or not the primary server thread 
+        /// will sleep.Sleeps are recommended when running multiple instances of RTIME
+        /// services on any given machine or when do any type of development on the same
+        /// machine running the game service. Sleeps should be disabled when performance
+        /// testing or running single instances of production services.
+        /// The DmeServerUseThreads will determine whether or not the server will
+        /// be multi-threaded.For most development, running the server as a single
+        /// thread (setting DmeServerWorldsPerThread to "0") is recommended.
+        /// </summary>
+        public bool EnableSleeps = false; // (DEFAULT: 1 for Win32; 0 for Linux)
+        public bool UseThread = false; // (DEFAULT: 0)
+
+        public bool EnableMedius = true; // (DEFAULT: 1)
+        public bool EnforceAuthentication = false; // (DEFAULT: 1)
+
+        /// <summary>
         /// Logging settings.
         /// </summary>
         public LogSettings Logging { get; set; } = new LogSettings();
@@ -109,12 +131,12 @@ namespace Server.Dme.Config
     public class MPSSettings
     {
         /// <summary>
-        /// Ip of the Medius Authentication server.
+        /// Ip of the Medius Proxy Server.
         /// </summary>
         public string Ip { get; set; } = "127.0.0.1";
 
         /// <summary>
-        /// The port that the Authentication server is bound to.
+        /// The port that the Proxy Server is bound to.
         /// </summary>
         public int Port { get; set; } = 10077;
 

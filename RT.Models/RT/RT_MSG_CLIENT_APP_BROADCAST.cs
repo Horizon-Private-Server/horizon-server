@@ -2,10 +2,7 @@
 using Server.Common;
 using Server.Common.Stream;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace RT.Models
 {
@@ -47,7 +44,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Contents:{BitConverter.ToString(Payload)}";
+                $"Contents: {BitConverter.ToString(Payload)}";
         }
     }
 }

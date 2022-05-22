@@ -15,7 +15,7 @@ namespace Server.Medius.PluginArgs
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Game:{Game}";
+                $"Game: {Game}";
         }
     }
 }

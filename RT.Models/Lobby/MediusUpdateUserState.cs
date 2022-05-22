@@ -1,17 +1,11 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.UpdateUserState)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.UpdateUserState)]
     public class MediusUpdateUserState : BaseLobbyMessage
     {
-
-
 		public override byte PacketType => (byte)MediusLobbyMessageIds.UpdateUserState;
 
         public string SessionKey; // SESSIONKEY_MAXLEN
@@ -39,12 +33,11 @@ namespace RT.Models
             writer.Write(UserAction);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-             $"SessionKey:{SessionKey} " +
-$"UserAction:{UserAction}";
+             $"SessionKey: {SessionKey} " +
+             $"UserAction: {UserAction}";
         }
     }
 }

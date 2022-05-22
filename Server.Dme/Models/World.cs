@@ -1,15 +1,11 @@
 ﻿using DotNetty.Common.Internal.Logging;
-using Microsoft.Extensions.Logging;
 using RT.Common;
 using RT.Models;
 using Server.Dme.PluginArgs;
-using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server.Dme.Models
@@ -262,7 +258,7 @@ namespace Server.Dme.Models
         public async Task OnPlayerJoined(ClientObject player)
         {
             // Plugin
-            await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
+            await Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this
@@ -294,7 +290,7 @@ namespace Server.Dme.Models
         public async Task OnPlayerLeft(ClientObject player)
         {
             // Plugin
-            await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
+            await Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this
@@ -373,6 +369,7 @@ namespace Server.Dme.Models
                 MessageID = request.MessageID,
                 DmeClientIndex = newClient.DmeId,
                 AccessKey = newClient.Token,
+                pubKey = request.ConnectInfo.ServerKey,
                 Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS
             };
         }
@@ -381,7 +378,7 @@ namespace Server.Dme.Models
 
         public override string ToString()
         {
-            return $"WorldId:{WorldId}, ClientCount:{Clients.Count}";
+            return $"WorldId: {WorldId}, ClientCount: {Clients.Count}";
         }
 
     }

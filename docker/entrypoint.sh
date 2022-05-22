@@ -14,4 +14,3 @@ dotnet Server.UniverseInformation.dll &
 echo "Starting Medius ..."
 cd /medius/
 dotnet Server.Medius.dll
-

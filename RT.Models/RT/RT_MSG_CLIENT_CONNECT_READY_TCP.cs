@@ -1,9 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -31,8 +27,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"StartOpt:{StartOpt} " +
-                $"RecvFlag:{RecvFlag}";
+                $"StartOpt: {StartOpt} " +
+                $"RecvFlag: {RecvFlag}";
         }
     }
 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using DotNetty.Common.Internal.Logging;
 using RT.Common;
@@ -11,7 +10,6 @@ using Server.Common;
 using Server.Database.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
-using Server.Plugins.Interface;
 
 namespace Server.Medius.Models
 {
@@ -38,6 +36,10 @@ namespace Server.Medius.Models
         public string SpectatorPassword;
         public byte[] GameStats = new byte[Constants.GAMESTATS_MAXLEN];
         public MediusGameHostType GameHostType;
+        public MGCL_GAME_HOST_TYPE GAME_HOST_TYPE;
+        public NetAddressList netAddressList;
+        public int WorldID;
+        public int AccountID;
         public int MinPlayers;
         public int MaxPlayers;
         public int GameLevel;
@@ -82,8 +84,16 @@ namespace Server.Medius.Models
         {
             if (createGame is MediusCreateGameRequest r)
                 FromCreateGameRequest(r);
+            else if (createGame is MediusCreateGameRequest0 r0)
+                FromCreateGameRequest0(r0);
             else if (createGame is MediusCreateGameRequest1 r1)
                 FromCreateGameRequest1(r1);
+            else if (createGame is MediusServerCreateGameOnMeRequest r2)
+                FromCreateGameOnMeRequest(r2);
+            else if (createGame is MediusServerCreateGameOnSelfRequest r3)
+                FromCreateGameOnSelfRequest(r3);
+            else if (createGame is MediusServerCreateGameOnSelfRequest0 r4)
+                FromCreateGameOnSelfRequest0(r4);
 
             Id = IdCounter++;
 
@@ -95,40 +105,40 @@ namespace Server.Medius.Models
             Host = client;
             SetWorldStatus(MediusWorldStatus.WorldPendingCreation).Wait();
 
-            Logger.Info($"Game {Id}:{GameName}: Created by {client}");
+            Logger.Info($"Game {Id}: {GameName}: Created by {client}");
         }
 
         public GameDTO ToGameDTO()
         {
             return new GameDTO()
             {
-                AppId = this.ApplicationId,
-                GameCreateDt = this.utcTimeCreated,
-                GameEndDt = this.utcTimeEnded,
-                GameStartDt = this.utcTimeStarted,
-                GameHostType = this.GameHostType.ToString(),
-                GameId = this.Id,
-                GameLevel = this.GameLevel,
-                GameName = this.GameName,
-                GameStats = this.GameStats,
-                GenericField1 = this.GenericField1,
-                GenericField2 = this.GenericField2,
-                GenericField3 = this.GenericField3,
-                GenericField4 = this.GenericField4,
-                GenericField5 = this.GenericField5,
-                GenericField6 = this.GenericField6,
-                GenericField7 = this.GenericField7,
-                GenericField8 = this.GenericField8,
-                MaxPlayers = this.MaxPlayers,
-                MinPlayers = this.MinPlayers,
-                PlayerCount = this.PlayerCount,
-                PlayerSkillLevel = this.PlayerSkillLevel,
-                RuleSet = this.RulesSet,
-                Metadata = this.Metadata,
-                WorldStatus = this.WorldStatus.ToString(),
+                AppId = ApplicationId,
+                GameCreateDt = utcTimeCreated,
+                GameEndDt = utcTimeEnded,
+                GameStartDt = utcTimeStarted,
+                GameHostType = GameHostType.ToString(),
+                GameId = Id,
+                GameLevel = GameLevel,
+                GameName = GameName,
+                GameStats = GameStats,
+                GenericField1 = GenericField1,
+                GenericField2 = GenericField2,
+                GenericField3 = GenericField3,
+                GenericField4 = GenericField4,
+                GenericField5 = GenericField5,
+                GenericField6 = GenericField6,
+                GenericField7 = GenericField7,
+                GenericField8 = GenericField8,
+                MaxPlayers = MaxPlayers,
+                MinPlayers = MinPlayers,
+                PlayerCount = PlayerCount,
+                PlayerSkillLevel = PlayerSkillLevel,
+                RuleSet = RulesSet,
+                Metadata = Metadata,
+                WorldStatus = WorldStatus.ToString(),
                 PlayerListCurrent = GetActivePlayerList(),
                 PlayerListStart = accountIdsAtStart,
-                Destroyed = this.destroyed
+                Destroyed = destroyed
             };
         }
 
@@ -155,6 +165,23 @@ namespace Server.Medius.Models
             Attributes = createGame.Attributes;
         }
 
+        private void FromCreateGameRequest0(MediusCreateGameRequest0 createGame)
+        {
+            ApplicationId = createGame.ApplicationID;
+            GameName = createGame.GameName;
+            MinPlayers = createGame.MinPlayers;
+            MaxPlayers = createGame.MaxPlayers;
+            GameLevel = createGame.GameLevel;
+            PlayerSkillLevel = createGame.PlayerSkillLevel;
+            RulesSet = createGame.RulesSet;
+            GenericField1 = createGame.GenericField1;
+            GenericField2 = createGame.GenericField2;
+            GenericField3 = createGame.GenericField3;
+            GamePassword = createGame.GamePassword;
+            GameHostType = createGame.GameHostType;
+        }
+
+
         private void FromCreateGameRequest1(MediusCreateGameRequest1 createGame)
         {
             ApplicationId = createGame.ApplicationID;
@@ -176,6 +203,80 @@ namespace Server.Medius.Models
             SpectatorPassword = createGame.SpectatorPassword;
             GameHostType = createGame.GameHostType;
             Attributes = createGame.Attributes;
+        }
+
+        private void FromCreateGameOnMeRequest(MediusServerCreateGameOnMeRequest serverCreateGameOnMe)
+        {
+            GameName = serverCreateGameOnMe.GameName;
+            GameStats = serverCreateGameOnMe.GameStats;
+            GamePassword = serverCreateGameOnMe.GamePassword;
+            ApplicationId = serverCreateGameOnMe.ApplicationID;
+            MaxPlayers = serverCreateGameOnMe.MaxClients;
+            MinPlayers = serverCreateGameOnMe.MinClients;
+            GameLevel = serverCreateGameOnMe.GameLevel;
+            PlayerSkillLevel = serverCreateGameOnMe.PlayerSkillLevel;
+            RulesSet = serverCreateGameOnMe.RulesSet;
+            GenericField1 = serverCreateGameOnMe.GenericField1;
+            GenericField2 = serverCreateGameOnMe.GenericField2;
+            GenericField3 = serverCreateGameOnMe.GenericField3;
+            GenericField4 = serverCreateGameOnMe.GenericField4;
+            GenericField5 = serverCreateGameOnMe.GenericField5;
+            GenericField6 = serverCreateGameOnMe.GenericField6;
+            GenericField7 = serverCreateGameOnMe.GenericField7;
+            GenericField8 = serverCreateGameOnMe.GenericField8;
+            GAME_HOST_TYPE = serverCreateGameOnMe.GameHostType;
+            netAddressList = serverCreateGameOnMe.AddressList;
+            WorldID = serverCreateGameOnMe.WorldID;
+            AccountID = serverCreateGameOnMe.AccountID;
+        }
+
+        private void FromCreateGameOnSelfRequest(MediusServerCreateGameOnSelfRequest serverCreateGameOnSelf)
+        {
+            GameName = serverCreateGameOnSelf.GameName;
+            GameStats = serverCreateGameOnSelf.GameStats;
+            GamePassword = serverCreateGameOnSelf.GamePassword;
+            ApplicationId = serverCreateGameOnSelf.ApplicationID;
+            MaxPlayers = serverCreateGameOnSelf.MaxClients;
+            MinPlayers = serverCreateGameOnSelf.MinClients;
+            GameLevel = serverCreateGameOnSelf.GameLevel;
+            PlayerSkillLevel = serverCreateGameOnSelf.PlayerSkillLevel;
+            RulesSet = serverCreateGameOnSelf.RulesSet;
+            GenericField1 = serverCreateGameOnSelf.GenericField1;
+            GenericField2 = serverCreateGameOnSelf.GenericField2;
+            GenericField3 = serverCreateGameOnSelf.GenericField3;
+            GenericField4 = serverCreateGameOnSelf.GenericField4;
+            GenericField5 = serverCreateGameOnSelf.GenericField5;
+            GenericField6 = serverCreateGameOnSelf.GenericField6;
+            GenericField7 = serverCreateGameOnSelf.GenericField7;
+            GenericField8 = serverCreateGameOnSelf.GenericField8;
+            GAME_HOST_TYPE = serverCreateGameOnSelf.GameHostType;
+            netAddressList = serverCreateGameOnSelf.AddressList;
+            WorldID = serverCreateGameOnSelf.WorldID;
+            AccountID = serverCreateGameOnSelf.AccountID;
+        }
+
+        private void FromCreateGameOnSelfRequest0(MediusServerCreateGameOnSelfRequest0 serverCreateGameOnSelf0)
+        {
+            GameName = serverCreateGameOnSelf0.GameName;
+            GameStats = serverCreateGameOnSelf0.GameStats;
+            GamePassword = serverCreateGameOnSelf0.GamePassword;
+            ApplicationId = serverCreateGameOnSelf0.ApplicationID;
+            MaxPlayers = serverCreateGameOnSelf0.MaxClients;
+            MinPlayers = serverCreateGameOnSelf0.MinClients;
+            GameLevel = serverCreateGameOnSelf0.GameLevel;
+            PlayerSkillLevel = serverCreateGameOnSelf0.PlayerSkillLevel;
+            RulesSet = serverCreateGameOnSelf0.RulesSet;
+            GenericField1 = serverCreateGameOnSelf0.GenericField1;
+            GenericField2 = serverCreateGameOnSelf0.GenericField2;
+            GenericField3 = serverCreateGameOnSelf0.GenericField3;
+            GenericField4 = serverCreateGameOnSelf0.GenericField4;
+            GenericField5 = serverCreateGameOnSelf0.GenericField5;
+            GenericField6 = serverCreateGameOnSelf0.GenericField6;
+            GenericField7 = serverCreateGameOnSelf0.GenericField7;
+            GenericField8 = serverCreateGameOnSelf0.GenericField8;
+            GAME_HOST_TYPE = serverCreateGameOnSelf0.GameHostType;
+            netAddressList = serverCreateGameOnSelf0.AddressList;
+            WorldID = serverCreateGameOnSelf0.WorldID;
         }
 
         public string GetActivePlayerList()
@@ -237,14 +338,14 @@ namespace Server.Medius.Models
             await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOINED_GAME, new OnPlayerGameArgs() { Player = player.Client, Game = this });
         }
 
-        public virtual void AddPlayer(ClientObject client)
+        public virtual async Task AddPlayer(ClientObject client)
         {
             // Don't add again
             if (Clients.Any(x => x.Client == client))
                 return;
 
             // 
-            Logger.Info($"Game {Id}:{GameName}: {client} added.");
+            Logger.Info($"Game {Id}: {GameName}: {client} added.");
 
             Clients.Add(new GameClient()
             {
@@ -259,7 +360,7 @@ namespace Server.Medius.Models
         protected virtual async Task OnPlayerLeft(GameClient player)
         {
             // 
-            Logger.Info($"Game {Id}:{GameName}: {player.Client} left.");
+            Logger.Info($"Game {Id}: {GameName}: {player.Client} left.");
 
             // 
             player.InGame = false;
@@ -275,7 +376,7 @@ namespace Server.Medius.Models
         public virtual async Task RemovePlayer(ClientObject client)
         {
             // 
-            Logger.Info($"Game {Id}:{GameName}: {client} removed.");
+            Logger.Info($"Game {Id}: {GameName}: {client} removed.");
 
             // Remove host
             if (Host == client)
@@ -311,7 +412,10 @@ namespace Server.Medius.Models
             if (report.MediusWorldID != Id)
                 return;
 
+
+            //Id = report.MediusWorldID;
             GameName = report.GameName;
+            GameStats = report.GameStats;
             MinPlayers = report.MinPlayers;
             MaxPlayers = report.MaxPlayers;
             GameLevel = report.GameLevel;
@@ -325,7 +429,40 @@ namespace Server.Medius.Models
             GenericField6 = report.GenericField6;
             GenericField7 = report.GenericField7;
             GenericField8 = report.GenericField8;
+
+            // Once the world has been closed then we force it closed.
+            // This is because when the host hits 'Play Again' they tell the server the world has closed (EndGameReport)
+            // but the existing clients tell the server the world is still active.
+            // This gives the host a "Game Name Already Exists" when they try to remake with the same name.
+            // This just fixes that. At the cost of the game not showing after a host leaves a game.
+            if (WorldStatus != MediusWorldStatus.WorldClosed && WorldStatus != report.WorldStatus)
+            {
+                await SetWorldStatus(report.WorldStatus);
+            }
+            else
+            {
+                // Update db
+                if (!utcTimeEnded.HasValue)
+                    _ = Program.Database.UpdateGame(this.ToGameDTO());
+            }
+        }
+
+        public virtual async Task OnWorldReport0(MediusWorldReport0 report)
+        {
+            // Ensure report is for correct game world
+            if (report.MediusWorldID != Id)
+                return;
+
+            GameName = report.GameName;
             GameStats = report.GameStats;
+            MinPlayers = report.MinPlayers;
+            MaxPlayers = report.MaxPlayers;
+            GameLevel = report.GameLevel;
+            PlayerSkillLevel = report.PlayerSkillLevel;
+            RulesSet = report.RulesSet;
+            GenericField1 = report.GenericField1;
+            GenericField2 = report.GenericField2;
+            GenericField3 = report.GenericField3;
 
             // Once the world has been closed then we force it closed.
             // This is because when the host hits 'Play Again' they tell the server the world has closed (EndGameReport)
@@ -355,7 +492,7 @@ namespace Server.Medius.Models
             destroyed = true;
 
             // 
-            Logger.Info($"Game {Id}:{GameName}: EndGame() called.");
+            Logger.Info($"Game {Id}: {GameName}: EndGame() called.");
 
             // Send to plugins
             await Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_DESTROYED, new OnGameArgs() { Game = this });
@@ -424,7 +561,8 @@ namespace Server.Medius.Models
                         utcTimeEnded = Utils.GetHighPrecisionUtcTime();
 
                         // Send to plugins
-                        await Program .Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_ENDED, new OnGameArgs() { Game = this });
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_ENDED, new OnGameArgs() { Game = this });
+
                         return;
                     }
             }

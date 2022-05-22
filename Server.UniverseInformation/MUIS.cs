@@ -13,13 +13,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using DotNetty.Handlers.Timeout;
 
-namespace Server.UnivereInformation
+namespace Server.UniverseInformation
 {
     public class MUIS
     {
@@ -47,11 +44,11 @@ namespace Server.UnivereInformation
 
         public MUIS(int port)
         {
-            this._port = port;
+            _port = port;
         }
 
         /// <summary>
-        /// Start the Dme Tcp Server.
+        /// Start the MUIS TCP Server.
         /// </summary>
         public virtual async void Start()
         {
@@ -214,23 +211,40 @@ namespace Server.UnivereInformation
                     {
                         data.ApplicationId = clientConnectTcp.AppId;
 
-                        if (scertClient.MediusVersion >= 109)
-                        {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
-                        }
-                        else
-                        {
+                        //   HSG:F Pubeta, HW:O 
+                        if(data.ApplicationId == 10538 || data.ApplicationId == 10582 || data.ApplicationId == 10130) {
                             Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                             {
                                 IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
                             }, clientChannel);
-                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
+
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                        } else
+                        {
+                            if (scertClient.MediusVersion <= 109)
+                            {
+                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("004802") }, clientChannel);
+                            }
+                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                            {
+                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
+                            }, clientChannel);
+
+                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
                         }
-                        break;
+
+                        
+
+                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                        if (scertClient.MediusVersion >= 109)
+                        {
+                            //Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                        }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
                             UNK_00 = 0,
@@ -242,7 +256,8 @@ namespace Server.UnivereInformation
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
-                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -258,6 +273,11 @@ namespace Server.UnivereInformation
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
                         ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
+                        break;
+                    }
+                case RT_MSG_CLIENT_APP_LIST clientAppList:
+                    {
+
                         break;
                     }
 
@@ -287,50 +307,108 @@ namespace Server.UnivereInformation
                     {
                         if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var info))
                         {
-                            // 
-                            if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                            //GT4 or DDOA, or HOA
+                            if(data.ApplicationId == 10782 || data.ApplicationId == 10538 || data.ApplicationId == 10130 )
                             {
-                                Queue(new RT_MSG_SERVER_APP()
+                                // MUIS Standard Flow - Deprecated after Medius Client/Server Library 1.50
+                                if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_UNIVERSES))
                                 {
-                                    Message = new MediusUniverseVariableSvoURLResponse()
+                                    Queue(new RT_MSG_SERVER_APP()
                                     {
-                                        MessageID = new MessageId(),
-                                        URL = info.SvoURL
+                                        Message = new MediusUniverseStatusListResponse()
+                                        {
+                                            MessageID = new MessageId(),
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            UniverseName = info.Name,
+                                            DNS = info.Endpoint,
+                                            Port = info.Port,
+                                            UniverseDescription = info.Description,
+                                            Status = info.Status,
+                                            UserCount = info.UserCount,
+                                            MaxUsers = info.MaxUsers,
+                                            EndOfList = true,
+                                        }
+                                    }, clientChannel);
+
+                                    if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_NEWS))
+                                    {
+                                        Queue(new RT_MSG_SERVER_APP()
+                                        {
+                                            Message = new MediusUniverseNewsResponse()
+                                            {
+                                                MessageID = getUniverseInfo.MessageID,
+                                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                                News = "Simulated News!",
+                                                EndOfList = true
+                                            }
+                                        }, clientChannel);
                                     }
-                                }, clientChannel);
-                            }
-
-                            Queue(new RT_MSG_SERVER_APP()
-                            {
-                                Message = new MediusUniverseVariableInformationResponse()
-                                {
-                                    MessageID = getUniverseInfo.MessageID,
-                                    StatusCode = MediusCallbackStatus.MediusSuccess,
-                                    InfoFilter = getUniverseInfo.InfoType,
-                                    UniverseID = info.UniverseId,
-                                    ExtendedInfo = info.ExtendedInfo,
-                                    UniverseName = info.Name,
-                                    UniverseDescription = info.Description,
-                                    SvoURL = info.SvoURL,
-                                    DNS = info.Endpoint,
-                                    Port = info.Port,
-                                    EndOfList = true
+                                    /*
+                                    Queue(new RT_MSG_SERVER_APP()
+                                    {
+                                        Message = new MediusUniverseNewsResponse()
+                                        {
+                                            MessageID = getUniverseInfo.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            News = "Simulated News!",
+                                            EndOfList = true
+                                        }
+                                    }, clientChannel);
+                                    */
                                 }
-                            }, clientChannel);
-
-                            if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_NEWS))
+                            } 
+                            else
                             {
+                                //Send Variable Flow
+                                // 
+                                if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                                {
+                                    Queue(new RT_MSG_SERVER_APP()
+                                    {
+                                        Message = new MediusUniverseVariableSvoURLResponse()
+                                        {
+                                            MessageID = new MessageId(),
+                                            URL = info.SvoURL
+                                        }
+                                    }, clientChannel);
+                                }
+
                                 Queue(new RT_MSG_SERVER_APP()
                                 {
-                                    Message = new MediusUniverseNewsResponse()
+                                    Message = new MediusUniverseVariableInformationResponse()
                                     {
                                         MessageID = getUniverseInfo.MessageID,
                                         StatusCode = MediusCallbackStatus.MediusSuccess,
-                                        News = "News!",
+                                        InfoFilter = getUniverseInfo.InfoType,
+                                        UniverseID = info.UniverseId,
+                                        ExtendedInfo = info.ExtendedInfo,
+                                        UniverseName = info.Name,
+                                        UniverseDescription = info.Description,
+                                        SvoURL = info.SvoURL,
+                                        Status = info.Status,
+                                        UserCount = info.UserCount,
+                                        MaxUsers = info.MaxUsers,
+                                        DNS = info.Endpoint,
+                                        Port = info.Port,
                                         EndOfList = true
                                     }
                                 }, clientChannel);
+
+                                if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_NEWS))
+                                {
+                                    Queue(new RT_MSG_SERVER_APP()
+                                    {
+                                        Message = new MediusUniverseNewsResponse()
+                                        {
+                                            MessageID = getUniverseInfo.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            News = "Simulated News!",
+                                            EndOfList = true
+                                        }
+                                    }, clientChannel);
+                                }
                             }
+                            
                         }
                         else
                         {

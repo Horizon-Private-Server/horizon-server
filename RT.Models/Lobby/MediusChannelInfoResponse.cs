@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.ChannelInfoResponse)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.ChannelInfoResponse)]
     public class MediusChannelInfoResponse : BaseLobbyMessage, IMediusResponse
     {
 
@@ -54,15 +50,14 @@ namespace RT.Models
             writer.Write(MaxPlayers);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"LobbyName:{LobbyName} " +
-$"ActivePlayerCount:{ActivePlayerCount} " +
-$"MaxPlayers:{MaxPlayers}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode: {StatusCode} " +
+                $"LobbyName: {LobbyName} " +
+                $"ActivePlayerCount: {ActivePlayerCount} " +
+                $"MaxPlayers: {MaxPlayers}";
         }
     }
 }

@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.Policy)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.Policy)]
     public class MediusGetPolicyRequest : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.Policy;
@@ -45,13 +41,12 @@ namespace RT.Models
             writer.Write(Policy);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"SessionKey:{SessionKey} " +
-$"Policy:{Policy}";
+                $"MessageID: {MessageID} " +
+                $"SessionKey: {SessionKey} " +
+                $"Policy: {Policy}";
         }
     }
 }

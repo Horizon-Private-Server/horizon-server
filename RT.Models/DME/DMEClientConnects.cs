@@ -50,11 +50,11 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                 $"UNK_00:{UNK_00} " +
-                 $"PlayerIndex:{PlayerIndex} " +
-                 $"PlayerIp:{PlayerIp} " +
-                 $"UNK_06:{UNK_06} " +
-                 $"Key:{Key}";
+                 $"UNK_00: {UNK_00} " +
+                 $"PlayerIndex: {PlayerIndex} " +
+                 $"PlayerIp: {PlayerIp} " +
+                 $"UNK_06: {UNK_06} " +
+                 $"Key: {Key}";
         }
     }
 }

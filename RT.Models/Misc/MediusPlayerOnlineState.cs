@@ -1,10 +1,6 @@
-﻿using DotNetty.Common.Internal;
-using RT.Common;
+﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -39,11 +35,11 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"ConnectStatus:{ConnectStatus} " +
-                $"MediusLobbyWorldID:{MediusLobbyWorldID} " +
-                $"MediusGameWorldID:{MediusGameWorldID} " +
-                $"LobbyName:{LobbyName} " +
-                $"GameName:{GameName}";
+                $"ConnectStatus: {ConnectStatus} " +
+                $"MediusLobbyWorldID: {MediusLobbyWorldID} " +
+                $"MediusGameWorldID: {MediusGameWorldID} " +
+                $"LobbyName: {LobbyName} " +
+                $"GameName: {GameName}";
         }
     }
 }

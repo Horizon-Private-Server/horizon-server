@@ -57,9 +57,9 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"Policy:{Policy} " +
-$"EndOfText:{EndOfText}";
+                $"StatusCode:{StatusCode} " +
+                $"Policy:{Policy} " +
+                $"EndOfText:{EndOfText}";
         }
 
         public static List<MediusGetPolicyResponse> FromText(MessageId messageId, string policy)

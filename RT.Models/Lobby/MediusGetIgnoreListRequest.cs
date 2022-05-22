@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetIgnoreList)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetIgnoreList)]
     public class MediusGetIgnoreListRequest : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.GetIgnoreList;
@@ -42,12 +38,11 @@ namespace RT.Models
             writer.Write(new byte[2]);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"SessionKey:{SessionKey}";
+                $"MessageID: {MessageID} " +
+                $"SessionKey: {SessionKey}";
         }
     }
 }

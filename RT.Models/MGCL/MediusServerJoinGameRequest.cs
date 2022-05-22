@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerJoinGameRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerJoinGameRequest)]
     public class MediusServerJoinGameRequest : BaseMGCLMessage, IMediusRequest
     {
 
@@ -38,12 +34,11 @@ namespace RT.Models
             writer.Write(ConnectInfo);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"ConnectInfo:{ConnectInfo}";
+                $"MessageID: {MessageID} " +
+                $"ConnectInfo: {ConnectInfo}";
         }
     }
 }

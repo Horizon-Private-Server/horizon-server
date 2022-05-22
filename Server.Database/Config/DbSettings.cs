@@ -1,12 +1,4 @@
-﻿using DotNetty.Common.Internal.Logging;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-
-namespace Server.Database.Config
+﻿namespace Server.Database.Config
 {
     public class DbSettings
     {
@@ -19,13 +11,12 @@ namespace Server.Database.Config
         /// <summary>
         /// Database url.
         /// </summary>
-        public string DatabaseUrl { get; set; } = "http://localhost:80";
+        public string DatabaseUrl { get; set; } = null;
 
         /// <summary>
         /// Database username.
         /// </summary>
         public string DatabaseUsername { get; set; } = null;
-
 
         /// <summary>
         /// Database password.

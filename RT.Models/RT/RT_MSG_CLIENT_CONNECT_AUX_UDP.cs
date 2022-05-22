@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Text;
+﻿using System.Net;
 using RT.Common;
 using Server.Common;
 
@@ -45,12 +41,12 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"WorldId:{WorldId} " +
-                $"ApplicationId:{ApplicationId} " +
-                $"EndPoint:{EndPoint} " +
-                $"PlayerId:{PlayerId} " +
-                $"ScertId:{ScertId} " +
-                $"UNK_26:{UNK_26}";
+                $"WorldId: {WorldId} " +
+                $"ApplicationId: {ApplicationId} " +
+                $"EndPoint: {EndPoint} " +
+                $"PlayerId: {PlayerId} " +
+                $"ScertId: {ScertId} " +
+                $"UNK_26: {UNK_26}";
         }
     }
 }

@@ -1,13 +1,10 @@
 using RT.Common;
 using Server.Common;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryFwdMessage)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryFwdMessage)]
     public class MediusBinaryFwdMessage : BaseLobbyExtMessage
     {
 
@@ -49,14 +46,13 @@ namespace RT.Models
             writer.Write(Message, Constants.BINARYMESSAGE_MAXLEN);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"OriginatorAccountID:{OriginatorAccountID} " +
-                $"MessageType:{MessageType} " +
-                $"Message:{BitConverter.ToString(Message)}";
+                $"MessageID: {MessageID} " +
+                $"OriginatorAccountID: {OriginatorAccountID} " +
+                $"MessageType: {MessageType} " +
+                $"Message: {BitConverter.ToString(Message)}";
         }
     }
 }

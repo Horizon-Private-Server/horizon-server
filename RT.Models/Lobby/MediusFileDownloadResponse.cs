@@ -21,7 +21,7 @@ namespace RT.Models
         public int iStartByteIndex;
         public int iDataSize;
         public int iPacketNumber;
-        public int iXferStatus;
+        public MediusFileXferStatus iXferStatus;
         public MediusCallbackStatus StatusCode;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
@@ -31,7 +31,7 @@ namespace RT.Models
             iStartByteIndex = reader.ReadInt32();
             iDataSize = reader.ReadInt32();
             iPacketNumber = reader.ReadInt32();
-            iXferStatus = reader.ReadInt32();
+            iXferStatus = reader.Read<MediusFileXferStatus>();
             StatusCode = reader.Read<MediusCallbackStatus>();
 
             // 
@@ -64,13 +64,13 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"Data:{Data} " +
-$"iStartByteIndex:{iStartByteIndex} " +
-$"iDataSize:{iDataSize} " +
-$"iPacketNumber:{iPacketNumber} " +
-$"iXferStatus:{iXferStatus} " +
-$"StatusCode:{StatusCode}";
+                $"MessageID: {MessageID} " +
+                $"Data: {Data} " +
+                $"iStartByteIndex: {iStartByteIndex} " +
+                $"iDataSize: {iDataSize} " +
+                $"iPacketNumber: {iPacketNumber} " +
+                $"iXferStatus: {iXferStatus} " +
+                $"StatusCode: {StatusCode}";
         }
     }
 }

@@ -20,8 +20,8 @@ namespace Server.Medius.PluginArgs
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Player:{Player} " +
-                $"Game:{Game}";
+                $"Player: {Player} " +
+                $"Game: {Game}";
         }
     }
 }

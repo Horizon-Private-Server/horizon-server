@@ -2,6 +2,16 @@
   "profiles": {
     "Server.Medius": {
       "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Server.Medius Docker"
+    },
+    "Profile 1": {
+      "commandName": "Executable",
+      "executablePath": "D:\\PC Development\\!Github Repos\\Deadlocked-Server-Private-Revamp\\Server.Medius\\bin\\Debug\\netcoreapp3.1\\Server.Medius.exe"
+    },
+    "Docker (1)": {
+      "commandName": "Docker"
     }
   }
 }

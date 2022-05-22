@@ -1,9 +1,5 @@
-﻿using Org.BouncyCastle.Math;
-using RT.Cryptography;
+﻿using RT.Cryptography;
 using RT.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Server.Pipeline.Attribute
 {
@@ -11,7 +7,8 @@ namespace Server.Pipeline.Attribute
     {
         public static RsaKeyPair DefaultRsaAuthKey = null;
 
-        public int MediusVersion { get; set; }
+        public int? MediusVersion { get; set; }
+        public int ApplicationID { get; set; }
         public bool IsPS3Client => MediusVersion >= 112;
         public CipherService CipherService { get; set; } = null;
         public RsaKeyPair RsaAuthKey { get; set; } = null;
@@ -23,6 +20,7 @@ namespace Server.Pipeline.Attribute
             OnMediusVersionChanged();
         }
 
+        #region OnMessage
         public bool OnMessage(BaseScertMessage message)
         {
             if (message is RT_MSG_CLIENT_HELLO clientHello)
@@ -33,6 +31,7 @@ namespace Server.Pipeline.Attribute
             }
             else if (message is RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp && MediusVersion == 0)
             {
+                ApplicationID = clientConnectTcp.AppId;
                 MediusVersion = 108;
                 OnMediusVersionChanged();
                 return true;
@@ -40,7 +39,9 @@ namespace Server.Pipeline.Attribute
 
             return false;
         }
+        #endregion
 
+        #region OnMediusVersionChanged
         private void OnMediusVersionChanged()
         {
             if (IsPS3Client)
@@ -54,5 +55,6 @@ namespace Server.Pipeline.Attribute
                 CipherService.SetCipher(CipherContext.RSA_AUTH, (RsaAuthKey ?? DefaultRsaAuthKey).ToPS2());
             }
         }
+        #endregion
     }
 }

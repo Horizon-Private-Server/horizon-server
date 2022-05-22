@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSetAttributesRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSetAttributesRequest)]
     public class MediusServerSetAttributesRequest : BaseMGCLMessage, IMediusRequest
     {
 
@@ -41,13 +37,12 @@ namespace RT.Models
             writer.Write(ListenServerAddress);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"Attributes:{Attributes} " +
-                $"ListenServerAddress:{ListenServerAddress}";
+                $"MessageID: {MessageID} " +
+                $"Attributes: {Attributes} " +
+                $"ListenServerAddress: {ListenServerAddress}";
         }
     }
 }

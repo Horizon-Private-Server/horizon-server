@@ -36,7 +36,7 @@ namespace RT.Models
         public MediusWorldSecurityLevelType SecurityLevel;
         public MediusWorldStatus WorldStatus;
         public MediusGameHostType GameHostType;
-        public string GameName; // GAMENAME_MAXLEN
+        public string GameName;
         public byte[] GameStats = new byte[Constants.GAMESTATS_MAXLEN];
         public bool EndOfList;
 
@@ -137,7 +137,7 @@ $"SecurityLevel:{SecurityLevel} " +
 $"WorldStatus:{WorldStatus} " +
 $"GameHostType:{GameHostType} " +
 $"GameName:{GameName} " +
-$"GameStats:{GameStats} " +
+$"GameStats:{BitConverter.ToString(GameStats)} " +
 $"EndOfList:{EndOfList}";
         }
     }

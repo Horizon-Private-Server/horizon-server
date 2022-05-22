@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginRequest)]
     public class MediusServerSessionBeginRequest : BaseMGCLMessage, IMediusRequest
     {
 
@@ -54,12 +50,12 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"LocationID:{LocationID} " +
-                $"ApplicationID:{ApplicationID} " +
-                $"ServerType:{ServerType} " +
-                $"ServerVersion:{ServerVersion} " +
-                $"Port:{Port}";
+                $"MessageID: {MessageID} " +
+                $"LocationID: {LocationID} " +
+                $"ApplicationID: {ApplicationID} " +
+                $"ServerType: {ServerType} " +
+                $"ServerVersion: {ServerVersion} " +
+                $"Port: {Port}";
         }
     }
 }

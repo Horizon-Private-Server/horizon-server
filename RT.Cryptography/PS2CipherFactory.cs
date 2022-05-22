@@ -28,7 +28,6 @@ namespace RT.Cryptography
 
             return CreateSymFromPublicKey(context, publicKey);
         }
-
         public ICipher CreateNew(RsaKeyPair rsaKeyPair)
         {
             return rsaKeyPair?.ToPS2();

@@ -49,10 +49,10 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID}" + " " +
-                $"SessionKey:{SessionKey}" + " " +
-                $"PlayerAccountID:{PlayerAccountID}" + " " +
-                $"WelcomeMessage:{WelcomeMessage}";
+                $"MessageID: {MessageID}" + " " +
+                $"SessionKey: {SessionKey}" + " " +
+                $"PlayerAccountID: {PlayerAccountID}" + " " +
+                $"WelcomeMessage: {WelcomeMessage}";
         }
     }
 }

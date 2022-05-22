@@ -1,15 +1,11 @@
 ﻿using RT.Common;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
     [ScertMessage(RT_MSG_TYPE.RT_MSG_SERVER_CRYPTKEY_GAME)]
     public class RT_MSG_SERVER_CRYPTKEY_GAME : BaseScertMessage
     {
-
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_SERVER_CRYPTKEY_GAME;
 
         // 

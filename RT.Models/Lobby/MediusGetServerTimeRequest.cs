@@ -14,8 +14,6 @@ namespace RT.Models
 
         public MessageId MessageID { get; set; }
 
-
-
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
@@ -37,8 +35,8 @@ namespace RT.Models
 
         public override string ToString()
         {
-return base.ToString() + " " +
-                $"MessageID:{MessageID}";
+                return base.ToString() + " " +
+                $"MessageID: {MessageID}";
         }
     }
 }

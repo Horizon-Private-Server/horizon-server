@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectNotification)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectNotification)]
     public class MediusServerConnectNotification : BaseMGCLMessage
     {
         public override byte PacketType => (byte)MediusMGCLMessageIds.ServerConnectNotification;
@@ -40,13 +36,12 @@ namespace RT.Models
             writer.Write(new byte[3]);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"ConnectEventType:{ConnectEventType} " +
-                $"MediusWorldUID:{MediusWorldUID} " +
-                $"PlayerSessionKey:{PlayerSessionKey}";
+                $"ConnectEventType: {ConnectEventType} " +
+                $"MediusWorldUID: {MediusWorldUID} " +
+                $"PlayerSessionKey: {PlayerSessionKey}";
         }
     }
 }

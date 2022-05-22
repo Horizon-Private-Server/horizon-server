@@ -1,8 +1,4 @@
 ﻿using RT.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -29,8 +25,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"ClientTime:{ClientTime} " +
-                $"ServerTime:{ServerTime}";
+                $"ClientTime: {ClientTime} " +
+                $"ServerTime: {ServerTime}";
         }
     }
 }

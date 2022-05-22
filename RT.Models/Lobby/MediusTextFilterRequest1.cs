@@ -1,14 +1,11 @@
 using RT.Common;
 using Server.Common;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.MediusTextFilter1)]
-    public class MediusTextFilterRequest1 : BaseLobbyMessage, IMediusRequest
+    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.MediusTextFilter1)]
+    public class MediusTextFilterRequest1 : BaseLobbyExtMessage, IMediusRequest
     {
 
 		public override byte PacketType => (byte)MediusLobbyExtMessageIds.MediusTextFilter1;
@@ -16,7 +13,9 @@ namespace RT.Models
         public MessageId MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public string Text; // variable len
+        public MediusTextFilterType TextFilter;
+        public uint TextSize;
+        public char[] Text; // variable len
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -28,9 +27,9 @@ namespace RT.Models
 
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
-            reader.ReadBytes(4);
-            int textLen = reader.ReadInt32();
-            Text = reader.ReadString(textLen);
+            TextFilter = reader.Read<MediusTextFilterType>();
+            TextSize = reader.ReadUInt32();
+            Text = reader.ReadChars(Convert.ToInt32(TextSize));
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -43,18 +42,19 @@ namespace RT.Models
 
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
-            writer.Write(new byte[4]);
-            writer.Write(Text?.Length ?? 0);
-            writer.Write(Text, Text?.Length ?? 0);
+            writer.Write(TextFilter);
+            writer.Write(TextSize);
+            writer.Write(Text);
         }
-
 
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"SessionKey:{SessionKey} " +
-                $"Text:{Text}";
+                $"MessageID: {MessageID} " +
+                $"SessionKey: {SessionKey} " +
+                $"TextFilter: {TextFilter} " +
+                $"TextSize: {TextSize} " +
+                $"Text:{Convert.ToString(Text)}";
         }
     }
 }

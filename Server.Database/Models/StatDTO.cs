@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Server.Database.Models
+﻿namespace Server.Database.Models
 {
     public class LeaderboardDTO
     {
@@ -82,7 +78,6 @@ namespace Server.Database.Models
         /// </summary>
         public int[] Stats { get; set; }
     }
-
     public class ClanStatPostDTO
     {
         /// <summary>

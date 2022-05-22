@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,7 +21,7 @@ namespace Server.Database
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<DbController>();
 
-        private DbSettings _settings = new DbSettings();
+        public DbSettings _settings = new DbSettings();
 
         private int _simulatedAccountIdCounter = 1;
         private int _simulatedClanIdCounter = 1;
@@ -46,6 +47,18 @@ namespace Server.Database
             }
         }
 
+        #region Sub Classes
+        public class IpBan
+        {
+            public string IpAddress { get; set; }
+        }
+
+        public class MacBan 
+        {
+            public string MacAddress { get; set; }
+        }
+        #endregion
+
         /// <summary>
         /// Authenticate with middleware.
         /// </summary>
@@ -69,7 +82,6 @@ namespace Server.Database
             return !string.IsNullOrEmpty(_dbAccessToken);
         }
 
-
         #region Account
 
         /// <summary>
@@ -90,6 +102,34 @@ namespace Server.Database
                 else
                 {
                     result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}&AppId={appId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get account by name.
+        /// </summary>
+        /// <param name="name">Case insensitive name of player.</param>
+        /// <returns>Returns account.</returns>
+        public async Task<AccountDTO> GetAccountByName(string name)
+        {
+            AccountDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = _simulatedAccounts.FirstOrDefault(x => x.AccountName.ToLower() == name.ToLower());
+                }
+                else
+                {
+                    result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}");
                 }
             }
             catch (Exception e)
@@ -199,6 +239,28 @@ namespace Server.Database
                 else
                 {
                     result = (await GetDbAsync($"Account/deleteAccount?AccountName={accountName}&AppId={appId}")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+            return result;
+        }
+
+        public async Task<bool> PostAccountUpdatePassword(int accountId, string oldPassword, string newPassword) 
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await GetDbAsync($"Account/updateAccountPassword?accountId={accountId}&oldPassowrd={oldPassword}&newPassword={newPassword}")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)
@@ -464,6 +526,8 @@ namespace Server.Database
             return result;
         }
 
+        
+
         /// <summary>
         /// Gets whether or not the ip is banned.
         /// </summary>
@@ -479,7 +543,12 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", $"{ip}");
+                    IpBan IpBanArray = new IpBan
+                    {
+                        IpAddress = ip
+                    };
+                    System.Text.Json.JsonSerializer.Serialize(IpBanArray);
+                    result = await PostDbAsync<bool>($"Account/getIpIsBanned", IpBanArray);
                 }
             }
             catch (Exception e)
@@ -506,7 +575,12 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", $"{mac}");
+                    MacBan MacBanArray = new MacBan
+                    {
+                        MacAddress = mac
+                    };
+                    System.Text.Json.JsonSerializer.Serialize(MacBanArray);
+                    result = await PostDbAsync<bool>($"Account/getMacIsBanned", MacBanArray);
                 }
             }
             catch (Exception e)
@@ -726,6 +800,46 @@ namespace Server.Database
         /// <param name="accountId">Account id of player.</param>
         /// <param name="statId">Index of stat. Starts at 1.</param>
         /// <returns>Leaderboard result for player.</returns>
+        public async Task<LeaderboardDTO> GetPlayerLeaderboard(int accountId)
+        {
+            LeaderboardDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var account = await GetAccountById(accountId);
+                    if (account == null)
+                        return null;
+
+                    return new LeaderboardDTO()
+                    {
+                        AccountId = accountId,
+                        AccountName = account.AccountName,
+                        Index = 1,
+                        MediusStats = account.MediusStats,
+                        TotalRankedAccounts = 1
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<LeaderboardDTO>($"Stats/getPlayerLeaderboard?AccountId={accountId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get player ranking in a given leaderboard.
+        /// </summary>
+        /// <param name="accountId">Account id of player.</param>
+        /// <param name="statId">Index of stat. Starts at 1.</param>
+        /// <returns>Leaderboard result for player.</returns>
         public async Task<LeaderboardDTO> GetPlayerLeaderboardIndex(int accountId, int statId)
         {
             LeaderboardDTO result = null;
@@ -871,6 +985,43 @@ namespace Server.Database
                 else
                 {
                     result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?StatId={statId}&StartIndex={startIndex}&Size={size}&AppId={appId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get leaderboard for a given stat by page and size.
+        /// </summary>
+        /// <param name="startIndex">Position to start gathering results from. Starts at 0.</param>
+        /// <param name="size">Max number of items to retrieve.</param>
+        /// <returns>Collection of leaderboard results for each player in page.</returns>
+        public async Task<LeaderboardDTO[]> GetLeaderboardList(int startIndex, int size, int appId)
+        {
+            LeaderboardDTO[] result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var ordered = _simulatedAccounts.Where(x => x.AppId == appId).OrderByDescending(x => x.AccountWideStats[0]).Skip(startIndex).Take(size).ToList();
+                    result = ordered.Select(x => new LeaderboardDTO()
+                    {
+                        AccountId = x.AccountId,
+                        AccountName = x.AccountName,
+                        MediusStats = x.MediusStats,
+                        TotalRankedAccounts = 0,
+                        Index = startIndex + ordered.IndexOf(x)
+                    }).ToArray();
+                }
+                else
+                {
+                    result = await GetDbAsync<LeaderboardDTO[]>($"Stats/getLeaderboard?Size={size}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -1739,9 +1890,14 @@ namespace Server.Database
                 {
                     return new DimAnnouncements()
                     {
-                        AnnouncementTitle = "Title",
-                        AnnouncementBody = "Body",
-                        CreateDt = DateTime.UtcNow
+                        AnnouncementTitle = "Welcome to the PSORG Revival Servers!",
+                        AnnouncementBody = "" +
+                            "This is a work in progress server which may have unfinished features " +
+                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
+                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
+                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
+                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
+                        CreateDt = DateTime.UtcNow,
                     };
                 }
                 else
@@ -1772,9 +1928,17 @@ namespace Server.Database
                     {
                         new DimAnnouncements()
                         {
-                            AnnouncementTitle = "Title",
-                            AnnouncementBody = "Body",
-                            CreateDt = DateTime.UtcNow
+                            Id = 1,
+                            AnnouncementTitle = "Welcome to the PSORG Revival Servers!",
+                            
+                            AnnouncementBody = "" +
+                            "This is a work in progress server which may have unfinished features " +
+                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
+                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
+                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
+                            "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " +
+                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
+                            
                         }
                     };
                 }
@@ -1803,9 +1967,14 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     return new DimEula()
-                    {
-                        EulaTitle = "Title",
-                        EulaBody = "Body"
+                    { 
+                        EulaTitle = "Welcome to the PSORG Revival Servers!",
+                        EulaBody = "is a work in progress server which may have unfinished features\n " +
+                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
+                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
+                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
+                            "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " +
+                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
                     };
                 }
                 else
@@ -1835,13 +2004,121 @@ namespace Server.Database
                 {
                     return new DimEula()
                     {
-                        EulaTitle = "Title",
-                        EulaBody = "Body"
+                        EulaTitle = "Welcome to the PSORG Revival Servers!",
+                        EulaBody = "is a work in progress server which may have unfinished features " +
+                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
+                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
+                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
+                            "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " + 
+                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
                     };
                 }
                 else
                 {
                     result = await GetDbAsync<DimEula>($"api/getEULA?fromDt={DateTime.UtcNow.AddDays(-1)}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Locations
+
+        /// <summary>
+        /// Get Locations
+        /// </summary>
+        public async Task<DimLocations> GetDimLocations(int LocationId, int appId)
+        {
+            DimLocations result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimLocations()
+                    {
+                        Id = 1,
+                        LocationId = 1,
+                        LocationName = "Default",
+
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimLocations>($"api/keys/getLocations?LocationId={LocationId}&AppId={appId}&fromDt={DateTime.UtcNow}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region NpIdGetByAccountNames 
+
+        /// <summary>
+        /// Gets the NpIds by Account Name
+        /// </summary>
+        public async Task<DimNpByAccountNames> GetNpIdByAccountNames(int appId)
+        {
+            DimNpByAccountNames result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimNpByAccountNames()
+                    {
+                        Id = 1,
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimNpByAccountNames>($"Account/NpIds/getNpIdByAccountNames?fromDt={DateTime.UtcNow}&AppId={appId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region NpIdPost
+
+        /// <summary>
+        /// Post the NpId to the database
+        /// </summary>
+        public async Task<DimNpIdPost> PostNpId(byte[] data, int appId)
+        {
+            DimNpIdPost result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new DimNpIdPost()
+                    {
+                        Id = 1,
+                        data = data,
+                    };
+                }
+                else
+                {
+                    result = await GetDbAsync<DimNpIdPost>($"Account/NpIds/postNpId?data={data}&fromDt={DateTime.UtcNow}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -1983,6 +2260,147 @@ namespace Server.Database
                 else
                 {
                     result = (await DeleteDbAsync($"api/Game/clear")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Party
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="party"></param>
+        /// <returns></returns>
+        public async Task<bool> CreateParty(PartyDTO party)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"api/Party/create", JsonConvert.SerializeObject(party))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="party"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdateParty(PartyDTO party)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PutDbAsync($"api/Game/update/{party.PartyId}", JsonConvert.SerializeObject(party))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partyId"></param>
+        /// <param name="metadata"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdatePartyMetadata(int partyId, string metadata)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PutDbAsync($"api/Party/updateMetaData/{partyId}", JsonConvert.SerializeObject(metadata))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Delete party by party id.
+        /// </summary>
+        /// <param name="partyId">Party id.</param>
+        /// <returns>Success or failure.</returns>
+        public async Task<bool> DeleteParty(int partyId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await DeleteDbAsync($"api/Party/delete/{partyId}")).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Clear the active Parties table.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> ClearActiveParties()
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await DeleteDbAsync($"api/Party/clear")).IsSuccessStatusCode;
                 }
             }
             catch (Exception e)

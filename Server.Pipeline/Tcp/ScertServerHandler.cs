@@ -36,11 +36,11 @@ namespace Server.Pipeline.Tcp
                     {
                         Group = g = new DefaultChannelGroup(ctx.Executor);
                     }
-                    else
-                    {
-                        g = Group;
-                    }
                 }
+            }
+            else
+            {
+                g = Group;
             }
 
             // Detect when client disconnects

@@ -1,10 +1,6 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
-using System.Text;
 
 namespace RT.Models
 {
@@ -33,8 +29,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Ip:{Ip} " +
-                $"Port:{Port}";
+                $"Ip: {Ip} " +
+                $"Port: {Port}";
         }
     }
 }

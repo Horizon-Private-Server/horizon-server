@@ -1,10 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using RT.Cryptography;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -26,7 +21,15 @@ namespace RT.Models
             SessionKey = null;
             AccessToken = null;
 
-            ARG1 = reader.ReadUInt32();
+            if (reader.MediusVersion > 108)
+            {
+                ARG1 = reader.ReadUInt32();
+            }
+            else
+            {
+                reader.ReadBytes(3);
+                ARG1 = reader.ReadUInt16();
+            }
             AppId = reader.ReadInt32();
             Key = reader.Read<RSA_KEY>();
 
@@ -39,7 +42,15 @@ namespace RT.Models
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            writer.Write(ARG1);
+            if (writer.MediusVersion > 108)
+            {
+                writer.Write(ARG1);
+            }
+            else
+            {
+                writer.Write(new byte[3]);
+                writer.Write((ushort)ARG1);
+            }
             writer.Write(AppId);
             writer.Write(Key ?? new RSA_KEY());
         }
@@ -47,11 +58,11 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"ARG1:{ARG1} " +
-                $"ARG2:{AppId} " +
-                $"Key:{Key} " +
-                $"SessionKey:{SessionKey} " +
-                $"AccessToken:{AccessToken}";
+                $"ARG1: {ARG1} " +
+                $"AppId: {AppId} " +
+                $"Key: {Key} " +
+                $"SessionKey: {SessionKey} " +
+                $"AccessToken: {AccessToken}";
         }
     }
 }

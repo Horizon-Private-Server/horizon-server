@@ -1,9 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -30,8 +26,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"GameHostType:{(MGCL_GAME_HOST_TYPE)GameHostType} " +
-                $"Timestamp:{Timestamp}";
+                $"GameHostType: {(MGCL_GAME_HOST_TYPE)GameHostType} " +
+                $"Timestamp: {Timestamp}";
         }
     }
 }

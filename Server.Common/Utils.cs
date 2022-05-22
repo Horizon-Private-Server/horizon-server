@@ -174,9 +174,9 @@ namespace Server.Common
             return new DateTime(1970, 1, 1) + TimeSpan.FromSeconds(unixTime);
         }
 
-#endregion
+        #endregion
 
-#region SHA-256
+        #region SHA-256
 
         public static string ComputeSHA256(string input)
         {
@@ -195,9 +195,9 @@ namespace Server.Common
             }
         }
 
-#endregion
+        #endregion
 
-#region Ip
+        #region Ip
 
         public static IPAddress GetIp(string hostname)
         {
@@ -259,7 +259,7 @@ namespace Server.Common
             return null;
         }
 
-#endregion
+        #endregion
 
     }
 }

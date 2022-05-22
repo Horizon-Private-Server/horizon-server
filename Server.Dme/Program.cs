@@ -32,7 +32,9 @@ namespace Server.Dme
 
         public static ServerSettings Settings = new ServerSettings();
 
-        public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
+        public static IPAddress SERVER_IP;
+        public static string IP_TYPE;
+
 
         public static Dictionary<int, MediusManager> Managers = new Dictionary<int, MediusManager>();
         public static TcpServer TcpServer = new TcpServer();
@@ -128,14 +130,30 @@ namespace Server.Dme
         {
             int waitMs = Settings.MainLoopSleepMs;
 
-            Logger.Info("Starting medius components...");
+            Logger.Info("Initializing DME components...");
 
-            Logger.Info($"Starting TCP on port {TcpServer.Port}.");
+            Logger.Info("*****************************************************************");
+            string DME_SERVER_VERSION = "2.10.0009";
+            Logger.Info($"DME Message Router Version {DME_SERVER_VERSION}");
+
+            int KM_GetSoftwareID = 120;
+            Logger.Info($"DME Message Router Application ID {KM_GetSoftwareID}");
+            
+            #region DateTime
+            string date = DateTime.Now.ToString("MMMM/dd/yyyy");
+            string time = DateTime.Now.ToString("hh:mm:ss tt");
+            Logger.Info($"Date: {date}, Time: {time}");
+            #endregion
+
+            #region DME 
+            Logger.Info($"Server IP = {SERVER_IP} [{IP_TYPE}]  TCP Port = {Settings.TCPPort}  UDP Port = {Settings.UDPPort}");
             TcpServer.Start();
-            Logger.Info($"TCP started.");
+            #endregion
+
+            Logger.Info("*****************************************************************");
 
             // build and start medius managers per app id
-           foreach (var applicationId in Settings.ApplicationIds)
+            foreach (var applicationId in Settings.ApplicationIds)
             {
                 var manager = new MediusManager(applicationId);
                 Logger.Info($"Starting MPS for appid {applicationId}.");
@@ -145,7 +163,7 @@ namespace Server.Dme
             }
 
             // 
-            Logger.Info("Started.");
+            Logger.Info("DME Initalized");
 
             // start timer
             _timer = new HighResolutionTimer();
@@ -207,7 +225,6 @@ namespace Server.Dme
 
         static void Initialize()
         {
-            RefreshServerIp();
             RefreshConfig();
         }
 
@@ -247,26 +264,28 @@ namespace Server.Dme
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
 
             // Determine server ip
-            if (usePublicIp != Settings.UsePublicIp)
-                RefreshServerIp();
-        }
-
-        static void RefreshServerIp()
-        {
             if (!Settings.UsePublicIp)
             {
                 SERVER_IP = Utils.GetLocalIPAddress();
+                IP_TYPE = "Local";
             }
             else
             {
                 if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
+                {
                     SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
+                    IP_TYPE = "Public";
+
+                }
                 else
+                {
                     SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
+                    IP_TYPE = "Public (Override)";
+                }
             }
         }
 
-        public static MediusManager GetManager(int applicationId, bool useDefaultOnMissing)
+            public static MediusManager GetManager(int applicationId, bool useDefaultOnMissing)
         {
             if (Managers.TryGetValue(applicationId, out var manager))
                 return manager;

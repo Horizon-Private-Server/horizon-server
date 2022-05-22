@@ -28,10 +28,10 @@ namespace Server.Dme.PluginArgs
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Player:{Player} " +
-                $"Channel:{Channel} " +
-                $"Message:{Message} " +
-                $"Ignore:{Ignore}";
+                $"Player: {Player} " +
+                $"Channel: {Channel} " +
+                $"Message: {Message} " +
+                $"Ignore: {Ignore}";
         }
     }
 }

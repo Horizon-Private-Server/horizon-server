@@ -2,19 +2,17 @@
 using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
 using NReco.Logging.File;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Math.EC.Rfc7748;
-using RT.Cryptography;
 using Server.Common;
 using Server.Common.Logging;
-using Server.UnivereInformation.Config;
+using Server.UniverseInformation.Config;
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace Server.UnivereInformation
+namespace Server.UniverseInformation
 {
     class Program
     {
@@ -32,14 +30,49 @@ namespace Server.UnivereInformation
         {
             DateTime lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
 
+            
+
+            //Medius Universe Information Server Version 2.10.0003
+
+            Logger.Info("**************************************************");
+            string datetime = DateTime.Now.ToString("MMMM/dd/yyyy hh:mm:ss tt");
+            Logger.Info($"* Launched on {datetime}");
+
             UniverseInfoServers = new MUIS[Settings.Ports.Length];
             for (int i = 0; i < UniverseInfoServers.Length; ++i)
             {
-                Logger.Info($"Starting MUIS on port {Settings.Ports[i]}.");
+                Logger.Info($"* Enabling MUIS on TCP Port = {Settings.Ports[i]}.");
                 UniverseInfoServers[i] = new MUIS(Settings.Ports[i]);
                 UniverseInfoServers[i].Start();
-                Logger.Info($"MUIS started.");
             }
+
+            //* Process ID: %d , Parent Process ID: %d
+
+            Logger.Info($"* Server Key Type: {Settings.EncryptMessages}");
+
+            #region Remote Log Viewing
+            if (Settings.RemoteLogViewPort == 0)
+            {
+                //* Remote log viewing setup failure with port %d.
+                Logger.Info("* Remote log viewing disabled.");
+            }
+            else if (Settings.RemoteLogViewPort != 0)
+            {
+                Logger.Info($"* Remote log viewing enabled at port {Settings.RemoteLogViewPort}.");
+            }
+            #endregion
+
+            //* Diagnostic Profiling Enabled: %d Counts
+
+            Logger.Info("**************************************************");
+
+            if (Settings.NATIp != null)
+            {
+                IPAddress ip = IPAddress.Parse(Settings.NATIp);
+                DoGetHostEntry(ip);
+            }
+
+            Logger.Info($"MUIS started.");
 
             try
             {
@@ -144,6 +177,24 @@ namespace Server.UnivereInformation
             // Update file logger min level
             if (_fileLogger != null)
                 _fileLogger.MinLevel = Settings.Logging.LogLevel;
+        }
+
+        public static void DoGetHostEntry(IPAddress address)
+        {
+            try
+            {
+                IPHostEntry host = Dns.GetHostEntry(address);
+
+                Logger.Info($"* NAT Service IP: {address}");
+                //Logger.Info($"GetHostEntry({address}) returns HostName: {host.HostName}");
+            }
+            catch (SocketException ex)
+            {
+                //unknown host or
+                //not every IP has a name
+                //log exception (manage it)
+                Logger.Error($"* NAT not resolved {ex}");
+            }
         }
     }
 }

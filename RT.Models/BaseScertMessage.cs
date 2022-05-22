@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using RT.Common;
 using Server.Common.Logging;
 using Server.Common.Stream;
@@ -44,7 +43,7 @@ namespace RT.Models
         /// <summary>
         /// Serializes the message.
         /// </summary>
-        public List<byte[]> Serialize(int mediusVersion, CipherService cipherService)
+        public List<byte[]> Serialize(int? mediusVersion, CipherService cipherService)
         {
             var results = new List<byte[]>();
             byte[] result = null;
@@ -55,7 +54,7 @@ namespace RT.Models
             // Serialize message
             using (var stream = new MemoryStream(buffer, true))
             {
-                using (var writer = new MessageWriter(stream) { MediusVersion = mediusVersion })
+                using (var writer = new MessageWriter(stream) { MediusVersion = (int)mediusVersion })
                 {
                     Serialize(writer);
                     length = (int)writer.BaseStream.Position;
@@ -87,7 +86,7 @@ namespace RT.Models
 
                             var data = new byte[length];
                             Array.Copy(buffer, data, length);
-                            if (!this.SkipEncryption && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                            if (!SkipEncryption && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                             {
                                 totalHeaderSize += HASH_SIZE;
 
@@ -119,7 +118,7 @@ namespace RT.Models
             {
                 var data = new byte[length];
                 Array.Copy(buffer, data, length);
-                if (!this.SkipEncryption && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                if (!SkipEncryption && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                 {
                     totalHeaderSize += HASH_SIZE;
 
@@ -286,7 +285,6 @@ namespace RT.Models
         {
             return $"Id:{Id}";
         }
-
     }
 
     [AttributeUsage(AttributeTargets.Class)]

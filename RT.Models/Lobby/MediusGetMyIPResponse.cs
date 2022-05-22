@@ -8,6 +8,9 @@ using System.Text;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Response for the request to get your external IP Address
+    /// </summary>
 	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetMyIPResponse)]
     public class MediusGetMyIPResponse : BaseLobbyMessage, IMediusResponse
     {
@@ -16,7 +19,9 @@ namespace RT.Models
         public bool IsSuccess => StatusCode >= 0;
 
         public MessageId MessageID { get; set; }
-
+        /// <summary>
+        /// Retrieves local IP Address (as seen by the Medius Servers, not behind a NAT).
+        /// </summary>
         public IPAddress IP = IPAddress.Any;
         public MediusCallbackStatus StatusCode;
 

@@ -1,9 +1,6 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -38,16 +35,15 @@ namespace RT.Models
             writer.Write(StreamingDataRate);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Description:{Description} " +
-                $"LastChangedTimeStamp:{LastChangedTimeStamp} " +
-                $"LastChangedByUserID:{LastChangedByUserID} " +
-                $"NumberAccesses:{NumberAccesses} " +
-                $"StreamableFlag:{StreamableFlag} " +
-                $"StreamingDataRate:{StreamingDataRate}";
+                $"Description: {Description} " +
+                $"LastChangedTimeStamp: {LastChangedTimeStamp} " +
+                $"LastChangedByUserID: {LastChangedByUserID} " +
+                $"NumberAccesses: {NumberAccesses} " +
+                $"StreamableFlag: {StreamableFlag} " +
+                $"StreamingDataRate: {StreamingDataRate}";
         }
     }
 }

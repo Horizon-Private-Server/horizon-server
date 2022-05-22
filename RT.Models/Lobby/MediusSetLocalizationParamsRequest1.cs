@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -7,10 +7,10 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.SetLocalizationParams1)]
-    public class MediusSetLocalizationParamsRequest1 : BaseLobbyExtMessage, IMediusRequest
+	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.SetLocalizationParams)]
+    public class MediusSetLocalizationParamsRequest : BaseLobbyMessage, IMediusRequest
     {
-        public override byte PacketType => (byte)MediusLobbyExtMessageIds.SetLocalizationParams1;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.SetLocalizationParams;
 
         public MessageId MessageID { get; set; }
 
@@ -29,7 +29,6 @@ namespace RT.Models
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             reader.ReadBytes(2);
-
             CharacterEncoding = reader.Read<MediusCharacterEncodingType>();
             Language = reader.Read<MediusLanguageType>();
         }
@@ -54,9 +53,9 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-                $"SessionKey:{SessionKey} " +
-                $"CharacterEncoding:{CharacterEncoding} " +
-                $"Language:{Language}";
+             $"SessionKey:{SessionKey} " +
+$"CharacterEncoding:{CharacterEncoding} " +
+$"Language:{Language}";
         }
     }
 }

@@ -8,7 +8,6 @@ using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Pipeline.Attribute;
 using Server.Plugins;
-using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -53,6 +52,7 @@ namespace Server.Medius
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
             scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+
 
             // 
             switch (message)
@@ -104,9 +104,21 @@ namespace Server.Medius
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
 
+                        #region Amplitude SERVER_CONNECT_COMPLETE
+                        // Complete MPS Connection on Amplitude or R&C3: Pubeta 
+                        if (data.ApplicationId == 10164 || data.ApplicationId == 10680)
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                        }
+                        #endregion
                         break;
                     }
-
+                case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
+                    {
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                        Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
+                        break;
+                    }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
                     {
 
@@ -138,7 +150,6 @@ namespace Server.Medius
                 default:
                     {
                         Logger.Warn($"UNHANDLED MESSAGE: {message}");
-
                         break;
                     }
             }
@@ -203,7 +214,6 @@ namespace Server.Medius
                         else
                         {
                             game.DMEWorldId = createGameWithAttrResponse.WorldID;
-                            await game.GameCreated();
                             rClient?.Queue(new MediusCreateGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
@@ -266,23 +276,138 @@ namespace Server.Medius
                         break;
                     }
 
+                case MediusServerCreateGameOnSelfRequest serverCreateGameOnSelfRequest:
+                    {
+                        // Create DME object on Player
+                        var dme = new DMEObject(serverCreateGameOnSelfRequest);
+                        dme.ApplicationId = data.ApplicationId;
+                        dme.BeginSession();
+                        Program.Manager.AddDmeClient(dme);
+
+                        // 
+                        data.ClientObject = dme;
+                        data.ClientObject.OnConnected();
+
+                        //Add game
+                        var game = new Game(dme, serverCreateGameOnSelfRequest, dme.CurrentChannel, dme);
+                        Program.Manager.AddGame(game);
+
+                        // Send to plugins
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = serverCreateGameOnSelfRequest });
+
+                        //Send Success response
+                        data.ClientObject.Queue(new MediusServerCreateGameOnMeResponse()
+                        {
+                            MessageID = serverCreateGameOnSelfRequest.MessageID,
+                            Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS,
+                            MediusWorldID = serverCreateGameOnSelfRequest.WorldID,
+                        });
+                        break;
+                    }
+
+                case MediusServerCreateGameOnSelfRequest0 serverCreateGameOnSelfRequest0:
+                    {
+                        // Create DME object on Player
+                        var dme = new DMEObject(serverCreateGameOnSelfRequest0);
+                        dme.ApplicationId = data.ApplicationId;
+                        dme.BeginSession();
+                        Program.Manager.AddDmeClient(dme);
+
+                        // 
+                        data.ClientObject = dme;
+                        data.ClientObject.OnConnected();
+
+                        //Add game
+                        var game = new Game(dme, serverCreateGameOnSelfRequest0, dme.CurrentChannel, dme);
+                        Program.Manager.AddGame(game);
+
+                        // Send to plugins
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = serverCreateGameOnSelfRequest0 });
+
+                        //Send Success response
+                        data.ClientObject.Queue(new MediusServerCreateGameOnMeResponse()
+                        {
+                            MessageID = serverCreateGameOnSelfRequest0.MessageID,
+                            Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS,
+                            MediusWorldID = serverCreateGameOnSelfRequest0.WorldID,
+                        });
+                        break;
+                    }
+
+                case MediusServerCreateGameOnMeRequest serverCreateGameOnMeRequest:
+                    {
+                        // Create DME object on Player
+                        var dme = new DMEObject(serverCreateGameOnMeRequest);
+                        dme.ApplicationId = data.ApplicationId;
+                        dme.BeginSession();
+                        Program.Manager.AddDmeClient(dme);
+
+                        // 
+                        data.ClientObject = dme;
+                        data.ClientObject.OnConnected();
+
+                        //Add game
+                        var game = new Game(dme, serverCreateGameOnMeRequest, dme.CurrentChannel, dme);
+                        Program.Manager.AddGame(game);
+
+                        // Send to plugins
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = serverCreateGameOnMeRequest });
+
+                        //Send Success response
+                        data.ClientObject.Queue(new MediusServerCreateGameOnMeResponse()
+                        {
+                            MessageID = serverCreateGameOnMeRequest.MessageID,
+                            Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS,
+                            MediusWorldID = serverCreateGameOnMeRequest.WorldID,
+                        });
+                        break;
+                    }
+
+                /// <summary>
+                /// This structure uses the game world ID as MediusWorldID. This should not be confused with the net World ID on this host.
+                /// </summary>
+                case MediusServerEndGameOnMeRequest serverEndGameOnMeRequest:
+                    {
+                        data.ClientObject.Queue(new MediusServerEndGameOnMeResponse()
+                        {
+                            MessageID = serverEndGameOnMeRequest.MessageID,
+                            Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS,
+                        });
+                        break;
+                    }
+
                 case MediusServerReport serverReport:
                     {
                         (data.ClientObject as DMEObject)?.OnWorldReport(serverReport);
-
                         break;
                     }
                 case MediusServerConnectNotification connectNotification:
                     {
                         Program.Manager.GetGameByDmeWorldId((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
+                        break;
+                    }
 
+
+
+                case MediusServerDisconnectPlayerRequest serverDisconnectPlayerRequest:
+                    {
 
                         break;
                     }
 
+
                 case MediusServerEndGameResponse endGameResponse:
                     {
 
+                        break;
+                    }
+                case MediusServerSessionEndRequest sessionEndRequest:
+                    {
+                        data?.ClientObject.Queue(new MediusServerSessionEndResponse()
+                        {
+                            MessageID = sessionEndRequest.MessageID,
+                            ErrorCode = MGCL_ERROR_CODE.MGCL_SUCCESS
+                        });
                         break;
                     }
 
@@ -319,6 +444,12 @@ namespace Server.Medius
             return dme;
         }
 
-        
+        public DMEObject ReserveDMEObject(MediusServerSessionBeginRequest1 request)
+        {
+            var dme = new DMEObject(request);
+            dme.BeginSession();
+            Program.Manager.AddDmeClient(dme);
+            return dme;
+        }
     }
 }

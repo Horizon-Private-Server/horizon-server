@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountRegistrationResponse)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountRegistrationResponse)]
     public class MediusAccountRegistrationResponse : BaseLobbyMessage, IMediusResponse
     {
 
@@ -48,13 +44,12 @@ namespace RT.Models
             writer.Write(AccountID);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"AccountID:{AccountID}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode: {StatusCode} " +
+                $"AccountID: {AccountID}";
         }
     }
 }

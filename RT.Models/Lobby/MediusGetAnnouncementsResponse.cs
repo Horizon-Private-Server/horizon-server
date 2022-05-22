@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetAnnouncementsResponse)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetAnnouncementsResponse)]
     public class MediusGetAnnouncementsResponse : BaseLobbyMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.GetAnnouncementsResponse;
@@ -29,11 +25,26 @@ namespace RT.Models
             //
             MessageID = reader.Read<MessageId>();
 
-            // 
+            //
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
             AnnouncementID = reader.ReadInt32();
-            Announcement = reader.ReadString(Constants.ANNOUNCEMENT_MAXLEN);
+
+            //DL HD, UYA HD, Motorstorm1
+            if(reader.AppId == 20095 || reader.AppId == 24000 || reader.AppId == 20754)
+            {
+                Announcement = reader.ReadString(Constants.ANNOUNCEMENT_MAXLEN);
+            }
+
+            if (reader.MediusVersion <= 112)
+            {
+                Announcement = reader.ReadString(Constants.ANNOUNCEMENT_MAXLEN);
+            }
+            else if (reader.MediusVersion == 113)
+            {
+                Announcement = reader.ReadString(Constants.ANNOUNCEMENT1_MAXLEN);
+            }
+
             EndOfList = reader.ReadBoolean();
             reader.ReadBytes(3);
         }
@@ -50,20 +61,33 @@ namespace RT.Models
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(AnnouncementID);
-            writer.Write(Announcement, Constants.ANNOUNCEMENT_MAXLEN);
+
+            //DL HD, UYA HD, Motorstorm1
+            if (writer.AppId == 20095 || writer.AppId == 24000 || writer.AppId == 20754)
+            {
+                writer.Write(Announcement, Constants.ANNOUNCEMENT_MAXLEN);
+            }
+
+            if (writer.MediusVersion <= 112)
+            {
+                writer.Write(Announcement, Constants.ANNOUNCEMENT_MAXLEN);
+            }
+            else if (writer.MediusVersion == 113)
+            {
+                writer.Write(Announcement, Constants.ANNOUNCEMENT1_MAXLEN);
+            }
             writer.Write(EndOfList);
             writer.Write(new byte[3]);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"AnnouncementID:{AnnouncementID} " +
-$"Announcement:{Announcement} " +
-$"EndOfList:{EndOfList}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode: {StatusCode} " +
+                $"AnnouncementID: {AnnouncementID} " +
+                $"Announcement: {Announcement} " +
+                $"EndOfList: {EndOfList}";
         }
     }
 }

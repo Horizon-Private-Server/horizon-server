@@ -1,9 +1,6 @@
 ﻿using RT.Common;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace RT.Models
 {
@@ -33,8 +30,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Address:{Address:X8} " +
-            $"Payload:{BitConverter.ToString(Payload)}";
+                $"Address: {Address:X8} " +
+                $"Payload: {BitConverter.ToString(Payload)}";
         }
 
 

@@ -1,9 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -55,7 +51,6 @@ namespace RT.Models
             GenericField2 = reader.ReadInt32();
             GenericField3 = reader.ReadInt32();
             GameHostType = reader.Read<MediusGameHostType>();
-            Attributes = reader.Read<MediusWorldAttributesType>();
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -82,9 +77,7 @@ namespace RT.Models
             writer.Write(GenericField2);
             writer.Write(GenericField3);
             writer.Write(GameHostType);
-            writer.Write(Attributes);
         }
-
 
         public override string ToString()
         {
@@ -103,8 +96,7 @@ namespace RT.Models
                 $"GenericField1:{GenericField1:X8} " +
                 $"GenericField2:{GenericField2:X8} " +
                 $"GenericField3:{GenericField3:X8} " +
-                $"GameHostType:{GameHostType} " +
-                $"Attributes:{Attributes}";
+                $"GameHostType:{GameHostType} ";
         }
     }
 }

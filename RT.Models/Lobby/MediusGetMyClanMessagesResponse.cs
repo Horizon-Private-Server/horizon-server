@@ -1,9 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -50,15 +46,14 @@ namespace RT.Models
             writer.Write(new byte[3]);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID}" + " " +
-                $"StatusCode:{StatusCode}" + " " +
-                $"ClanID:{ClanID}" + " " +
-                $"Message:{Message}" + " " +
-                $"EndOfList:{EndOfList}";
+                $"MessageID: {MessageID}" + " " +
+                $"StatusCode: {StatusCode}" + " " +
+                $"ClanID: {ClanID}" + " " +
+                $"Message: {Message}" + " " +
+                $"EndOfList: {EndOfList}";
         }
     }
 }

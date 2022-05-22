@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.JoinGameResponse)]
+    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.JoinGameResponse)]
     public class MediusJoinGameResponse : BaseLobbyMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.JoinGameResponse;
@@ -34,7 +30,7 @@ namespace RT.Models
             GameHostType = reader.Read<MediusGameHostType>();
             ConnectInfo = reader.Read<NetConnectionInfo>();
 
-            if (reader.MediusVersion >= 112)
+            if (reader.MediusVersion > 112)
                 reader.ReadBytes(4);
         }
 
@@ -52,18 +48,17 @@ namespace RT.Models
             writer.Write(GameHostType);
             writer.Write(ConnectInfo);
 
-            if (writer.MediusVersion >= 112)
+            if (writer.MediusVersion > 112)
                 writer.Write(new byte[4]);
         }
-
 
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"GameHostType:{GameHostType} " +
-$"ConnectInfo:{ConnectInfo}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode: {StatusCode} " +
+                $"GameHostType: {GameHostType} " +
+                $"ConnectInfo: {ConnectInfo}";
         }
     }
 }

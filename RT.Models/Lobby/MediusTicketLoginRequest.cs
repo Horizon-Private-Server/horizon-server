@@ -1,9 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -16,11 +12,10 @@ namespace RT.Models
 
         public string SessionKey; // SESSIONKEY_MAXLEN
         public byte[] UNK0;
-        public string Username;
+        public string AccountName;
         public byte[] UNK1;
-        public string Password = "TestPass";
-        public string UNK2;
-
+        public string Password = "";
+        public string ServiceID;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -33,11 +28,9 @@ namespace RT.Models
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
             UNK0 = reader.ReadBytes(88);
-            Username = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
+            AccountName = reader.ReadString(Constants.ACCOUNTNAME_MAXLEN);
             UNK1 = reader.ReadBytes(20);
-            UNK2 = reader.ReadString(24);
-
-
+            ServiceID = reader.ReadString(24);
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -51,21 +44,20 @@ namespace RT.Models
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
             writer.Write(UNK0 ?? new byte[88], 88);
-            writer.Write(Username, Constants.ACCOUNTNAME_MAXLEN);
+            writer.Write(AccountName, Constants.ACCOUNTNAME_MAXLEN);
             writer.Write(UNK1 ?? new byte[20], 20);
-            writer.Write(UNK2 ?? "", 24);
+            writer.Write(ServiceID ?? "", 24);
         }
-
 
         public override string ToString()
         {
             return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-             $"SessionKey:{SessionKey} " +
-             $"UNK0:{UNK0} " +
-             $"Username:{Username} " +
-             $"UNK1:{UNK1} " +
-             $"UNK2:{UNK2}";
+                $"SessionKey:{SessionKey} " +
+                $"UNK0: {UNK0} " +
+                $"AccountName: {AccountName} " +
+                $"UNK1: {UNK1} " +
+                $"ServiceID: {ServiceID}";
         }
     }
 }

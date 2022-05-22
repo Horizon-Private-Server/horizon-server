@@ -54,10 +54,10 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"StatusCode:{StatusCode} " +
-$"GMT_time:{GMT_time} " +
-$"Local_server_timezone:{Local_server_timezone}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode:{ StatusCode} " +
+                $"GMT_time: {GMT_time} " +
+                $"Local_server_timezone: {Local_server_timezone}";
         }
     }
 }

@@ -1,9 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -11,8 +7,6 @@ namespace RT.Models
     public class MediusUpdateClanStatsRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.UpdateClanStats;
-
-
 
         public MessageId MessageID { get; set; }
         public string SessionKey; // SESSIONKEY_MAXLEN
@@ -45,14 +39,13 @@ namespace RT.Models
             writer.Write(Stats, Constants.CLANSTATS_MAXLEN);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID}" + " " +
-                $"SessionKey:{SessionKey}" + " " +
-                $"ClanID:{ClanID}" + " " +
-                $"Stats:{Stats}";
+                $"MessageID: {MessageID}" +
+                $"SessionKey: {SessionKey}" +
+                $"ClanID: {ClanID}" +
+                $"Stats: {Stats}";
         }
     }
 }

@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-
-namespace Server.NAT.Config
+﻿namespace Server.NAT.Config
 {
+    #region NAT Server Config
     public class ServerSettings
     {
         /// <summary>
-        /// Port of the NAT server.
+        /// Default Port of the NAT server.
         /// </summary>
         public int Port { get; set; } = 10070;
 
@@ -18,4 +13,5 @@ namespace Server.NAT.Config
         /// </summary>
         public int? OverridePort { get; set; } = null;
     }
+    #endregion
 }

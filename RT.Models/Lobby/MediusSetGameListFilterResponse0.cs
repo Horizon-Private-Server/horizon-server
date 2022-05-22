@@ -30,7 +30,6 @@ namespace RT.Models
             // 
             reader.ReadBytes(3);
             StatusCode = reader.Read<MediusCallbackStatus>();
-            FilterID = reader.ReadUInt32();
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -44,16 +43,14 @@ namespace RT.Models
             // 
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
-            writer.Write(FilterID);
         }
 
 
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"StatusCode:{StatusCode} " +
-                $"FilterID:{FilterID}";
+                $"MessageID: {MessageID} " +
+                $"StatusCode:{ StatusCode}";
         }
     }
 }

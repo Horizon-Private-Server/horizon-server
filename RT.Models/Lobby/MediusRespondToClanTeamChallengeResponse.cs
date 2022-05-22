@@ -7,6 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
+    /*
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.RespondToClanTeamChallengeResponse)]
     public class MediusRespondToClanTeamChallengeResponse : BaseLobbyMessage, IMediusResponse
     {
@@ -47,4 +48,5 @@ namespace RT.Models
                 $"StatusCode:{StatusCode}";
         }
     }
+    */
 }

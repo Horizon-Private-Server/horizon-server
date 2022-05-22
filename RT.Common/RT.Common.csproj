@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNetty.Common" Version="0.7.1" />
+    <PackageReference Include="DotNetty.Common" Version="0.7.2" />
   </ItemGroup>
 
 </Project>

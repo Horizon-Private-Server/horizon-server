@@ -1,13 +1,9 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerCreateGameRequest)]
+    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerCreateGameRequest)]
     public class MediusServerCreateGameRequest : BaseMGCLMessage, IMediusRequest
     {
 
@@ -45,9 +41,9 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"ApplicationID:{ApplicationID} " +
-                $"MaxClients:{MaxClients}";
+                $"MessageID: {MessageID} " +
+                $"ApplicationID: {ApplicationID} " +
+                $"MaxClients: {MaxClients}";
         }
     }
 }

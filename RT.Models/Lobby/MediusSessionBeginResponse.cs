@@ -53,9 +53,9 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-    $"StatusCode:{StatusCode}" +
-    $"SessionKey:{SessionKey}";
+                $"MessageID: {MessageID} " +
+    $"StatusCode: {StatusCode}" +
+    $"SessionKey: {SessionKey}";
         }
     }
 }

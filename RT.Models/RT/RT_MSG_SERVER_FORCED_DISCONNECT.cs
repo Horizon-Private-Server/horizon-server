@@ -27,7 +27,7 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"Reason:{Reason}";
+                $"Reason: {Reason}";
         }
     }
 }

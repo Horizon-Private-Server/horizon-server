@@ -1,13 +1,10 @@
 ﻿using RT.Common;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Server.Medius.Models
 {
     public class GameListFilter
     {
-        public uint FieldID;
+        public uint FieldID = 0;
         public MediusGameListFilterField FilterField;
         public int BaselineValue;
         public MediusComparisonOperator ComparisonOperator;
@@ -18,6 +15,7 @@ namespace Server.Medius.Models
             if (game == null)
                 return false;
 
+            #region FilterField
             switch (FilterField)
             {
                 case MediusGameListFilterField.MEDIUS_FILTER_GAME_LEVEL: return ComparisonOperator.Compare(BaselineValue, game.GameLevel & Mask);
@@ -37,6 +35,7 @@ namespace Server.Medius.Models
                 case MediusGameListFilterField.MEDIUS_FILTER_RULES_SET: return ComparisonOperator.Compare(BaselineValue, game.RulesSet & Mask);
                 default: return false;
             }
+            #endregion
         }
     }
 }

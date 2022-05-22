@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Server.UniverseInformation": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Server.UniverseInformation Docker"
+    }
+  }
+}

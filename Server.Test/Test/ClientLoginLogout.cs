@@ -39,11 +39,6 @@ namespace Server.Test.Test
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel channel)
         {
             await base.ProcessMessage(message, channel);
-
-            switch (message)
-            {
-
-            }
         }
     }
 }

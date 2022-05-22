@@ -1,8 +1,5 @@
 ﻿using RT.Common;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Server.Common;
 using Server.Common.Stream;
 
@@ -31,8 +28,8 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"TargetOrSource:{TargetOrSource} " +
-                $"Payload:{(Payload == null ? "" : BitConverter.ToString(Payload)) }";
+                $"TargetOrSource: {TargetOrSource} " +
+                $"Payload: {(Payload == null ? "" : BitConverter.ToString(Payload)) }";
         }
     }
 }

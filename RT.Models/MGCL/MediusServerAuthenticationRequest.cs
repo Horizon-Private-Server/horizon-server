@@ -1,9 +1,5 @@
 using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
@@ -41,13 +37,12 @@ namespace RT.Models
             writer.Write(AddressList);
         }
 
-
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-                $"TrustLevel:{TrustLevel} " +
-                $"AddressList:{AddressList}";
+                $"MessageID: {MessageID} " +
+                $"TrustLevel: {TrustLevel} " +
+                $"AddressList: {AddressList}";
         }
     }
 }
