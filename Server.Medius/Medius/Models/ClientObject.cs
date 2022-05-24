@@ -50,6 +50,11 @@ namespace Server.Medius.Models
         public string AccountStats { get; protected set; } = null;
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string AccountDisplayName { get; set; } = null;
+
+        /// <summary>
         /// Current access token required to access the account.
         /// </summary>
         public string Token { get; protected set; } = null;

@@ -5,11 +5,11 @@ namespace RT.Models
 {
     public class MediusStatusResponse : BaseMediusMessage, IMediusResponse
     {
-        public NetMessageTypes Class;
+        public NetMessageClass Class;
         public byte Type;
 
         public override byte PacketType => Type;
-        public override NetMessageTypes PacketClass => Class;
+        public override NetMessageClass PacketClass => Class;
 
         public bool IsSuccess => StatusCode >= 0;
 

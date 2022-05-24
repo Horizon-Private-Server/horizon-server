@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginResponse)]
     public class MediusServerSessionBeginResponse : BaseMGCLMessage, IMediusResponse
     {
 

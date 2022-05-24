@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RT.Common
 {
-    #region RT_MSG_TYPE
+    #region RT_MSG
     public enum RT_MSG_TYPE : byte
     {
         RT_MSG_CLIENT_CONNECT_TCP,
@@ -60,12 +60,36 @@ namespace RT.Common
         RT_MSG_CLIENT_APP_BROADCAST_QOS,
         RT_MSG_CLIENT_APP_SINGLE_QOS,
         RT_MSG_CLIENT_APP_LIST_QOS,
-        RT_MSG_CLIENT_MAX_MSGLEN,
-        RT_MSG_SERVER_MAX_MSGLEN,
+        RT_MSG_CLIENT_APP_GROUP_LIST,
+        RT_MSG_CLIENT_APP_GROUP_LIST_QOS,
+        RT_MSG_CLIENT_JOIN_GROUP,
+        RT_MSG_CLIENT_LEAVE_GROUP,
+        RT_MSG_CLIENT_JOIN_GROUP_LIST,
+        RT_MSG_CLIENT_LEAVE_GROUP_LIST,
+        //RT_MSG_CLIENT_APP_FILTER,
+        //RT_MSG_CLIENT_APP_FILTER_QOS,
         RT_MSG_CLIENT_MULTI_APP_TOSERVER = 59,
         RT_MSG_SERVER_MULTI_APP_TOCLIENT,
         RT_MSG_CLIENT_APP_TO_PLUGIN,
         RT_MSG_SERVER_PLUGIN_TO_APP,
+        RT_MSG_CLIENT_AGGREGATE_MESSAGE,
+        RT_MSG_SERVER_AGGREGATE_MESSAGE,
+        RT_MSG_CLIENT_MAX_MSGLEN,
+        RT_MSG_SERVER_MAX_MSGLEN
+
+    }
+
+    public enum RT_MSG_CLIENT_DISCONNECT_REASON : byte
+    {
+         RT_MSG_CLIENT_DISCONNECT_NONE,
+         RT_MSG_CLIENT_DISCONNECT_NORMAL,
+         RT_MSG_CLIENT_DISCONNECT_CONNECT_FAIL,
+         RT_MSG_CLIENT_DISCONNECT_STREAMMEDIA_FAIL,
+         RT_MSG_CLIENT_DISCONNECT_UPDATE_FAIL,
+         RT_MSG_CLIENT_DISCONNECT_INACTIVITY,
+         RT_MSG_CLIENT_DISCONNECT_SHUTDOWN,
+         RT_MSG_CLIENT_DISCONNECT_LENGTH_MISMATCH,
+         MAX_RT_MSG_CLIENT_DISCONNECT_REASON
     }
     #endregion
 
@@ -646,42 +670,75 @@ namespace RT.Common
         /// <summary>
         /// Create a client-server based game.
         /// </summary>
-        MediusGameHostClientServer = 0,
+        MediusGameHostClientServer,
 
         /// <summary>
         /// Create a integrated server game where the game server and a client are on the same host.
         /// </summary>
-        MediusGameHostIntegratedServer = 1,
+        MediusGameHostIntegratedServer,
 
         /// <summary>
         /// Host a peer-to-peer game.
         /// </summary>
-        MediusGameHostPeerToPeer = 2,
+        MediusGameHostPeerToPeer,
 
         /// <summary>
         /// Host a LAN based game.
         /// </summary>
-        MediusGameHostLANPlay = 3,
+        MediusGameHostLANPlay,
 
         /// <summary>
         /// Host a client-server, auxiliary UDP game.
         /// </summary>
-        MediusGameHostClientServerAuxUDP = 4,
+        MediusGameHostClientServerAuxUDP,
 
         /// <summary>
         /// Host a client-server, primary UDP game.
         /// </summary>
-        MediusGameHostClientServerUDP = 5,
+        MediusGameHostClientServerUDP,
 
         /// <summary>
         /// 
         /// </summary>
-        MediusGameHostIndependent = 6,
+        MediusGameHostIndependent,
 
         /// <summary>
         /// Game Hosts are at Max
         /// </summary>
-        MediusGameHostMax = 7,
+        MediusGameHostMax,
+    }
+    #endregion
+
+    #region MediusBanReasonType
+    /// <summary>
+    /// 
+    /// </summary>
+    public enum MediusBanReasonType : int
+    {
+        /// <summary>
+        /// Reserved.
+        /// </summary>
+        MediusInvalidBanReason,
+        
+        /// <summary>
+        /// Ban for Chatting.
+        /// </summary>
+        MediusBanForChatting,
+
+        /// <summary>
+        /// Ban for Vulgarity.
+        /// </summary>
+        MediusBanForVulgarity,
+
+        /// <summary>
+        /// Ban for other title-definted reason.
+        /// </summary>
+        MediusBanForOtherReason,
+
+        /// <summary>
+        /// Placeholder to normalize the field size on different compilers
+        /// </summary>
+        ExtraMediusBanReasonType = 0xffffff
     }
     #endregion
 
@@ -978,11 +1035,12 @@ namespace RT.Common
         NetAddressTypeBinaryInternal = 5,
         NetAddressTypeBinaryExternalVport = 6,
         NetAddressTypeBinaryInternalVport = 7,
-        NetAddressTypeBinaryNATServices = 8
+        NetAddressTypeBinaryNATServices = 8,
+        NetAddressTypeSignalAddress
     }
 
-    #region NetMessageTypes
-    public enum NetMessageTypes : byte
+    #region NetMessageClass
+    public enum NetMessageClass : byte
     {
         MessageClassDME,
         MessageClassLobby,
@@ -990,6 +1048,7 @@ namespace RT.Common
         MessageClassLobbyReport,
         MessageClassLobbyExt,
         MessageClassLobbyAuthentication,
+        MessageClassDMELocalPlugin,
         MaxMessageClasses,
     }
     #endregion
@@ -1000,17 +1059,27 @@ namespace RT.Common
         ServerVersion = 0x00,
         Ping = 0x01,
         PacketFragment = 0x02,
+        DataStreamEndPacket = 0x05,
+        AcceptClientPacket = 0x9,
         ClientConnects = 0x10,
+        ClientLeaves = 0x12,
         RequestServers = 0x13,
         ServerResponse = 0x14,
+        ArbitrateJoinPacket = 0x15,
         UpdateClientStatus = 0x16,
+        SMMigrateOrderPacket = 0x17,
         LANFindPacket = 0x19,
         LANFindResultsPacket = 0x1A,
         LANTextMessage = 0x21,
         LANRawMessage = 0x22,
-
-        //
-        ClientUpdate = 0x15,
+        GameMetaDataPacket = 0x2F,
+        ICESignalPacket = 0x30,
+        DeleteNetObjectPacket = 0xA,
+        RequestOwnershipPacket = 0xB,
+        GrantOwnershipPacket = 0xC,
+        ReleaseOwnershipPacket = 0xD,
+        DataStreamUpdatePacket = 0xE,
+        ClientUpdate = 0xF,
     }
     #endregion
 
@@ -1354,7 +1423,6 @@ namespace RT.Common
         GenericChatSetFilterResponse = 0x26,
         ExtendedSessionBeginRequest = 0x27,
         TokenRequest = 0x28,
-        VoteToBanPlayerRequest = 0x2C,
         GetServerTimeRequest = 0x2A,
         GetServerTimeResponse = 0x2B,
         VoteToBanPlayer = 0x2C,
@@ -1374,7 +1442,6 @@ namespace RT.Common
         AccountUpdateStats_OpenAccessResponse = 0x3A,
         AddPlayerToClan_ByClanOfficer = 0x3B,
         AddPlayerToClan_ByClanOfficerResponse = 0x3C,
-
         // PS3
         CrossChatMessage = 0x3D,
         CroxxChatFwdMessage = 0x3E,
@@ -1505,69 +1572,6 @@ namespace RT.Common
         MGCL_CALL_MGCL_CLOSE_BEFORE_REINITIALIZING = -18,
         MGCL_NUM_GAME_WORLDS_PER_LOBBY_WORLD_EXCEEDED = -19,
     }
-    #region Medius Unified Community Gateway
-    public enum MUCG_MessageTypes : byte
-    {
-        MUCG_MsgVersion = 0,
-        MUCG_MsgError = 1,
-        MUCG_MsgLobbyInitialize = 2,
-        MUCG_MsgLobbyAcceptance = 3,
-        MUCG_MsgReqConnectedAccounts = 4,
-        MUCG_MsgAccountAdd = 5,
-        MUCG_MsgAccountConnect = 6,
-        MUCG_MsgAccountDisconnect = 7,
-        MUCG_MsgAccountRemove = 8,
-        MUCG_MsgReqBuddyListPresence = 9,
-        MUCG_MsgReqAccountPresence = 10,
-        MUCG_MsgC, at = 11,
-        MUCG_MsgPresence = 12,
-        MUCG_MsgBuddyAdd = 13,
-        MUCG_MsgBuddyRemove = 14,
-        MUCG_MsgSync = 15,
-        MUCG_MsgRecoverMode = 16,
-        MUCG_MsgRecoverAccount = 17,
-        MUCG_MsgProcessSync = 18,
-        MUCG_MsgEventOnOffline = 19,
-        MUCG_MsgEventBuddyListMod = 20,
-        MUCG_MsgClanAdd = 21,
-        MUCG_MsgClanRemove = 22,
-        MUCG_MsgClanMemberAdd = 23,
-        MUCG_MsgClanMemberRemove = 24,
-        MUCG_MsgClanInviteAdd = 25,
-        MUCG_MsgClanInviteRemove = 26,
-        MUCG_MsgClanChat = 27,
-        MUCG_MsgReqClanInvites = 28,
-        MUCG_MsgClanInvite = 29,
-        MUCG_MsgReqClanMembers = 30,
-        MUCG_MsgEventClanMemberListMod = 31,
-        MUCG_MsgEventClanInviteListMod = 32,
-        MUCG_MsgEventClanDisband = 33,
-        MUCG_MsgIgnoreAdd = 34,
-        MUCG_MsgIgnoreRemove = 35,
-        MUCG_MsgReqIgnoreListIDs = 36,
-        MUCG_MsgReqClanIDs = 37,
-        MUCG_MsgClanID = 38,
-        MUCG_Msg_End = 39,
-    }
-
-    public enum MUCG_RESULT : byte
-    {
-        MUCG_RESULT_OK = 0,
-        MUCG_RESULT_CONNECT_INIT_FAILED = 1,
-        MUCG_RESULT_CONNECT_FAILED = 2,
-        MUCG_RESULT_RT_MSG_ERROR = 3,
-        MUCG_RESULT_DISCONNECT_FAILURE = 4,
-        MUCG_RESULT_UPDATE_FAILURE = 5,
-        MUCG_RESULT_INCOMPATIBLE_VERSION = 6,
-        MUCG_RESULT_PARSE_ERROR = 7,
-        MUCG_RESULT_PACK_ERROR = 8,
-        MUCG_RESULT_INVALID_PARAMETER = 9,
-        MUCG_RESULT_DATA_PERSIST_FAILED = 10,
-        MUCG_RESULT_DATA_NOT_READY = 11,
-        MUCG_RESULT_GATEWAY_ERROR = 12,
-        MAX_MUCG_RESULT = 13
-    }
-    #endregion
 
     #region Anti-Cheat
     public enum CheatQueryType : byte
@@ -1601,6 +1605,27 @@ namespace RT.Common
         DME_SERVER_CHEAT_QUERY_IOP_MEM_FREE = 27,
         DME_SERVER_CHEAT_QUERY_IOP_MEM_USED = 28
     }
+
+    public enum anticheatLOBBYCONNECT : int
+    {
+        anticheatLOBBYCONNECT = 0,
+        anticheatLOBBYDISCONNECT = 1,
+        anticheatJOINGAME = 2,
+        anticheatPERIODIC = 3,
+        anticheatLEAVEGAME = 4,
+        anticheatPLAYERREPORT = 5,
+        anticheatSTATSREPORT = 6,
+        anticheatCHATMESSAGE = 7,
+        anticheatDELAYED = 8,
+        anticheatRECONFIG = 9,
+        anticheatCREATELOBBYWORLD = 10,
+        anticheatGETCHANNELLIST = 11,
+        anticheatGETGAMELIST = 12,
+        anticheatGETMYCLANS = 13,
+        anticheatGETANNOUNCEMENTS = 14,
+        anticheatMAXEVENTS = 15,
+    }
+
     #endregion
 
     public enum NetClientStatus : byte
@@ -1691,6 +1716,7 @@ namespace RT.Common
     }
     #endregion
 
+    #region Medius File Services
     public enum MediusFileXferStatus : int
     {
         Error = 0,
@@ -1698,4 +1724,303 @@ namespace RT.Common
         Mid = 2,
         End = 3
     }
+
+    public enum MFS_TransferResult : int 
+    {
+        mfsUPLOAD_SUCCESS,
+        mfsDOWNLOAD_SUCCESS,
+        mfsUPLOAD_FAILURE,
+        mfsDOWNLOAD_FAILURE
+    }
+    #endregion
+
+    #region Medius Universe Manager
+
+    public enum MUMCacheNextGameRetrieveType : int
+    {
+        MC_EXHAUSTIVE_SEARCH,
+        MC_USING_LOBBY_ASSOC
+    }
+
+    public enum MC_MUM_CACHE_CONFIG_OPTION_TYPE : int
+    {
+        MC_MUM_CACHE_CONFIG_OPTION_ID_COMPAT,
+        MC_MUM_CACHE_CONFIG_OPTION_GLIST_SHIELD,
+        MC_MUM_CACHE_CONFIG_OPTION_ACCOUNT_STATS_AS_STRING,
+        MC_MUM_CACHE_CONFIG_OPTION_DELTA_HASH_FAILURE_ACTION,
+        MC_MUM_CACHE_CONFIG_OPTION_IN_GAME_NOTIFIER,
+        MC_MUM_CACHE_CONFIG_OPTION_MAX
+    }
+
+    public enum MUM_RESULT : int
+    {
+        MUM_RESULT_OK,
+        MUM_RESULT_FAILURE
+    }
+
+    #endregion
+
+    #region Medius Unified Community Gateway
+    public enum MUCG_MessageTypes : byte
+    {
+        MUCG_MsgVersion = 0,
+        MUCG_MsgError = 1,
+        MUCG_MsgLobbyInitialize = 2,
+        MUCG_MsgLobbyAcceptance = 3,
+        MUCG_MsgReqConnectedAccounts = 4,
+        MUCG_MsgAccountAdd = 5,
+        MUCG_MsgAccountConnect = 6,
+        MUCG_MsgAccountDisconnect = 7,
+        MUCG_MsgAccountRemove = 8,
+        MUCG_MsgReqBuddyListPresence = 9,
+        MUCG_MsgReqAccountPresence = 10,
+        MUCG_MsgC, at = 11,
+        MUCG_MsgPresence = 12,
+        MUCG_MsgBuddyAdd = 13,
+        MUCG_MsgBuddyRemove = 14,
+        MUCG_MsgSync = 15,
+        MUCG_MsgRecoverMode = 16,
+        MUCG_MsgRecoverAccount = 17,
+        MUCG_MsgProcessSync = 18,
+        MUCG_MsgEventOnOffline = 19,
+        MUCG_MsgEventBuddyListMod = 20,
+        MUCG_MsgClanAdd = 21,
+        MUCG_MsgClanRemove = 22,
+        MUCG_MsgClanMemberAdd = 23,
+        MUCG_MsgClanMemberRemove = 24,
+        MUCG_MsgClanInviteAdd = 25,
+        MUCG_MsgClanInviteRemove = 26,
+        MUCG_MsgClanChat = 27,
+        MUCG_MsgReqClanInvites = 28,
+        MUCG_MsgClanInvite = 29,
+        MUCG_MsgReqClanMembers = 30,
+        MUCG_MsgEventClanMemberListMod = 31,
+        MUCG_MsgEventClanInviteListMod = 32,
+        MUCG_MsgEventClanDisband = 33,
+        MUCG_MsgIgnoreAdd = 34,
+        MUCG_MsgIgnoreRemove = 35,
+        MUCG_MsgReqIgnoreListIDs = 36,
+        MUCG_MsgReqClanIDs = 37,
+        MUCG_MsgClanID = 38,
+        MUCG_Msg_End = 39,
+    }
+
+    public enum MUCG_RESULT : byte
+    {
+        MUCG_RESULT_OK = 0,
+        MUCG_RESULT_CONNECT_INIT_FAILED = 1,
+        MUCG_RESULT_CONNECT_FAILED = 2,
+        MUCG_RESULT_RT_MSG_ERROR = 3,
+        MUCG_RESULT_DISCONNECT_FAILURE = 4,
+        MUCG_RESULT_UPDATE_FAILURE = 5,
+        MUCG_RESULT_INCOMPATIBLE_VERSION = 6,
+        MUCG_RESULT_PARSE_ERROR = 7,
+        MUCG_RESULT_PACK_ERROR = 8,
+        MUCG_RESULT_INVALID_PARAMETER = 9,
+        MUCG_RESULT_DATA_PERSIST_FAILED = 10,
+        MUCG_RESULT_DATA_NOT_READY = 11,
+        MUCG_RESULT_GATEWAY_ERROR = 12,
+        MAX_MUCG_RESULT = 13
+    }
+
+    public enum MUCG_STATE : int
+    {
+        MUCG_STATE_DISCONNECTED,
+        MUCG_STATE_CONNECTING,
+        MUCG_STATE_VERIFYING,
+        MUCG_STATE_INITIALIZING,
+        MUCG_STATE_INITIALIZED,
+        MUCG_STATE_PENDING_DISCONNECT,
+        MUCG_STATE_IN_RECOVERY,
+        MAX_MUCG_STATE
+    }
+
+    #endregion
+
+    #region Zipper Interactive
+
+    #region MAG Types
+    public enum FactionType : int
+    {
+        FactionTypeFirst,
+        FactionTypeGreen = 0,
+        FactionTypeAllies = 0,
+        FactionTypeBlack,
+        FactionTypeHammer = 1,
+        FactionTypeRed,
+        FactionTypeSIRSAT = 2,
+        FactionTypeMax,
+        FactionTypeNone = 0xFFFFFFF,
+        FactionTypeAll = 0xFFFFFFF
+    }
+
+    public enum GameType : int
+    {
+        GameTypeFirst,
+        GameType64 = 0,
+        GameType128,
+        GameType256,
+        GameTypeFactionExercise,
+        GameTypeMaxQueueable,
+        GameTypeTraining = 4,
+        NumGameTypes,
+        GameTypeNone = 0xFFFFFFF
+    }
+
+    public enum NetMessageType : int
+    {
+        NetMMessageProtocolInfo = 2,
+        NetAccountLogoutRequest = 45,
+        NetMessageCharacterDataRequest,
+        NetMessageCharacterDataResponse,
+        NetMessageCharacterListRequest = 566,
+        NetMessageCharacterListResponse = 567,
+        NetMessageNewsEulaRequest = 574,
+        NetMessageNewsEUlaResponse = 575,
+        NetMessageServerStatusRequest = 587,
+        NetMessageServerStatusResponse = 588, //Needs Debug Check
+    }
+    #endregion
+
+    #region GameNetClient
+
+    public enum RespawnStatus : int
+    {
+        kRespawnNone,
+        kRespawnCancel,
+        kRespawnConfirm,
+        kRespawnRequestSent
+    }
+
+    public enum MicrophoneState : int
+    {
+        kMicOff,
+        kMicRequesting,
+        kMicRecording
+    }
+
+    #endregion
+
+    #region MagNetClient
+    public enum CharacteRequestType : int
+    {
+        kCharacterRequestNone,
+        kCharacterRequestCreate,
+        kCharacterRequestDelete,
+        kCharacterRequestFactionReSpec
+    }
+
+    #endregion
+
+
+    public enum NetResult : int
+    {
+        kNetSuccess = 0,
+        kNetError = 1,
+        kNetTimeout = 2,
+        kNetCancel = 3,
+        kNetMediusDisconnect = 4,
+        kNetGameDisconnect = 5,
+        kNetNameTaken = 6,
+        kNetNameInvalid = 7,
+        kNetCableDisconnect = 8,
+        kNetNPDisconnect = 9,
+        kNetNPConnectFailed = 0xA,
+        kNetNPNoAccount = 0xB,
+        kNetProtocolError = 0xC,
+        kNetNotImplemented = 0xD
+    }
+
+    public enum NetPluginType : int
+    {
+        kNetPluginNone,
+        kNetPluginMAPS,
+        kNetPlgionMAS,
+        kNetPlgionMLS,
+        kNetPlgionMPS,
+        kNetPlgionMUM,
+        kNetPlgionDME,
+    }
+
+    public enum QueryType : int
+    {
+        kQueryTypeNone,
+        kQueryByName,
+        kQueryByID
+    }
+
+    #region zNetwork
+
+    public enum NetAutoTestType : int
+    {
+        kAutoTestNone,
+        kAutoTestGrenadeThrow,
+        kAutoTestFirePrimary
+    }
+
+    public enum NetMessageNewsEulaResponseContentType : int
+    {
+        News,
+        Eula
+    }
+
+    public enum NetAccountLoginResponse : int
+    {
+        eResultFail,
+        eResultSuccess,
+        eResultQueue
+    }
+
+    public enum NetMessageUserNote : int
+    {
+        kNone,
+        kGeneralComplaint,
+        kTerrain_0,
+        kSpawnCamping,
+        kEnd
+    }
+
+    public enum NetClientType : int
+    {
+        kNetClientPlayer,
+        kNetClientObserver
+    }
+
+    public enum JoinGamePreferenceType : int
+    {
+        JoinGamePreferenceNone,
+        JoinGamePreferenceGameType,
+        JoinGamePreferenceSpecificGame,
+        JoinGamePreferenceLocation,
+        JoinGamePreferenceTraining,
+        JoinGamePreferenceDirective
+    }
+
+    public enum PartyInviteResponse : int
+    {
+        kPartyInviteAccept,
+        kPartyInviteDecline,
+        kPartyInviteError,
+        kPartyInviteInParty,
+        kPartyInviteTimeout
+    }
+
+    public enum PartyStatus : int
+    {
+        kPartyStatusNone,
+    }
+
+    public enum VictoryType : int
+    {
+        VictoryTypeFirst,
+        VictoryTypeMinor = 0,
+        VictoryTypeMajor,
+        VictoryTypeMax,
+        VictoryTypeNone = 0xFFFFFFF
+    }
+
+    #endregion
+
+    #endregion
+
 }

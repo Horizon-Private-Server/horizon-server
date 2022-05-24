@@ -4,7 +4,7 @@ using Server.Common;
 namespace RT.Models
 {
 
-    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.MatchFindGameStatusResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.MatchFindGameStatusResponse)]
     public class MediusMatchFindGameStatusResponse : BaseLobbyExtMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyExtMessageIds.MatchFindGameStatusResponse;

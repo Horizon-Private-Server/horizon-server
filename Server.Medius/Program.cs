@@ -99,12 +99,14 @@ namespace Server.Medius
                     if (!await Database.Authenticate())
                     {
                         // Log and exit when unable to authenticate
-                        Logger.Error("Unable to authenticate with the db middleware server");
+                        Logger.Error($"Unable to connect to Cache Server.");
                         return;
                     }
                     else
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
+
+                        Logger.Info("Connected to Cache Server");
 
 #if !DEBUG
                         if (!_hasPurgedAccountStatuses)
@@ -146,7 +148,7 @@ namespace Server.Medius
                 // Reload config
                 if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
                 {
-                    RefreshConfig();
+                    await RefreshConfig();
                     _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
                 }
             }
@@ -194,7 +196,7 @@ namespace Server.Medius
             {
                 //* Remote log viewing setup failure with port %d.
                 Logger.Info("* Remote log viewing disabled.");
-            } else if (Settings.RemoteLogViewPort != 0)
+            } else if (Settings.RemoteLogViewPort > 0)
             {
                 Logger.Info($"* Remote log viewing enabled at port {Settings.RemoteLogViewPort}.");
             }
@@ -252,8 +254,30 @@ namespace Server.Medius
 
             if (Settings.NATIp != null)
             {
-                IPAddress ip = IPAddress.Parse(Settings.NATIp);
-                DoGetHostEntry(ip);
+                try
+                {
+                    if(Settings.NATIp == IPAddress.Any.ToString())
+                    {
+                        try
+                        {
+                            IPAddress ip = IPAddress.Parse(Settings.NATIp);
+                            DoGetHostAddressEntry(ip);
+
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"GetHostAddress returned {ex}");
+                        }
+                    }
+
+                    DoGetHostNameEntry(Settings.NATIp);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"GetHostNameEntry returned {ex}");
+                }
+
+                
             }
             string rt_msg_client_get_version_string = "rt_msg_client version: 1.08.0206";
             Logger.Info($"Initialized Message Client Library {rt_msg_client_get_version_string}");
@@ -392,7 +416,12 @@ namespace Server.Medius
             if (Settings.EnableMLS == true)
             {
                 Logger.Info($"Enabling MLS on Server IP = {SERVER_IP} TCP Port = {LobbyServer.Port} UDP Port = {LobbyServer.Port}.");
+
+
                 Logger.Info($"Medius Lobby Server running under ApplicationID {AppIdArray}");
+
+                DMEServerResetMetrics();
+
                 LobbyServer.Start();
                 Logger.Info("Medius Lobby Server Initialized and Now Accepting Clients");
             }
@@ -409,7 +438,7 @@ namespace Server.Medius
             #endregion
 
             #region Server IP
-            Logger.Info($"Server IP = {SERVER_IP} [{IP_TYPE}]");
+            //Logger.Info($"Server IP = {SERVER_IP} [{IP_TYPE}]");
 
             #endregion
 
@@ -420,7 +449,10 @@ namespace Server.Medius
             if (Settings.AllowMediusFileServices == true)
             {
                 Logger.Info($"Initializing MFS Download Queue of size {Settings.MFSDownloadQSize}");
+
                 Logger.Info($"Initializing MFS Upload Queue of size {Settings.MFSUploadQSize}");
+                MFS_transferInit();
+
                 Logger.Info($"MFS Queue Timeout Interval {Settings.MFSQueueTimeoutInterval}");
             }
 
@@ -457,7 +489,7 @@ namespace Server.Medius
         static async Task Main(string[] args)
         {
             // 
-            Initialize();
+            await Initialize();
 
             // Add file logger if path is valid
             if (new FileInfo(LogSettings.Singleton.LogPath)?.Directory?.Exists ?? false)
@@ -487,9 +519,9 @@ namespace Server.Medius
             await StartServerAsync();
         }
 
-        static void Initialize()
+        static async Task Initialize()
         {
-            RefreshConfig();
+            await RefreshConfig();
 
             //
             if (Settings.Locations != null)
@@ -703,7 +735,7 @@ namespace Server.Medius
         /// <summary>
         /// 
         /// </summary>
-        static void RefreshConfig()
+        static Task RefreshConfig()
         {
             // 
             var serializerSettings = new JsonSerializerSettings()
@@ -711,19 +743,49 @@ namespace Server.Medius
                 MissingMemberHandling = MissingMemberHandling.Ignore,
             };
 
-            // Load settings
-            if (File.Exists(CONFIG_FILE))
+            #region Dirs
+            string root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string subdirLogs = root + @"\logs";
+            string subdirMFSFiles = root + @"\MFSFiles";
+            string subdirHorizonPlugins = root + @"\plugins";
+            string subdirConfig = root + @"\config";
+            string subdirConfigFile = subdirConfig + @"\" + CONFIG_FILE;
+            #endregion
+
+            #region Create Dirs
+            // If Logs directory does not exist, create it. 
+            if (!Directory.Exists(subdirLogs))
             {
+                Directory.CreateDirectory(subdirLogs);
+            }
+
+            // If MFSFiles directory does not exist, create it. 
+            if (!Directory.Exists(subdirMFSFiles))
+            {
+                Directory.CreateDirectory(subdirMFSFiles);
+            }
+
+            // If config directory does not exist, create it. 
+            if (!Directory.Exists(subdirConfig))
+            {
+                Directory.CreateDirectory(subdirConfig);
+            }
+            #endregion
+
+            #region Check Config.json
+            // Create Defaults if File doesn't exist
+            if (!File.Exists(subdirConfigFile))
+            {
+                File.WriteAllText(subdirConfigFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+            } else {
+
+                // Load Settings
                 Settings.Locations?.Clear();
 
                 // Populate existing object
-                JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
+                JsonConvert.PopulateObject(File.ReadAllText(subdirConfigFile), Settings, serializerSettings);
             }
-            else
-            {
-                // Save defaults
-                File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
-            }
+            #endregion
 
             // Set LogSettings singleton
             LogSettings.Singleton = Settings.Logging;
@@ -766,6 +828,7 @@ namespace Server.Medius
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;
+            return Task.CompletedTask;
         }
 
         public static string GenerateSessionKey()
@@ -775,6 +838,7 @@ namespace Server.Medius
                 return (++_sessionKeyCounter).ToString();
             }
         }
+
         #region Text Filter
         private static string GetTextFilterRegexExpression(TextFilterContext context)
         {
@@ -826,7 +890,8 @@ namespace Server.Medius
 
             return path;
         }
-        
+
+        #region System Time
         public static DateTime GetLinkerTime(Assembly assembly)
         {
             const string BuildVersionMetadataPrefix = "+build";
@@ -846,13 +911,22 @@ namespace Server.Medius
             return default;
         }
 
-        public static void DoGetHostEntry(IPAddress address)
+        public static TimeSpan GetUptime()
         {
+            ManagementObject mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
+            DateTime lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
+            return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
+        }
+        #endregion
+
+        #region DoGetHost
+        public static void DoGetHostNameEntry(string hostName)
+        {
+            IPHostEntry host = Dns.GetHostEntry(hostName);
             try
             {
-                IPHostEntry host = Dns.GetHostEntry(address);
 
-                Logger.Info($"NAT Service IP: {address}");
+                Logger.Info($"NAT Service HostName: {hostName} \n      NAT Service IP: {host.AddressList.First()}");
                 //Logger.Info($"GetHostEntry({address}) returns HostName: {host.HostName}");
             }
             catch (SocketException ex)
@@ -860,15 +934,43 @@ namespace Server.Medius
                 //unknown host or
                 //not every IP has a name
                 //log exception (manage it)
-                Logger.Error($"NAT not resolved {ex}");
+                Logger.Error($"NAT not resolved: {host.AddressList.First()} || exception: {ex}");
             }
         }
 
-        public static TimeSpan GetUptime()
+        public static void DoGetHostAddressEntry(IPAddress address)
         {
-            ManagementObject mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
-            DateTime lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
-            return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
+            IPHostEntry host = Dns.GetHostEntry(address);
+            try
+            {
+
+                Logger.Info($"NAT Service IP: {host.AddressList.First()}");
+                //Logger.Info($"GetHostEntry({address}) returns HostName: {host.HostName}");
+            }
+            catch (SocketException ex)
+            {
+                //unknown host or
+                //not every IP has a name
+                //log exception (manage it)
+                Logger.Error($"NAT not resolved: {host.AddressList.First()} || exception: {ex}");
+            }
+        }
+        #endregion
+
+        public static void MFS_transferInit()
+        {
+
+            Logger.Info($"Initializing MFS_transfer with url {Settings.MFSTransferURI} "); //numThreads{}"
+        }
+
+        public static void DMEServerResetMetrics()
+        {
+            //rt_msg_server_reset_connect_metrics
+            //rt_msg_server_reset_data_metrics
+            //rt_msg_server_reset_message_metrics
+            //rt_msg_server_reset_frame_time_metrics
+
+            //ERROR: Could not reset DME Svr metrics[%d]
         }
     }
 }

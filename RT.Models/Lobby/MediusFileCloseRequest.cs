@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileClose)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileClose)]
     public class MediusFileCloseRequest : BaseLobbyMessage, IMediusRequest
     {
 

@@ -4,7 +4,7 @@ using System;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.MediusTextFilter1)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.MediusTextFilter1)]
     public class MediusTextFilterRequest1 : BaseLobbyExtMessage, IMediusRequest
     {
 

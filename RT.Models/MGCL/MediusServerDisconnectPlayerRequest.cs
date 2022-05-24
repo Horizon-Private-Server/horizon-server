@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerDisconnectPlayerRequest)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyReport, MediusMGCLMessageIds.ServerDisconnectPlayerRequest)]
     public class MediusServerDisconnectPlayerRequest : BaseMGCLMessage, IMediusRequest
     {
 

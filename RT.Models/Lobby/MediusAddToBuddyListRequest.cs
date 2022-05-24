@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AddToBuddyList)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AddToBuddyList)]
     public class MediusAddToBuddyListRequest : BaseLobbyMessage, IMediusRequest
     {
 

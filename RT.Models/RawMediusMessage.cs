@@ -12,8 +12,8 @@ namespace RT.Models
     public class RawMediusMessage : BaseMediusMessage
     {
 
-        protected NetMessageTypes _class;
-        public override NetMessageTypes PacketClass => _class;
+        protected NetMessageClass _class;
+        public override NetMessageClass PacketClass => _class;
 
         protected byte _messageType;
         public override byte PacketType => _messageType;
@@ -25,7 +25,7 @@ namespace RT.Models
 
         }
 
-        public RawMediusMessage(NetMessageTypes msgClass, byte messageType)
+        public RawMediusMessage(NetMessageClass msgClass, byte messageType)
         {
             _class = msgClass;
             _messageType = messageType;

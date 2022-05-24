@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassDME, MediusDmeMessageIds.ClientConnects)]
+    [MediusMessage(NetMessageClass.MessageClassDME, MediusDmeMessageIds.ClientConnects)]
     public class DMEClientConnects : BaseDMEMessage
     {
 

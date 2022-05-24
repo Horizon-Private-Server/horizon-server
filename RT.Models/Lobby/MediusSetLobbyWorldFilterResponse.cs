@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.SetLobbyWorldFilterResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.SetLobbyWorldFilterResponse)]
     public class MediusSetLobbyWorldFilterResponse : BaseLobbyExtMessage, IMediusResponse
     {
 

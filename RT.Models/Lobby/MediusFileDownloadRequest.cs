@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileDownload)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileDownload)]
     public class MediusFileDownloadRequest : BaseLobbyMessage, IMediusRequest
     {
 

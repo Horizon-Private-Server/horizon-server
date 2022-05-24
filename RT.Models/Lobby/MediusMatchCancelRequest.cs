@@ -1,21 +1,17 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.BuddySetListRequest)]
-    public class MediusBuddySetListRequest : BaseLobbyMessage, IMediusRequest
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.MatchCancelRequest)]
+    public class MediusMatchCancelRequest : BaseLobbyExtMessage, IMediusRequest
     {
-        public override byte PacketType => (byte)MediusLobbyExtMessageIds.BuddySetListRequest;
+        public override byte PacketType => (byte)MediusLobbyExtMessageIds.MatchCancelRequest;
 
         public MessageId MessageID { get; set; }
 
         public string SessionKey; // SESSIONKEY_MAXLEN
-        public int NumEntries;
-        public string[] List;
-
-        public byte NAME_LEN;
+        public int Unk1;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -27,16 +23,8 @@ namespace RT.Models
 
             // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
-            NumEntries = reader.ReadInt32();
-            
-            
-            
-            List = new string[NumEntries];
-            for (int i = 0; i < NumEntries; i++) {
-                NAME_LEN = reader.ReadByte();
-                List[i] = reader.ReadString(NAME_LEN);
-            }
-        }
+            Unk1 = reader.ReadInt32();
+    }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
@@ -48,12 +36,7 @@ namespace RT.Models
 
             // 
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
-            writer.Write(NumEntries);
-            for (int i = 0; i < NumEntries; i++)
-            {
-                writer.Write(NAME_LEN);
-                writer.Write(List[i]);
-            }
+            writer.Write(Unk1);
         }
 
         public override string ToString()
@@ -61,8 +44,7 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"MessageID: {MessageID} " +
                 $"SessionKey: {SessionKey} " +
-                $"NumEntries: {NumEntries} " +
-                $"List: {Convert.ToString(List)}";
+                $"Unk1: {Unk1}";
         }
     }
 }

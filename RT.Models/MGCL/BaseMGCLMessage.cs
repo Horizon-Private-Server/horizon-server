@@ -4,7 +4,7 @@ namespace RT.Models
 {
     public abstract class BaseMGCLMessage : BaseMediusMessage
     {
-        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyReport;
+        public override NetMessageClass PacketClass => NetMessageClass.MessageClassLobbyReport;
 
         public BaseMGCLMessage()
         {

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetWorldSecurityLevel)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.GetWorldSecurityLevel)]
     public class MediusGetWorldSecurityLevelRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.GetWorldSecurityLevel;

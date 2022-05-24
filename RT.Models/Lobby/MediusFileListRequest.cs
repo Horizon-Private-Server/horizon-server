@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileListFiles)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileListFiles)]
     public class MediusFileListRequest : BaseLobbyMessage, IMediusRequest
     {
 

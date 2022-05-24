@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.ExtendedSessionBeginRequest)]
+	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.ExtendedSessionBeginRequest)]
     public class MediusExtendedSessionBeginRequest : BaseLobbyExtMessage, IMediusRequest
     {
 

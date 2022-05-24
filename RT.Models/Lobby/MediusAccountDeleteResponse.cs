@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountDeleteResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AccountDeleteResponse)]
     public class MediusAccountDeleteResponse : BaseLobbyMessage, IMediusResponse
     {
 

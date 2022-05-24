@@ -3,10 +3,10 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerReport)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyReport, MediusMGCLMessageIds.ServerReport)]
     public class MediusServerReport : BaseMGCLMessage
     {
-        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobbyReport;
+        public override NetMessageClass PacketClass => NetMessageClass.MessageClassLobbyReport;
         public override byte PacketType => (byte)MediusMGCLMessageIds.ServerReport;
 
         public string SessionKey;

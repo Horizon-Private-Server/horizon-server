@@ -6,7 +6,7 @@ namespace RT.Models
     /// <summary>
     ///  Response to grant or deny game creation on this MGCL host. The confirmation maps to MGCL_ERROR_CODE.
     /// </summary>
-	[MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerCreateGameResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobbyReport, MediusMGCLMessageIds.ServerCreateGameResponse)]
     public class MediusServerCreateGameResponse : BaseMGCLMessage, IMediusResponse
     {
 

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.RemoveFromIgnoreList)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.RemoveFromIgnoreList)]
     public class MediusRemoveFromIgnoreListRequest : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.RemoveFromIgnoreList;

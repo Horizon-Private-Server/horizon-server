@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountLoginResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AccountLoginResponse)]
     public class MediusAccountLoginResponse : BaseLobbyMessage, IMediusResponse
     {
 

@@ -6,7 +6,7 @@ namespace RT.Models
     /// <summary>
     /// CreateChannelRequest (Pre 1.50)
     /// </summary>
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.CreateChannelRequest0)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.CreateChannelRequest0)]
     public class MediusCreateChannelRequest0 : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.CreateChannelRequest0;

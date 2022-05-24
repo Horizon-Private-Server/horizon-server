@@ -4,7 +4,7 @@ using System;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FileUploadResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileUploadResponse)]
     public class MediusFileUploadResponse : BaseLobbyMessage, IMediusResponse
     {
 

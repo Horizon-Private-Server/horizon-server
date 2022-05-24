@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.SetLocalizationParams)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.SetLocalizationParams)]
     public class MediusSetLocalizationParamsRequest : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.SetLocalizationParams;

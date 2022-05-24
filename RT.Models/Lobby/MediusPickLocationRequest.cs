@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.PickLocation)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.PickLocation)]
     public class MediusPickLocationRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.PickLocation;

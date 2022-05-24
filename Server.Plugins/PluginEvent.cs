@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Server.Plugins
+﻿namespace Server.Plugins
 {
     public enum PluginEvent
     {

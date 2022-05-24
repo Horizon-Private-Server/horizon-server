@@ -4,7 +4,7 @@ using System;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.DnasSignaturePost)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.DnasSignaturePost)]
     public class MediusDnasSignaturePost : BaseLobbyExtMessage
     {
 

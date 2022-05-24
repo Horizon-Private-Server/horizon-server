@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.AddAliasRequest)]
+	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.AddAliasRequest)]
     public class MediusAddAliasRequest : BaseLobbyMessage, IMediusRequest
     {
 

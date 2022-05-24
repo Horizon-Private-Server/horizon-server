@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.EndGameReport)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.EndGameReport)]
     public class MediusEndGameReport : BaseLobbyMessage
     {
 

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.GetAccessLevelInfoResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.GetAccessLevelInfoResponse)]
     public class MediusGetAccessLevelInfoResponse : BaseLobbyExtMessage, IMediusRequest
     {
 

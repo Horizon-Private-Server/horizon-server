@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.RemovePlayerFromClan)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.RemovePlayerFromClan)]
     public class MediusRemovePlayerFromClanRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.RemovePlayerFromClan;

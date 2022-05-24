@@ -199,6 +199,8 @@ namespace Server.Medius
                         // 
                         data.ClientObject.OnConnected();
 
+                        IPHostEntry host = Dns.GetHostEntry(Program.Settings.NATIp);
+
                         // Reply
                         data.ClientObject.Queue(new MediusServerSessionBeginResponse()
                         {
@@ -214,7 +216,7 @@ namespace Server.Medius
                                 {
                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                         {
-                                            new NetAddress() { Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService },
+                                            new NetAddress() { Address = host.AddressList.First().ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService },
                                             new NetAddress() { AddressType = NetAddressType.NetAddressNone },
                                         }
                                 },
@@ -234,6 +236,8 @@ namespace Server.Medius
                         // 
                         data.ClientObject.OnConnected();
 
+                        IPHostEntry host = Dns.GetHostEntry(Program.Settings.NATIp);
+
                         data.ClientObject.Queue(new MediusServerSessionBeginResponse()
                         {
                             MessageID = serverSessionBeginRequest1.MessageID,
@@ -248,7 +252,7 @@ namespace Server.Medius
                                 {
                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
-                                        new NetAddress() { Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService },
+                                        new NetAddress() { Address = host.AddressList.First().ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService },
                                         new NetAddress() { AddressType = NetAddressType.NetAddressNone },
                                     }
                                 },
@@ -669,7 +673,6 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {pickLocationRequest} without a session.");
 
-
                         data.ClientObject.LocationId = pickLocationRequest.LocationID;
                         data.ClientObject.Queue(new MediusPickLocationResponse()
                         {
@@ -815,6 +818,9 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {anonymousLoginRequest} without a session.");
 
+                        IPHostEntry host = Dns.GetHostEntry(Program.Settings.NATIp);
+
+                        data.ClientObject.AccountDisplayName = anonymousLoginRequest.SessionDisplayName;
                         data.ClientObject.Queue(new MediusAnonymousLoginResponse()
                         {
                             MessageID = anonymousLoginRequest.MessageID,
@@ -824,7 +830,7 @@ namespace Server.Medius
                             MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
                             ConnectInfo = new NetConnectionInfo()
                             {
-                                //AccessKey = anonymousLoginRequest.SessionKey,
+                                AccessKey = data.ClientObject.Token,
                                 SessionKey = anonymousLoginRequest.SessionKey,
                                 WorldID = 0,
                                 //ServerKey = Program.GlobalAuthPublic,
@@ -833,7 +839,7 @@ namespace Server.Medius
                                     AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                     {
                                         new NetAddress() {Address = Program.LobbyServer.IPAddress.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                        new NetAddress() {Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
+                                        new NetAddress() {Address = host.AddressList.First().ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                     }
                                 },
                                 Type = NetConnectionType.NetConnectionTypeClientServerTCP
@@ -1728,9 +1734,12 @@ namespace Server.Medius
             // Put client in default channel
             data.ClientObject.JoinChannel(Program.Manager.GetDefaultLobbyChannel(data.ApplicationId));
 
+            IPHostEntry host = Dns.GetHostEntry(Program.Settings.NATIp);
+
             // Tell client
             if (ticket == true)
             {
+
                 #region IF PS3 Client
                 data.ClientObject.Queue(new MediusTicketLoginResponse()
                 {
@@ -1755,7 +1764,7 @@ namespace Server.Medius
                             AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                             {
                                 new NetAddress() {Address = Program.LobbyServer.IPAddress.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                new NetAddress() {Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
+                                new NetAddress() {Address = host.AddressList.First().ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                             }
                         },
                         Type = NetConnectionType.NetConnectionTypeClientServerTCP
@@ -1786,7 +1795,7 @@ namespace Server.Medius
                             AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                             {
                                 new NetAddress() {Address = Program.LobbyServer.IPAddress.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                new NetAddress() {Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
+                                new NetAddress() {Address = host.AddressList.First().ToString(), Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                             }
                         },
                         Type = NetConnectionType.NetConnectionTypeClientServerTCP

@@ -4,7 +4,7 @@ using System;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.AddToBuddyListConfirmation)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.AddToBuddyListConfirmation)]
     public class MediusAddToBuddyListConfirmationRequest : BaseLobbyExtMessage, IMediusRequest
     {
 

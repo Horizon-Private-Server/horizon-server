@@ -10,7 +10,7 @@ namespace RT.Models
 {
     public abstract class BaseLobbyMessage : BaseMediusMessage
     {
-        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassLobby;
+        public override NetMessageClass PacketClass => NetMessageClass.MessageClassLobby;
 
         public BaseLobbyMessage()
         {

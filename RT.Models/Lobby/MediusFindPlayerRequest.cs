@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.FindPlayer)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FindPlayer)]
     public class MediusFindPlayerRequest : BaseLobbyMessage, IMediusRequest
     {
 

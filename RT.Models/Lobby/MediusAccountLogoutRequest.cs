@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountLogout)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AccountLogout)]
     public class MediusAccountLogoutRequest : BaseLobbyMessage, IMediusRequest
     {
 

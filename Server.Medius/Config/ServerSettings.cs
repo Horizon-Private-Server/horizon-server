@@ -16,19 +16,19 @@ namespace Server.Medius.Config
     public class ServerSettings
     {
         /// <summary>
-        /// Beta specific config.
-        /// </summary>
-        public BetaConfig Beta { get; set; } = new BetaConfig();
-
-        /// <summary>
         /// How many milliseconds before refreshing the config.
         /// </summary>
         public int RefreshConfigInterval = 5000;
 
         /// <summary>
+        /// Beta specific config.
+        /// </summary>
+        public BetaConfig Beta { get; set; } = new BetaConfig();
+
+        /// <summary>
         /// Compatible application ids. Null means all are accepted.
         /// </summary>
-        public int[] ApplicationIds { get; set; } = null;
+        public int[] ApplicationIds { get; set; } = { 0 };
 
         #region PublicIp
         /// <summary>
@@ -90,25 +90,25 @@ namespace Server.Medius.Config
         public int LocationID = 0;
 
         #region Enable Select Servers
-        /// <summary
-        /// 
+        /// <summary>
+        /// Enable MAPS Zipper Interactive Only
         /// </summary>
         public bool EnableMAPS { get; set; } = false;
 
-        /// <summary
-        /// 
+        /// <summary>
+        /// Enable MAS
         /// </summary>
-        public bool EnableMAS { get; set; } = false;
+        public bool EnableMAS { get; set; } = true;
 
-        /// <summary
-        /// 
+        /// <summary>
+        /// Enable MLS
         /// </summary>
-        public bool EnableMLS { get; set; } = false;
+        public bool EnableMLS { get; set; } = true;
 
-        /// <summary
-        /// 
+        /// <summary>
+        /// Enable MPS
         /// </summary>
-        public bool EnableMPS { get; set; } = false;
+        public bool EnableMPS { get; set; } = true;
         #endregion
 
         #region Ports
@@ -219,7 +219,7 @@ namespace Server.Medius.Config
         /// <summary>
         /// Root path of the medius file service directory.
         /// </summary>
-        public string MediusFileServerRootPath { get; set; } = "files";
+        public string MediusFileServerRootPath { get; set; } = "MFSFiles";
 
         /// <summary>
         /// Max number of download requests in the download queue

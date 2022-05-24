@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.CheckMyClanInvitations)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.CheckMyClanInvitations)]
     public class MediusCheckMyClanInvitationsRequest : BaseLobbyMessage, IMediusRequest
     {
 

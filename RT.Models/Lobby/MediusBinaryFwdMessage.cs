@@ -4,7 +4,7 @@ using System;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryFwdMessage)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryFwdMessage)]
     public class MediusBinaryFwdMessage : BaseLobbyExtMessage
     {
 

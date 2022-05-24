@@ -161,4 +161,74 @@ namespace Server.Common.Logging
             }
         }
     }
+
+    public class DMELogSettings
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public static LogSettings Singleton { get; set; } = null;
+
+        /// <summary>
+        /// Path to the log file.
+        /// </summary>
+        public string LogPath { get; set; } = "logs/DME.log";
+
+        /// <summary>
+        /// Whether to also log to the console.
+        /// </summary>
+        public bool LogToConsole { get; set; } = true;
+
+        /// <summary>
+        /// Size in bytes for each log file.
+        /// </summary>
+        public int RollingFileSize = 1024 * 1024 * 1;
+
+        /// <summary>
+        /// Max number of files before rolling back to the first log file.
+        /// </summary>
+        public int RollingFileCount = 100;
+
+        /// <summary>
+        /// Log level.
+        /// </summary>
+        public LogLevel LogLevel { get; set; } = LogLevel.Information;
+
+
+    }
+
+    public class NATLogSettings
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public static LogSettings Singleton { get; set; } = null;
+
+        /// <summary>
+        /// Path to the log file.
+        /// </summary>
+        public string LogPath { get; set; } = "logs/nat.log";
+
+        /// <summary>
+        /// Whether to also log to the console.
+        /// </summary>
+        public bool LogToConsole { get; set; } = true;
+
+        /// <summary>
+        /// Size in bytes for each log file.
+        /// </summary>
+        public int RollingFileSize = 1024 * 1024 * 1;
+
+        /// <summary>
+        /// Max number of files before rolling back to the first log file.
+        /// </summary>
+        public int RollingFileCount = 100;
+
+        /// <summary>
+        /// Log level.
+        /// </summary>
+        public LogLevel LogLevel { get; set; } = LogLevel.Information;
+        
+
+    }
 }

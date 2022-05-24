@@ -9,28 +9,28 @@ namespace RT.Models
     [AttributeUsage(AttributeTargets.Class)]
     public class MediusMessageAttribute : Attribute
     {
-        public NetMessageTypes MessageClass;
+        public NetMessageClass MessageClass;
         public byte MessageType;
 
-        public MediusMessageAttribute(NetMessageTypes msgClass, MediusDmeMessageIds msgType)
+        public MediusMessageAttribute(NetMessageClass msgClass, MediusDmeMessageIds msgType)
         {
             MessageClass = msgClass;
             MessageType = (byte)msgType;
         }
 
-        public MediusMessageAttribute(NetMessageTypes msgClass, MediusMGCLMessageIds msgType)
+        public MediusMessageAttribute(NetMessageClass msgClass, MediusMGCLMessageIds msgType)
         {
             MessageClass = msgClass;
             MessageType = (byte)msgType;
         }
 
-        public MediusMessageAttribute(NetMessageTypes msgClass, MediusLobbyMessageIds msgType)
+        public MediusMessageAttribute(NetMessageClass msgClass, MediusLobbyMessageIds msgType)
         {
             MessageClass = msgClass;
             MessageType = (byte)msgType;
         }
 
-        public MediusMessageAttribute(NetMessageTypes msgClass, MediusLobbyExtMessageIds msgType)
+        public MediusMessageAttribute(NetMessageClass msgClass, MediusLobbyExtMessageIds msgType)
         {
             MessageClass = msgClass;
             MessageType = (byte)msgType;
@@ -42,7 +42,7 @@ namespace RT.Models
         /// <summary>
         /// Message class.
         /// </summary>
-        public abstract NetMessageTypes PacketClass { get; }
+        public abstract NetMessageClass PacketClass { get; }
 
         /// <summary>
         /// Message type.
@@ -89,10 +89,10 @@ namespace RT.Models
         {
             switch (this.PacketClass)
             {
-                case NetMessageTypes.MessageClassDME: return LogSettings.Singleton?.IsLog((MediusDmeMessageIds)this.PacketType) ?? false;
-                case NetMessageTypes.MessageClassLobby: return LogSettings.Singleton?.IsLog((MediusLobbyMessageIds)this.PacketType) ?? false;
-                case NetMessageTypes.MessageClassLobbyReport: return LogSettings.Singleton?.IsLog((MediusMGCLMessageIds)this.PacketType) ?? false;
-                case NetMessageTypes.MessageClassLobbyExt: return LogSettings.Singleton?.IsLog((MediusLobbyExtMessageIds)this.PacketType) ?? false;
+                case NetMessageClass.MessageClassDME: return LogSettings.Singleton?.IsLog((MediusDmeMessageIds)this.PacketType) ?? false;
+                case NetMessageClass.MessageClassLobby: return LogSettings.Singleton?.IsLog((MediusLobbyMessageIds)this.PacketType) ?? false;
+                case NetMessageClass.MessageClassLobbyReport: return LogSettings.Singleton?.IsLog((MediusMGCLMessageIds)this.PacketType) ?? false;
+                case NetMessageClass.MessageClassLobbyExt: return LogSettings.Singleton?.IsLog((MediusLobbyExtMessageIds)this.PacketType) ?? false;
                 default: return true;
             }
         }
@@ -133,22 +133,22 @@ namespace RT.Models
                     {
                         switch (attrs[0].MessageClass)
                         {
-                            case NetMessageTypes.MessageClassDME:
+                            case NetMessageClass.MessageClassDME:
                                 {
                                     _dmeMessageClassById.Add((MediusDmeMessageIds)attrs[0].MessageType, classType);
                                     break;
                                 }
-                            case NetMessageTypes.MessageClassLobbyReport:
+                            case NetMessageClass.MessageClassLobbyReport:
                                 {
                                     _mgclMessageClassById.Add((MediusMGCLMessageIds)attrs[0].MessageType, classType);
                                     break;
                                 }
-                            case NetMessageTypes.MessageClassLobby:
+                            case NetMessageClass.MessageClassLobby:
                                 {
                                     _lobbyMessageClassById.Add((MediusLobbyMessageIds)attrs[0].MessageType, classType);
                                     break;
                                 }
-                            case NetMessageTypes.MessageClassLobbyExt:
+                            case NetMessageClass.MessageClassLobbyExt:
                                 {
                                     _lobbyExtMessageClassById.Add((MediusLobbyExtMessageIds)attrs[0].MessageType, classType);
                                     break;
@@ -167,30 +167,30 @@ namespace RT.Models
             // Init
             Initialize();
 
-            NetMessageTypes msgClass = reader.Read<NetMessageTypes>();
+            NetMessageClass msgClass = reader.Read<NetMessageClass>();
             var msgType = reader.ReadByte();
 
             switch (msgClass)
             {
-                case NetMessageTypes.MessageClassDME:
+                case NetMessageClass.MessageClassDME:
                     {
                         if (!_dmeMessageClassById.TryGetValue((MediusDmeMessageIds)msgType, out classType))
                             classType = null;
                         break;
                     }
-                case NetMessageTypes.MessageClassLobbyReport:
+                case NetMessageClass.MessageClassLobbyReport:
                     {
                         if (!_mgclMessageClassById.TryGetValue((MediusMGCLMessageIds)msgType, out classType))
                             classType = null;
                         break;
                     }
-                case NetMessageTypes.MessageClassLobby:
+                case NetMessageClass.MessageClassLobby:
                     {
                         if (!_lobbyMessageClassById.TryGetValue((MediusLobbyMessageIds)msgType, out classType))
                             classType = null;
                         break;
                     }
-                case NetMessageTypes.MessageClassLobbyExt:
+                case NetMessageClass.MessageClassLobbyExt:
                     {
                         if (!_lobbyExtMessageClassById.TryGetValue((MediusLobbyExtMessageIds)msgType, out classType))
                             classType = null;

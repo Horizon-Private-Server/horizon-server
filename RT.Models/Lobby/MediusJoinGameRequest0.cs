@@ -6,7 +6,7 @@ namespace RT.Models
     /// <summary>
     /// MediusJoinGameRequest0 (Pre 1.50)
     /// </summary>
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.JoinGameRequest0)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.JoinGameRequest0)]
     public class MediusJoinGameRequest0 : BaseLobbyMessage, IMediusRequest
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.JoinGameRequest0;

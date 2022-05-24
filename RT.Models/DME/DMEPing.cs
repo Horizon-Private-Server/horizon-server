@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassDME, MediusDmeMessageIds.Ping)]
+    [MediusMessage(NetMessageClass.MessageClassDME, MediusDmeMessageIds.Ping)]
     public class DMEPing : BaseDMEMessage
     {
 

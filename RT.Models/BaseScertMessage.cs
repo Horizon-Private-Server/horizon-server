@@ -66,7 +66,7 @@ namespace RT.Models
             // Check for fragmentation
             if (Id == RT_MSG_TYPE.RT_MSG_SERVER_APP && length > Constants.MEDIUS_MESSAGE_MAXLEN)
             {
-                var msgClass = (NetMessageTypes)buffer[0];
+                var msgClass = (NetMessageClass)buffer[0];
                 var msgType = buffer[1];
                 var fragments = DMETypePacketFragment.FromPayload(msgClass, msgType, buffer, 2, length - 2);
 
@@ -283,7 +283,7 @@ namespace RT.Models
 
         public override string ToString()
         {
-            return $"Id:{Id}";
+            return $"Id: {Id}";
         }
     }
 

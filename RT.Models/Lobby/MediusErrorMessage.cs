@@ -6,7 +6,7 @@ namespace RT.Models
     /// <summary>
     /// General error message from the server to client
     /// </summary>
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.ErrorMessage)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.ErrorMessage)]
     public class MediusErrorMessage : BaseLobbyMessage
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.ErrorMessage;

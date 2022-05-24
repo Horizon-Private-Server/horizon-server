@@ -1,6 +1,5 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
 using System.IO;
 using System.Linq;
 
@@ -36,7 +35,7 @@ namespace RT.Models
 
         public override string ToString()
         {
-            return "NetAddresses:<" + string.Join(" ", AddressList?.Select(x => x.ToString())) + "> ";
+            return "NetAddresses: <" + string.Join(" ", AddressList?.Select(x => x.ToString())) + "> ";
         }
     }
 }

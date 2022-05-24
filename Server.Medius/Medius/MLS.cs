@@ -87,10 +87,12 @@ namespace Server.Medius
                             await clientChannel.CloseAsync();
                             return;
                         }
-
                         // 
                         data.ApplicationId = clientConnectTcp.AppId;
+
                         data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
+
+                        data.ClientObject = Program.Manager.GetClientByAccountName(data.ClientObject.AccountName);
 
                         //If Client Object is null, then ignore
                         if (data.ClientObject == null)
@@ -490,7 +492,7 @@ namespace Server.Medius
                 #endregion
 
                 #region Match
-
+                //Unimplemented
                 case MediusMatchGetSupersetListRequest matchGetSupersetListRequest:
                     {
                         // ERROR - Need a session
@@ -517,7 +519,7 @@ namespace Server.Medius
 
                         break;
                     }
-
+                    //Unimplemented
                 case MediusMatchFindGameRequest matchFindGameRequest:
                     {
                         // ERROR - Need a session
@@ -527,6 +529,8 @@ namespace Server.Medius
                         // ERROR -- Need to be logged in
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {matchFindGameRequest} without being logged in.");
+
+
 
                         // Success
                         data.ClientObject.Queue(new MediusMatchFindGameStatusResponse()
@@ -1686,6 +1690,7 @@ namespace Server.Medius
                                 }
                                 else
                                 {
+                                    Logger.Info("GetLadderListRequest_ExtraInfo - no result");
                                     data.ClientObject.Queue(new MediusLadderList_ExtraInfoResponse()
                                     {
                                         MessageID = ladderList_ExtraInfoRequest.MessageID,
@@ -3112,11 +3117,12 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {gameListRequest} without being logged in.");
 
-                        
+                        /*
                         var gameList = Program.Manager.GetGameList(
                                data.ClientObject.ApplicationId,
                                gameListRequest.PageID,
-                               gameListRequest.PageSize)
+                               gameListRequest.PageSize,
+                               data.ClientObject.GameListFilters)
                             .Select(x => new MediusGameListResponse()
                             {
                                 MessageID = gameListRequest.MessageID,
@@ -3143,10 +3149,12 @@ namespace Server.Medius
                             data.ClientObject.Queue(new MediusGameListResponse()
                             {
                                 MessageID = gameListRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusWMError,
+                                StatusCode = MediusCallbackStatus.MediusNoResult,
+                                PlayerCount = 0,
                                 EndOfList = true
                             });
                         }
+                        */
                         break;
                     }
 
@@ -5108,6 +5116,8 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {binaryMessage} without being logged in.");
 
+
+                        //Binary Msg Handler Error: [%d]: Player not privileged or MUM erro
                         switch (binaryMessage.MessageType)
                         {
 
@@ -5120,12 +5130,27 @@ namespace Server.Medius
                                 {
                                     var target = Program.Manager.GetClientByAccountId(binaryMessage.TargetAccountID);
 
-                                    target?.Queue(new MediusBinaryFwdMessage1()
+                                    if (target != null)
                                     {
-                                        MessageType = binaryMessage.MessageType,
-                                        OriginatorAccountID = data.ClientObject.AccountId,
-                                        Message = binaryMessage.Message
-                                    });
+                                        target?.Queue(new MediusBinaryFwdMessage1()
+                                        {
+                                            MessageType = binaryMessage.MessageType,
+                                            OriginatorAccountID = data.ClientObject.AccountId,
+                                            Message = binaryMessage.Message
+                                        });
+                                    } else {
+                                        Logger.Info("No players found to send binary msg to");
+                                    }
+
+                                    break;
+                                }
+
+                            case MediusBinaryMessageType.BroadcastBinaryMsgAcrossEntireUniverse:
+                                {
+
+                                    //MUMBinaryFwdFromLobby
+                                    //MUMBinaryFwdFromLobby() Error %d MID %s, Orig AID %d, Whisper Target AID %d
+                                    Logger.Info($"Sending BroadcastBinaryMsgAcrossEntireUniverse(%d) binary message (%d)");
                                     break;
                                 }
                             default:

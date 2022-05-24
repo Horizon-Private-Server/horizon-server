@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectGamesResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyReport, MediusMGCLMessageIds.ServerConnectGamesResponse)]
     public class MediusServerConnectGamesResponse : BaseMGCLMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusMGCLMessageIds.ServerConnectGamesResponse;

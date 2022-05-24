@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassDME, MediusDmeMessageIds.ServerVersion)]
+    [MediusMessage(NetMessageClass.MessageClassDME, MediusDmeMessageIds.ServerVersion)]
     public class DMEServerVersion : BaseDMEMessage
     {
 

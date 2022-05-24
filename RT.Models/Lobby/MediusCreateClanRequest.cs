@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.CreateClan)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.CreateClan)]
     public class MediusCreateClanRequest : BaseLobbyMessage, IMediusRequest
     {
 

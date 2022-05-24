@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetIgnoreListResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.GetIgnoreListResponse)]
     public class MediusGetIgnoreListResponse : BaseLobbyMessage, IMediusResponse
     {
         public class MediusGetIgnoreListResponseItem

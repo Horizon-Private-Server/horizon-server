@@ -1,12 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Math;
-using RT.Common;
+﻿using Org.BouncyCastle.Math;
 using RT.Cryptography;
 using Server.Common.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
 
 namespace Server.Test.Config
 {
@@ -53,12 +47,12 @@ namespace Server.Test.Config
         /// <summary>
         /// The port that the Proxy server is bound to.
         /// </summary>
-        public short ProxyPort { get; set; } = 10079;
+        public short ProxyPort { get; set; } = 10077;
 
         /// <summary>
         /// The port that the Dme server is bound to.
         /// </summary>
-        public short DmePort { get; set; } = 10072;
+        public short DmePort { get; set; } = 10073;
 
         /// <summary>
         /// Key used to establish initial handshake with MPS.

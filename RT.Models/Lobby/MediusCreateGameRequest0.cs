@@ -6,7 +6,7 @@ namespace RT.Models
     /// <summary>
     /// CreateGameRequest (Pre 1.50)
     /// </summary>
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.CreateGameRequest0)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.CreateGameRequest0)]
     public class MediusCreateGameRequest0 : BaseLobbyMessage, IMediusRequest
     {
 

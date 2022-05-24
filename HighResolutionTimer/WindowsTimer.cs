@@ -164,8 +164,8 @@ namespace Haukcode.HighResolutionTimer
 
         public void WaitForTrigger()
         {
-            this.triggerEvent.WaitOne();
-            this.triggerEvent.Reset();
+            triggerEvent.WaitOne();
+            triggerEvent.Reset();
         }
     }
 

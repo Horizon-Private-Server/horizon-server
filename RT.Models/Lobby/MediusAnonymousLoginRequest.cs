@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AnonymousLogin)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AnonymousLogin)]
     public class MediusAnonymousLoginRequest : BaseLobbyMessage, IMediusRequest
     {
 

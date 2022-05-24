@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.SetGameListFilter0)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.SetGameListFilter0)]
     public class MediusSetGameListFilterRequest0 : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.SetGameListFilter0;

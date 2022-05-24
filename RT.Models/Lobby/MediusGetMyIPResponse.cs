@@ -11,7 +11,7 @@ namespace RT.Models
     /// <summary>
     /// Response for the request to get your external IP Address
     /// </summary>
-	[MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.GetMyIPResponse)]
+	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.GetMyIPResponse)]
     public class MediusGetMyIPResponse : BaseLobbyMessage, IMediusResponse
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.GetMyIPResponse;

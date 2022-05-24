@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.RespondToClanInvitation)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.RespondToClanInvitation)]
     public class MediusRespondToClanInvitationRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.RespondToClanInvitation;

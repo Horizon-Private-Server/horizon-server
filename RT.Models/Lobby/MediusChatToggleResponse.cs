@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.ChatToggleResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.ChatToggleResponse)]
     public class MediusChatToggleResponse : BaseLobbyMessage, IMediusResponse
     {
 

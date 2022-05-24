@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassDME, MediusDmeMessageIds.UpdateClientStatus)]
+    [MediusMessage(NetMessageClass.MessageClassDME, MediusDmeMessageIds.UpdateClientStatus)]
     public class DMEUpdateClientStatus : BaseDMEMessage
     {
 

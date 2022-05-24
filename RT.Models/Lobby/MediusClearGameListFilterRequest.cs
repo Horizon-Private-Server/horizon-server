@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageTypes.MessageClassLobbyExt, MediusLobbyExtMessageIds.ClearGameListFilter)]
+	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.ClearGameListFilter)]
     public class MediusClearGameListFilterRequest : BaseLobbyExtMessage, IMediusRequest
     {
 

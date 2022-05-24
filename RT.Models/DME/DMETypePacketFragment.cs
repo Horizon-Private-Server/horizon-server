@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassDME, MediusDmeMessageIds.PacketFragment)]
+    [MediusMessage(NetMessageClass.MessageClassDME, MediusDmeMessageIds.PacketFragment)]
     public class DMETypePacketFragment : BaseDMEMessage
     {
 
@@ -73,12 +73,12 @@ namespace RT.Models
                 $"PacketBufferOffset:{PacketBufferOffset}";
         }
 
-        public static List<DMETypePacketFragment> FromPayload(NetMessageTypes msgClass, byte msgType, byte[] payload)
+        public static List<DMETypePacketFragment> FromPayload(NetMessageClass msgClass, byte msgType, byte[] payload)
         {
             return FromPayload(msgClass, msgType, payload, 0, payload.Length);
         }
 
-        public static List<DMETypePacketFragment> FromPayload(NetMessageTypes msgClass, byte msgType, byte[] payload, int index, int length)
+        public static List<DMETypePacketFragment> FromPayload(NetMessageClass msgClass, byte msgType, byte[] payload, int index, int length)
         {
             List<DMETypePacketFragment> fragments = new List<DMETypePacketFragment>();
 

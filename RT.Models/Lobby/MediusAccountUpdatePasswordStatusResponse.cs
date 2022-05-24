@@ -4,7 +4,7 @@ using Server.Common;
 namespace RT.Models
 {
 
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AccountUpdatePasswordStatusResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AccountUpdatePasswordStatusResponse)]
     public class MediusAccountUpdatePasswordStatusResponse : BaseLobbyMessage, IMediusResponse
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.AccountUpdatePasswordStatusResponse;

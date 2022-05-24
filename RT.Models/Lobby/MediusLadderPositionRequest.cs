@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.LadderPosition)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.LadderPosition)]
     public class MediusLadderPositionRequest : BaseLobbyMessage, IMediusRequest
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.LadderPosition;

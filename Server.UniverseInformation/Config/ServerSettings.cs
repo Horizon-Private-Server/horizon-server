@@ -16,6 +16,7 @@ namespace Server.UniverseInformation.Config
 
         /// <summary>
         /// Ports of the MUIS server.
+        /// Default is 10071, EU is 10080, and Japan is 10101
         /// </summary>
         public int[] Ports { get; set; } = new int[] { 10071, 10080 };
 

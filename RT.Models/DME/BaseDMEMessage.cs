@@ -4,7 +4,7 @@ namespace RT.Models
 {
     public abstract class BaseDMEMessage : BaseMediusMessage
     {
-        public override NetMessageTypes PacketClass => NetMessageTypes.MessageClassDME;
+        public override NetMessageClass PacketClass => NetMessageClass.MessageClassDME;
 
         public BaseDMEMessage()
         {

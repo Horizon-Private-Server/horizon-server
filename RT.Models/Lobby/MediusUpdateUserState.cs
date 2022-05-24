@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.UpdateUserState)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.UpdateUserState)]
     public class MediusUpdateUserState : BaseLobbyMessage
     {
 		public override byte PacketType => (byte)MediusLobbyMessageIds.UpdateUserState;

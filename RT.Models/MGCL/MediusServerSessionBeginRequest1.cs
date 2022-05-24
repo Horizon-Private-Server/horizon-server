@@ -7,7 +7,7 @@ namespace RT.Models
     /// <summary>
     /// Begins a Peer to Peer MAS Session
     /// </summary>
-    [MediusMessage(NetMessageTypes.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginRequest1)]
+    [MediusMessage(NetMessageClass.MessageClassLobbyReport, MediusMGCLMessageIds.ServerSessionBeginRequest1)]
     public class MediusServerSessionBeginRequest1 : BaseMGCLMessage, IMediusRequest
     {
 

@@ -3,7 +3,7 @@ using Server.Common;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.AnonymousLoginResponse)]
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.AnonymousLoginResponse)]
     public class MediusAnonymousLoginResponse : BaseLobbyMessage, IMediusResponse
     {
 
