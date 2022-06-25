@@ -7,7 +7,12 @@ using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryMessage)]
+    /// <summary>
+    /// Introduced in Medius API v2.7
+    /// - Sends a binary message to everyone in the channel, 
+    /// or to a specific account id.
+    /// </summary>
+    [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.BinaryMessage)]
     public class MediusBinaryMessage : BaseLobbyExtMessage
     {
 

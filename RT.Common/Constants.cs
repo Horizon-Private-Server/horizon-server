@@ -126,6 +126,7 @@ namespace RT.Common
 
         public const int MGCL_MESSAGEID_MAXLEN = 21;
         public const int MGCL_SERVERVERSION_MAXLEN = 16;
+        public const int MGCL_SERVERVERSION_MAXLEN1 = 8;
         public const int MGCL_GAMENAME_MAXLEN = 64;
         public const int MGCL_GAMESTATS_MAXLEN = 256;
         public const int MGCL_GAMEPASSWORD_MAXLEN = 32;

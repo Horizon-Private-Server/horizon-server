@@ -30,12 +30,6 @@ namespace RT.Models
             StatusCode = reader.Read<MediusCallbackStatus>();
             AnnouncementID = reader.ReadInt32();
 
-            //DL HD, UYA HD, Motorstorm1
-            if(reader.AppId == 20095 || reader.AppId == 24000 || reader.AppId == 20754)
-            {
-                Announcement = reader.ReadString(Constants.ANNOUNCEMENT_MAXLEN);
-            }
-
             if (reader.MediusVersion <= 112)
             {
                 Announcement = reader.ReadString(Constants.ANNOUNCEMENT_MAXLEN);
@@ -61,12 +55,6 @@ namespace RT.Models
             writer.Write(new byte[3]);
             writer.Write(StatusCode);
             writer.Write(AnnouncementID);
-
-            //DL HD, UYA HD, Motorstorm1
-            if (writer.AppId == 20095 || writer.AppId == 24000 || writer.AppId == 20754)
-            {
-                writer.Write(Announcement, Constants.ANNOUNCEMENT_MAXLEN);
-            }
 
             if (writer.MediusVersion <= 112)
             {

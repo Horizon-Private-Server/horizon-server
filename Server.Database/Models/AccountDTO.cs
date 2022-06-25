@@ -118,6 +118,11 @@ namespace Server.Database.Models
         /// Account name.
         /// </summary>
         public string AccountName { get; set; }
+
+        /// <summary>
+        /// Player Status.
+        /// </summary>
+        public int PlayerStatus { get; set; }
     }
 
     public class AccountStatusDTO

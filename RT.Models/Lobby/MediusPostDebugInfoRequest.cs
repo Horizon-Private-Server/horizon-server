@@ -7,6 +7,13 @@ using System.Text;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Introduced in Medius API v2.7.
+    /// Allow an application to post ascii information about a 
+    /// problem that occurred during online gameplay.This function is strictly used
+    /// only during development, QA and Public Beta phases of a title. In general, an
+    /// application should not ship with calls to this function.
+    /// </summary>
     [MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.PostDebugInfo)]
     public class MediusPostDebugInfoRequest : BaseLobbyExtMessage, IMediusRequest
     {

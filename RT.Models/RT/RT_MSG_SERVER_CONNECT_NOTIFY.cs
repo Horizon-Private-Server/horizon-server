@@ -10,17 +10,15 @@ namespace RT.Models
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_SERVER_CONNECT_NOTIFY;
 
         //
-        public short PlayerIndex;
-        public short ScertId;
-        public short UNK_04 = 0;
+        public ushort PlayerIndex;
+        public int ScertId;
         public IPAddress IP = IPAddress.Any;
         public RSA_KEY Key = new RSA_KEY();
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
-            PlayerIndex = reader.ReadInt16();
-            ScertId = reader.ReadInt16();
-            UNK_04 = reader.ReadInt16();
+            PlayerIndex = reader.ReadUInt16();
+            ScertId = reader.ReadInt32();
             IP = reader.Read<IPAddress>();
             Key = reader.Read<RSA_KEY>();
         }
@@ -29,7 +27,6 @@ namespace RT.Models
         {
             writer.Write(PlayerIndex);
             writer.Write(ScertId);
-            writer.Write(UNK_04);
             writer.Write(IP ?? IPAddress.Any);
             writer.Write(Key);
         }

@@ -213,6 +213,11 @@ namespace Server.Medius.Models
         /// </summary>
         private DateTime _lastServerEchoValue = DateTime.UnixEpoch;
 
+        /// <summary>
+        /// File being Uploaded
+        /// </summary>
+        public MediusFile mediufFileToUpload;
+
 
 
         public ClientObject()

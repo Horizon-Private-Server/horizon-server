@@ -3,6 +3,10 @@ using Server.Common;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Introduced in 1.50<br></br>
+    /// Request to create a file using Medius File Services
+    /// </summary>
     [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileCreate)]
     public class MediusFileCreateRequest : BaseLobbyMessage, IMediusRequest
     {

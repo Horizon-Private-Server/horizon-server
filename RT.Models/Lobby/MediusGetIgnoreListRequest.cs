@@ -3,6 +3,9 @@ using Server.Common;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Introduced in Medius 1.42
+    /// </summary>
     [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.GetIgnoreList)]
     public class MediusGetIgnoreListRequest : BaseLobbyMessage, IMediusRequest
     {

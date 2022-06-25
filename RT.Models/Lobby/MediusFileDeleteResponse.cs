@@ -1,28 +1,27 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 
 namespace RT.Models
 {
-    /// <summary>
-    /// Introduced in Medius v1.50
-    /// </summary>
-    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileClose)]
-    public class MediusFileCloseRequest : BaseLobbyMessage, IMediusRequest
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileDeleteResponse)]
+    public class MediusFileDeleteResponse : BaseLobbyMessage, IMediusResponse
     {
 
-        public override byte PacketType => (byte)MediusLobbyMessageIds.FileClose;
+		public override byte PacketType => (byte)MediusLobbyMessageIds.FileDeleteResponse;
+
+        public bool IsSuccess => StatusCode >= 0;
 
         public MessageId MessageID { get; set; }
 
-        public MediusFile MediusFileInfo;
+        public MediusCallbackStatus StatusCode;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
-            MediusFileInfo = reader.Read<MediusFile>();
+            base.Deserialize(reader);
 
             // 
-            base.Deserialize(reader);
+            StatusCode = reader.Read<MediusCallbackStatus>();
 
             //
             MessageID = reader.Read<MessageId>();
@@ -31,22 +30,23 @@ namespace RT.Models
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            // 
-            writer.Write(MediusFileInfo);
+            //
+            base.Serialize(writer);
 
             // 
-            base.Serialize(writer);
+            writer.Write(StatusCode);
 
             //
             writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(new byte[3]);
         }
 
+
         public override string ToString()
         {
             return base.ToString() + " " +
                 $"MessageID: {MessageID} " +
-                $"MediusFileInfo: {MediusFileInfo}";
+                $"StatusCode: {StatusCode}";
         }
     }
 }

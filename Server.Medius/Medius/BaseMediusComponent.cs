@@ -111,26 +111,6 @@ namespace Server.Medius
                     {
                         QueueBanMessage(data, "Your IP has been banned!");
                     }
-                    else
-                    {
-                        // Check if in maintenance mode
-                        Program.Database.GetServerFlags().ContinueWith((r) =>
-                        {
-                            if (r.IsCompletedSuccessfully && r.Result != null && r.Result.MaintenanceMode != null)
-                            {
-                                // Ensure that maintenance is active
-                                // Ensure that we're past the from date
-                                // Ensure that we're before the to date (if set)
-                                if (r.Result.MaintenanceMode.IsActive
-                                        && Utils.GetHighPrecisionUtcTime() > r.Result.MaintenanceMode.FromDt
-                                        && (!r.Result.MaintenanceMode.ToDt.HasValue
-                                            || r.Result.MaintenanceMode.ToDt > Utils.GetHighPrecisionUtcTime()))
-                                {
-                                    QueueBanMessage(data, "Server in maintenance.");
-                                }
-                            }
-                        });
-                    }
                 });
             };
                 // Remove client on disconnect
@@ -369,6 +349,21 @@ namespace Server.Medius
                 LanguageType = 2,
                 EndOfMessage = true,
                 Message = msg
+            });
+        }
+
+        protected virtual void QueueClanKickMessage(ChannelData data, string msg)
+        {
+
+
+            // Send clan kick message
+            data.SendQueue.Enqueue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
+            {
+                Severity = Program.Settings.BanSystemMessageSeverity,
+                EncodingType = 1,
+                LanguageType = 2,
+                EndOfMessage = true,
+                Message = msg 
             });
         }
 

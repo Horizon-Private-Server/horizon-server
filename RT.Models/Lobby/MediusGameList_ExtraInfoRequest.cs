@@ -50,9 +50,9 @@ namespace RT.Models
         public override string ToString()
         {
             return base.ToString() + " " +
-                $"MessageID:{MessageID} " +
-             $"PageID:{PageID} " +
-$"PageSize:{PageSize}";
+                $"MessageID: {MessageID} " +
+                $"PageID: {PageID} " +
+                $"PageSize: {PageSize}";
         }
     }
 }

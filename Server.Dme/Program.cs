@@ -42,7 +42,7 @@ namespace Server.Dme
 
         private static FileLoggerProvider _fileLogger = null;
         private static ulong _sessionKeyCounter = 0;
-        private static readonly object _sessionKeyCounterLock = (object)_sessionKeyCounter;
+        private static readonly object _sessionKeyCounterLock = _sessionKeyCounter;
         private static DateTime _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
 
         private static int _ticks = 0;

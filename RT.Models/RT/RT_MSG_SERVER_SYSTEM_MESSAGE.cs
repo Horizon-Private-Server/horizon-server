@@ -3,6 +3,9 @@ using Server.Common;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Introduced in Medius 1.43
+    /// </summary>
     [ScertMessage(RT_MSG_TYPE.RT_MSG_SERVER_SYSTEM_MESSAGE)]
     public class RT_MSG_SERVER_SYSTEM_MESSAGE : BaseScertMessage
     {

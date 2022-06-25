@@ -69,10 +69,17 @@ namespace Server.Dme.Config
         /// </summary>
         public int MPSReconnectInterval { get; set; } = 15;
 
+        #region Server Echo
+        /// <summary>
+        /// Enable/Disable sending of Server Echo for games that don't implement this.
+        /// </summary>
+        public bool ServerEchoUnsupported { get; set; } = false;
+
         /// <summary>
         /// Number of seconds before the server should send an echo to the client.
         /// </summary>
         public int ServerEchoInterval { get; set; } = 10;
+        #endregion
 
         /// <summary>
         /// Number of milliseconds for main loop thread to sleep.

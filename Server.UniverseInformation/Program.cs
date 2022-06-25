@@ -4,12 +4,16 @@ using Newtonsoft.Json;
 using NReco.Logging.File;
 using Server.Common;
 using Server.Common.Logging;
+using Server.Database;
 using Server.UniverseInformation.Config;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Server.UniverseInformation
@@ -17,9 +21,12 @@ namespace Server.UniverseInformation
     class Program
     {
         public const string CONFIG_FILE = "config.json";
+        public const string DB_CONFIG_FILE = "db.config.json";
+
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
         public static ServerSettings Settings = new ServerSettings();
+        public static DbController Database = new DbController(DB_CONFIG_FILE);
 
         public static MUIS[] UniverseInfoServers = null;
 
@@ -30,12 +37,14 @@ namespace Server.UniverseInformation
         {
             DateTime lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
 
-            
-
-            //Medius Universe Information Server Version 2.10.0003
+            string datetime = DateTime.Now.ToString("MMMM/dd/yyyy hh:mm:ss tt");
 
             Logger.Info("**************************************************");
-            string datetime = DateTime.Now.ToString("MMMM/dd/yyyy hh:mm:ss tt");
+            #region MediusGetBuildTimeStamp
+            var MediusBuildTimeStamp = GetLinkerTime(Assembly.GetEntryAssembly());
+            Logger.Info($"* MediusBuildTimeStamp at {MediusBuildTimeStamp}");
+            #endregion
+            Logger.Info("* Medius Universe Information Server Version 3.05.201109161400");
             Logger.Info($"* Launched on {datetime}");
 
             UniverseInfoServers = new MUIS[Settings.Ports.Length];
@@ -47,6 +56,14 @@ namespace Server.UniverseInformation
             }
 
             //* Process ID: %d , Parent Process ID: %d
+            if (Database._settings.SimulatedMode == true)
+            {
+                Logger.Info("* Database Disabled Medius Universe Information Server");
+            }
+            else
+            {
+                Logger.Info("* Database Enabled Medius Universe Information Server");
+            }
 
             Logger.Info($"* Server Key Type: {Settings.EncryptMessages}");
 
@@ -196,5 +213,33 @@ namespace Server.UniverseInformation
                 Logger.Error($"* NAT not resolved {ex}");
             }
         }
+
+        #region System Time
+        public static DateTime GetLinkerTime(Assembly assembly)
+        {
+            const string BuildVersionMetadataPrefix = "+build";
+
+            var attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            if (attribute?.InformationalVersion != null)
+            {
+                var value = attribute.InformationalVersion;
+                var index = value.IndexOf(BuildVersionMetadataPrefix);
+                if (index > 0)
+                {
+                    value = value[(index + BuildVersionMetadataPrefix.Length)..];
+                    return DateTime.ParseExact(value, "yyyy-MM-ddTHH:mm:ss:fffZ", CultureInfo.InvariantCulture);
+                }
+            }
+
+            return default;
+        }
+
+        public static TimeSpan GetUptime()
+        {
+            ManagementObject mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
+            DateTime lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
+            return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
+        }
+        #endregion
     }
 }

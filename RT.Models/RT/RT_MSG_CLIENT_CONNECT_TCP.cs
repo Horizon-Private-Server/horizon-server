@@ -1,5 +1,6 @@
 ﻿using RT.Common;
 using Server.Common;
+using System;
 
 namespace RT.Models
 {
@@ -55,7 +56,7 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"TargetWorldId: {TargetWorldId:X8} " +
                 $"UNK0: {UNK0:X2} " +
-                $"AppId: {AppId:X8} " +
+                $"AppId: {Convert.ToInt32(AppId)} " +
                 $"Key: {Key} " +
                 $"SessionKey: {SessionKey} " +
                 $"AccessToken: {AccessToken}";

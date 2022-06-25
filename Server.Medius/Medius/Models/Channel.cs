@@ -22,7 +22,7 @@ namespace Server.Medius.Models
 
         public int Id = 0;
         public int ApplicationId = 0;
-        public ChannelType Type = ChannelType.Game;
+        public ChannelType Type = ChannelType.Lobby;
         public string Name = "Default";
         public string Password = null;
         public int MinPlayers = 1;

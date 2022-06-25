@@ -27,6 +27,7 @@ namespace Server.Medius.Models
         {
             ApplicationId = request.ApplicationID;
 
+
             // Generate new session key
             SessionKey = Program.GenerateSessionKey();
 
@@ -52,6 +53,7 @@ namespace Server.Medius.Models
         public DMEObject(MediusServerCreateGameOnMeRequest request)
         {
             ApplicationId = request.ApplicationID;
+            WorldId = request.WorldID;
 
             // Generate new session key
             SessionKey = Program.GenerateSessionKey();

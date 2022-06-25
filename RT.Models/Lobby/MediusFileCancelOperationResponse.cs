@@ -1,32 +1,29 @@
-using RT.Common;
+﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-	[MediusMessage(NetMessageClass.MessageClassLobbyExt, MediusLobbyExtMessageIds.SessionBegin1)]
-    public class MediusSessionBegin1Request : BaseLobbyExtMessage, IMediusRequest
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileCancelOperationResponse)]
+    public class MediusFileCancelOperationResponse : BaseLobbyMessage, IMediusResponse
     {
-		public override byte PacketType => (byte)MediusLobbyExtMessageIds.SessionBegin1;
+        public override byte PacketType => (byte)MediusLobbyMessageIds.FileCancelOperationResponse;
+
+        public bool IsSuccess => StatusCode >= 0;
 
         public MessageId MessageID { get; set; }
 
-        public MediusConnectionType ConnectionClass;
+        public MediusCallbackStatus StatusCode;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             base.Deserialize(reader);
+            // 
+            StatusCode = reader.Read<MediusCallbackStatus>();
 
             //
             MessageID = reader.Read<MessageId>();
-
-            // 
             reader.ReadBytes(3);
-            ConnectionClass = reader.Read<MediusConnectionType>();
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -34,20 +31,19 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            // 
+            writer.Write(StatusCode);
+
             //
             writer.Write(MessageID ?? MessageId.Empty);
-
-            // 
             writer.Write(new byte[3]);
-            writer.Write(ConnectionClass);
         }
-
 
         public override string ToString()
         {
-            return base.ToString() + " " + 
+            return base.ToString() + " " +
                 $"MessageID:{MessageID} " +
-                $"ConnectionClass:{ConnectionClass}";
+                $"StatusCode:{StatusCode}";
         }
     }
 }

@@ -49,7 +49,7 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"MessageID: {MessageID} " +
                 $"SessionKey: {SessionKey} " +
-                $"LocationID: {LocationID}";
+                $"LocationID: {Convert.ToInt32(LocationID)}";
         }
     }
 }

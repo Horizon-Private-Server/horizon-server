@@ -1,32 +1,34 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.ChatToggle)]
-    public class MediusChatToggleRequest : BaseLobbyMessage, IMediusRequest
+    /// <summary>
+    /// Introduced in 1.50<br></br>
+    /// Request to delete a file.
+    /// </summary>
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileDelete)]
+    public class MediusFileDeleteRequest : BaseLobbyMessage, IMediusRequest
     {
 
-        public override byte PacketType => (byte)MediusLobbyMessageIds.ChatToggle;
+        public override byte PacketType => (byte)MediusLobbyMessageIds.FileDelete;
 
         public MessageId MessageID { get; set; }
-        public string SessionKey; // SESSIONKEY_MAXLEN
-        public uint ChatToggle; 
+
+        public MediusFile MediusFileToDelete;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
-        {
+        { 
             // 
             base.Deserialize(reader);
 
+            // 
+            MediusFileToDelete = reader.Read<MediusFile>();
+
+
             //
             MessageID = reader.Read<MessageId>();
-
-            SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
-            ChatToggle = reader.ReadUInt32();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -34,19 +36,20 @@ namespace RT.Models
             // 
             base.Serialize(writer);
 
+            // 
+            writer.Write(MediusFileToDelete);
+
+
             //
             writer.Write(MessageID ?? MessageId.Empty);
-            writer.Write(SessionKey);
-            writer.Write(ChatToggle);
+            writer.Write(new byte[3]);
         }
-
 
         public override string ToString()
         {
             return base.ToString() + " " +
                 $"MessageID: {MessageID} " +
-                $"SessionKey: {SessionKey} " +
-                $"ChatToggle: {ChatToggle}";
+                $"MediusFileToCreate: {MediusFileToDelete}";
         }
     }
 }

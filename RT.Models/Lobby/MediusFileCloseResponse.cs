@@ -1,12 +1,11 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Introduced in Medius v1.50
+    /// </summary>
     [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.FileCloseResponse)]
     public class MediusFileCloseResponse : BaseLobbyMessage, IMediusResponse
     {
@@ -47,7 +46,6 @@ namespace RT.Models
             writer.Write(MessageID ?? MessageId.Empty);
             writer.Write(new byte[3]);
         }
-
 
         public override string ToString()
         {

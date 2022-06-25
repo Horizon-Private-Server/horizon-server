@@ -342,7 +342,10 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        Enqueue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value });
+                        Enqueue(new RT_MSG_CLIENT_ECHO()
+                        {
+                            Value = 0xA5,
+                        });
                         break;
                     }
                 case RT_MSG_SERVER_APP serverApp:
@@ -386,7 +389,7 @@ namespace Server.Dme
                             _mpsState = MPSConnectionState.AUTHENTICATED;
                         else
                             _mpsState = MPSConnectionState.FAILED;
-                        break;
+                        break; 
                     }
 
                 //

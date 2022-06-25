@@ -79,6 +79,21 @@ namespace RT.Common
 
     }
 
+    public enum RT_MSG_CLIENT_REJECT : byte
+    {
+        RT_MSG_CLIENT_REJECT_NONE,
+        RT_MSG_CLIENT_REJECT_ERROR,
+        RT_MSG_CLIENT_REJECT_CLIENT_VER,
+        RT_MSG_CLIENT_REJECT_SERVER_VER,
+        RT_MSG_CLIENT_REJECT_FULL,
+        RT_MSG_CLIENT_REJECT_WORLD_ID,
+        RT_MSG_CLIENT_REJECT_APP_SIGNATURE,
+        RT_MSG_CLIENT_REJECT_ENCRYPTION,
+        RT_MSG_CLIENT_ACCESS_KEY,
+        RT_MSG_CLIENT_REJECT_AUX_UDP_FAILURE,
+        MAX_RT_MSG_CLIENT_REJECT
+    }
+
     public enum RT_MSG_CLIENT_DISCONNECT_REASON : byte
     {
          RT_MSG_CLIENT_DISCONNECT_NONE,
@@ -231,6 +246,15 @@ namespace RT.Common
         MediusMasterAccount,
     }
 
+    #region MediusBuddyAddType
+    /// <summary>
+    /// Introduced in Medius Library version (v1.50)
+    /// There is a new enumeration type called MediusBuddyAddType.  When set to 
+    /// AddSymmetric, then when a player accepts your buddy invitation, you will
+    /// automatically be updated in their buddy list as well.Default behaviour of
+    /// Medius is to require both users to invite each other, AddSymmetric requires
+    /// only one user to invite.
+    /// </summary>
     public enum MediusBuddyAddType : int
     {
         /// <summary>
@@ -247,6 +271,7 @@ namespace RT.Common
         /// </summary>
         ExtraMediusAddType = 0xffffff
     }
+    #endregion
 
     public enum MediusLadderType : int
     {
@@ -263,6 +288,7 @@ namespace RT.Common
         MediusPlayerInOtherUniverse,
         LastMediusPLayerStatus,
     }
+
     #region MediusCharacterEncodingType
     public enum MediusCharacterEncodingType : int
     {
@@ -325,8 +351,9 @@ namespace RT.Common
     }
     #endregion
 
+    #region MediusConnectionType
     /// <summary>
-    /// Specify which type of network connection is being used
+    /// Specify which type of network connection is being used<br></br>
     /// Note, the connection type is set during the initial session begin request.
     /// </summary>
     public enum MediusConnectionType : int
@@ -344,9 +371,11 @@ namespace RT.Common
         /// </summary>
         Wireless = 2,
     }
+    #endregion
 
+    #region MediusDnasCategory
     /// <summary>
-    /// Post the dnas signature for this application
+    /// Post the dnas signature for this application<br></br>
     /// The DNAS category must correspond with the type of auth.dat file requested from SCEI.
     /// </summary>
     public enum MediusDnasCategory : int
@@ -364,6 +393,7 @@ namespace RT.Common
         /// </summary>
         DnasDiskID,
     }
+    #endregion
 
     #region Medius Device Type
     /// <summary>
@@ -392,6 +422,8 @@ namespace RT.Common
 
     #region MediusSCETerritory
     /// <summary>
+    /// Introduced in Medius 1.40.0023 <br></br>
+    /// Changed in Medius 1.40.0036 to now inlucde all possible memory card territories<br></br>
     /// Identifies the appropriate TRC territory for this title, for memory card, and HDD-related operations
     /// </summary>
     public enum MediusSCETerritory : int
@@ -531,11 +563,13 @@ namespace RT.Common
         ClanInvitationRevoked,
     }
 
+    #region Policy Type
     public enum MediusPolicyType : int
     {
         Usage,
         Privacy,
     }
+    #endregion
 
     public enum MediusUserAction : int
     {
@@ -688,6 +722,7 @@ namespace RT.Common
         MediusGameHostLANPlay,
 
         /// <summary>
+        /// Introduced in Medius 1.42<br></br>
         /// Host a client-server, auxiliary UDP game.
         /// </summary>
         MediusGameHostClientServerAuxUDP,
@@ -1025,33 +1060,171 @@ namespace RT.Common
         RECV_NOTIFICATION = 8
     }
 
-    public enum NetAddressType : int
+    public enum NetConnectFailureReason : uint
     {
-        NetAddressNone = 0,
-        NetAddressTypeExternal = 1,
-        NetAddressTypeInternal = 2,
-        NetAddressTypeNATService = 3,
-        NetAddressTypeBinaryExternal = 4,
-        NetAddressTypeBinaryInternal = 5,
-        NetAddressTypeBinaryExternalVport = 6,
-        NetAddressTypeBinaryInternalVport = 7,
-        NetAddressTypeBinaryNATServices = 8,
-        NetAddressTypeSignalAddress
+
+    }
+
+    /// <summary>
+    /// The values in this enumeration are used for determining the<br></br>
+    /// type of connection being made.
+    /// </summary>
+    public enum NetAddressType : uint
+    {
+        /// <summary>
+        /// This value is used to specify "Not in use"
+        /// </summary>
+        NetAddressNone,
+        /// <summary>
+        /// ASCII string representation of a client's public IPv4 address.
+        /// </summary>
+        NetAddressTypeExternal,
+        /// <summary>
+        /// ASCII string representation of a client's private IPv4 address.
+        /// </summary>
+        NetAddressTypeInternal,
+        /// <summary>
+        /// ASCII string representiation of a NAT resolution server's IPv4 address.
+        /// </summary>
+        NetAddressTypeNATService,
+        /// <summary>
+        ///4-byte binary representation of a client's public IPv4 address.
+        /// </summary>
+        NetAddressTypeBinaryExternal,
+        /// <summary>
+        /// 4-byte binary representation of a client's private IPv4 address.
+        /// </summary>
+        NetAddressTypeBinaryInternal,
+        /// <summary>
+        /// 4-byte binary representation of a client's public IPv4 address.<br></br>
+        /// The Port parameter contains a 2-byte virtual port in 2 high bytes and<br></br>
+        /// the actual network port in the 2 low bytes.
+        /// </summary>
+        NetAddressTypeBinaryExternalVport,
+        /// <summary>
+        /// 4-byte binary representation of a client's public IPv4 address.<br></br>
+        /// The Port parameter contains a 2-byte virtual port in 2 high bytes and<br></br>
+        /// the actual network port in the 2 low bytes.
+        /// </summary>
+        NetAddressTypeBinaryInternalVport,
+        /// <summary>
+        /// Contains two 4-byte binary representations of NAT resolution servers<br></br>
+        /// IPv4 addresses stored back to back.
+        /// </summary>
+        NetAddressTypeBinaryNATServices,
+        NetAddressTypeSignalAddress,
+        NetAddressTypeSignalBlob
     }
 
     #region NetMessageClass
+    /// <summary>
+    /// Message classes allow for orthogonal (non-interacting) registration of messages.
+    /// </summary>
     public enum NetMessageClass : byte
     {
+        /// <summary>
+        /// Identifies messages used internally by the DME.
+        /// </summary>
         MessageClassDME,
+        /// <summary>
+        /// Identifies messages used by the Medius Lobby.
+        /// </summary>
         MessageClassLobby,
+        /// <summary>
+        /// Identifies messages used by your game.
+        /// </summary>
         MessageClassApplication,
+        /// <summary>
+        /// Identifies messages used by the Medius Game Communications Library (MGCL).
+        /// </summary>
         MessageClassLobbyReport,
+        /// <summary>
+        /// Identifies additional external messages used by the Medius Lobby.
+        /// </summary>
         MessageClassLobbyExt,
+        /// <summary>
+        /// Identifies messages used during authentication.
+        /// (Deprecated)
+        /// </summary>
         MessageClassLobbyAuthentication,
+        /// <summary>
+        /// Zipper Interactive MAG/Socom 4 only!
+        /// </summary>
         MessageClassDMELocalPlugin,
+        /// <summary>
+        /// Used as an array allocation size. Must always be the <i>last</i> valid value before ExtraNetMessageClass, not after.
+        /// </summary>
         MaxMessageClasses,
+        /// <summary>
+        /// Ensures that all values are stored as 32-bit integers on all compilers.
+        /// </summary>
+        ExtraNetMessageClass = 0xff
     }
     #endregion
+
+
+    public enum NetClientStatus : uint
+    {
+        /// <summary>
+        /// No ClientStatus is available.
+        /// </summary>
+        ClientStatusNone,
+        /// <summary>
+        /// Client is not connected.
+        /// </summary>
+        ClientStatusNotConnected,
+        /// <summary>
+        /// Client is connected, but has not called NetJoin().
+        /// </summary>
+        ClientStatusConnected,
+        /// <summary>
+        /// Client is in the process of joining, and is now receiving its first batch of object and field updates.
+        /// </summary>
+        ClientStatusJoining,
+        /// <summary>
+        /// The client is now fully synchronized with the game, and has received all initial object creation callbacks, etc.
+        /// </summary>
+        ClientStatusJoined,
+        /// <summary>
+        /// The client is fully joined and is <i>also</i> the Session Master.
+        /// </summary>
+        ClientStatusJoinedSessionMaster,
+        /// <summary>
+        /// Ensures that all values are stored as 32-bit integers on all compilers.
+        /// </summary>
+        ExtraNetClientStatus = 0xffffff
+    }
+
+    /// <summary>
+    /// Introduced in 1.24
+    /// </summary>
+    public enum NetStreamMediaAudioType : uint
+    {
+        /// <summary>
+        /// RAW Unencoded audio data
+        /// </summary>
+        NetStreamMediaAudioTypeRAW = 0,
+        /// <summary>
+        /// Custom application audio data
+        /// </summary>
+        NetStreamMediaAudioTypeCUSTOM = 1,
+        /// <summary>
+        /// DME encoded GSM audio data
+        /// </summary>
+        NetStreamMediaAudioTypeGSM = 2,
+        /// <summary>
+        /// DME encoded LPC audio data
+        /// </summary>
+        NetStreamMediaAudioTypeLPC = 3,
+        /// <summary>
+        /// DME encoded LPC10 audio data
+        /// </summary>
+        NetStreamMediaAudioTypeLPC10 = 4,
+        /// <summary>
+        /// Ensures that all values are stored as 32-bit integers on all compilers.
+        /// </summary>
+        ExtraNetStreamMediaAudioType = 0xffffff
+    }
 
     #region MediusDmeMessageIds
     public enum MediusDmeMessageIds : byte
@@ -1534,10 +1707,11 @@ namespace RT.Common
     }
     #endregion
 
+    #region MGCL
     public enum MGCL_TRUST_LEVEL : int
     {
-        MGCL_TRUSTED = 0,
-        MGCL_NOT_TRUSTED = 1,
+        MGCL_TRUSTED,
+        MGCL_NOT_TRUSTED,
     }
 
     public enum MGCL_GAME_HOST_TYPE : int
@@ -1572,6 +1746,7 @@ namespace RT.Common
         MGCL_CALL_MGCL_CLOSE_BEFORE_REINITIALIZING = -18,
         MGCL_NUM_GAME_WORLDS_PER_LOBBY_WORLD_EXCEEDED = -19,
     }
+    #endregion
 
     #region Anti-Cheat
     public enum CheatQueryType : byte
@@ -1625,18 +1800,7 @@ namespace RT.Common
         anticheatGETANNOUNCEMENTS = 14,
         anticheatMAXEVENTS = 15,
     }
-
     #endregion
-
-    public enum NetClientStatus : byte
-    {
-        ClientStatusNone,
-        ClientStatusNotConnected,
-        ClientStatusConnected,
-        ClientStatusJoining,
-        ClientStatusJoined,
-        ClientStatusJoinedSessionMaster,
-    }
 
     [Flags]
     public enum MediusUniverseVariableInformationInfoFilter : uint

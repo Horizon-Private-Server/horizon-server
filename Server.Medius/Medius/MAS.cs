@@ -71,19 +71,29 @@ namespace Server.Medius
                         }
                         #endregion
 
+                        //If this is a PS3 client
                         if (scertClient.IsPS3Client)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
-                        }
-                        else if (scertClient.MediusVersion > 109 && scertClient.MediusVersion != null)
+                            //Send a Server_Connect_Require with no Password needed
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00 }, clientChannel);
+                        }   
+                        // Deadlocked check can be simplifed
+                        else if (scertClient.MediusVersion > 109 && scertClient.MediusVersion != null && scertClient.MediusVersion != 111)
                         {
                             Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
                         }
                         else
                         {
-                            #region If Frequency, TMBO, Socom 1 or ATV Offroad Fury 2 then
-                            //
-                            if (data.ApplicationId == 10010 || data.ApplicationId == 10031 || data.ApplicationId == 10274 || data.ApplicationId == 10284 || data.ApplicationId == 10984)
+                            #region PS2 specific
+                            //If Frequency, TMBO, Socom 1, ATV Offroad Fury 2, TM: HO, TM: BO or EyeToy Chat Beta then
+                            if (data.ApplicationId == 10010 ||
+                                data.ApplicationId == 10031 ||
+                                data.ApplicationId == 10274 ||
+                                data.ApplicationId == 10284 ||
+                                data.ApplicationId == 10984 ||
+                                data.ApplicationId == 10694 ||
+                                data.ApplicationId == 10550 ||
+                                data.ApplicationId == 20190)
                             {
                                 //Do NOT send hereCryptKey Game
                                 Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
@@ -95,7 +105,7 @@ namespace Server.Medius
                                 }, clientChannel);
 
                                 //If ATV Offroad Fury 2, complete connection
-                                if (data.ApplicationId == 10284)
+                                if (data.ApplicationId == 10284 || data.ApplicationId == 10550)
                                 {
                                     Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
                                 }
@@ -119,7 +129,7 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
                     {
-                        if (!scertClient.IsPS3Client && scertClient.RsaAuthKey != null)
+                        if (scertClient.RsaAuthKey != null)
                         {
                             Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         }
@@ -135,6 +145,9 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                        
+                        //TM:HO
+                        if (data.ApplicationId != 10694)
                         Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
                         break;
                     }
@@ -275,7 +288,7 @@ namespace Server.Medius
                         dmeObject.KeepAliveUntilNextConnection();
 
                         // Arc The Lad - End of Darkness cannot use the ServerKey, so they need to be removed, same with Amplitude and R&C3: Pubeta
-                        if (dmeObject.ApplicationId == 10984 || dmeObject.ApplicationId == 10164 || dmeObject.ApplicationId == 10680)
+                        if (dmeObject.ApplicationId == 10984 || dmeObject.ApplicationId == 10164 || dmeObject.ApplicationId == 10680 || dmeObject.ApplicationId == 10124)
                         {
                             dmeObject.Queue(new MediusServerAuthenticationResponse()
                             {
@@ -371,18 +384,40 @@ namespace Server.Medius
                         data.ClientObject.MediusVersion = (int)scertClient.MediusVersion;
                         data.ClientObject.OnConnected();
 
-                        if (Settings.SystemMessageSingleTest == true)
+                        if (Program.Settings.SystemMessageSingleTest != false)
                         {
-                            QueueBanMessage(data, "MAS.Notification Test: You have been banned from this server.");
-                        } else {
-                            // Reply
-                            data.ClientObject.Queue(new MediusSessionBeginResponse()
+                            QueueBanMessage(data, "MAS.Notification Test:\nYou have been banned from this server.");
+                        }
+                        else
+                        {
+                            _ = Program.Database.GetServerFlags().ContinueWith((r) =>
                             {
-                                MessageID = extendedSessionBeginRequest.MessageID,
-                                SessionKey = data.ClientObject.SessionKey,
-                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                if (r.IsCompletedSuccessfully && r.Result != null && r.Result.MaintenanceMode != null)
+                                {
+                                    // Ensure that maintenance is active
+                                    // Ensure that we're past the from date
+                                    // Ensure that we're before the to date (if set)
+                                    if (r.Result.MaintenanceMode.IsActive
+                                         && Utils.GetHighPrecisionUtcTime() > r.Result.MaintenanceMode.FromDt
+                                         && (!r.Result.MaintenanceMode.ToDt.HasValue
+                                             || r.Result.MaintenanceMode.ToDt > Utils.GetHighPrecisionUtcTime()))
+                                    {
+                                        QueueBanMessage(data, "Server in maintenance mode.");
+                                    }
+                                    else
+                                    {
+                                        // Reply
+                                        data.ClientObject.Queue(new MediusSessionBeginResponse()
+                                        {
+                                            MessageID = extendedSessionBeginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            SessionKey = data.ClientObject.SessionKey
+                                        });
+                                    }
+                                }
                             });
                         }
+
                         break;
                     }
                 case MediusSessionBeginRequest sessionBeginRequest:
@@ -393,16 +428,36 @@ namespace Server.Medius
                         data.ClientObject.MediusVersion = (int)scertClient.MediusVersion;
                         data.ClientObject.OnConnected();
 
-                        if (Settings.SystemMessageSingleTest == true)
+                        Logger.Info($"Test {Program.Settings.SystemMessageSingleTest}");
+                        if (Program.Settings.SystemMessageSingleTest != false)
                         {
-                            QueueBanMessage(data, "MAS.Notification Test: You have been banned from this server.");
+                            QueueBanMessage(data, "MAS.Notification Test:\nYou have been banned from this server.");
+
+                            await data.ClientObject.Logout();
                         } else {
-                            // Reply
-                            data.ClientObject.Queue(new MediusSessionBeginResponse()
+                            _ = Program.Database.GetServerFlags().ContinueWith((r) =>
                             {
-                                MessageID = sessionBeginRequest.MessageID,
-                                SessionKey = data.ClientObject.SessionKey,
-                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                if (r.IsCompletedSuccessfully && r.Result != null && r.Result.MaintenanceMode != null)
+                                {
+                                    // Ensure that maintenance is active
+                                    // Ensure that we're past the from date
+                                    // Ensure that we're before the to date (if set)
+                                    if (r.Result.MaintenanceMode.IsActive
+                                         && Utils.GetHighPrecisionUtcTime() > r.Result.MaintenanceMode.FromDt
+                                         && (!r.Result.MaintenanceMode.ToDt.HasValue
+                                             || r.Result.MaintenanceMode.ToDt > Utils.GetHighPrecisionUtcTime()))
+                                    {
+                                        QueueBanMessage(data, "Server in maintenance mode.");
+                                    } else {
+                                        // Reply
+                                        data.ClientObject.Queue(new MediusSessionBeginResponse()
+                                        {
+                                            MessageID = sessionBeginRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            SessionKey = data.ClientObject.SessionKey
+                                        });
+                                    }
+                                }
                             });
                         }
                         break;
@@ -416,16 +471,39 @@ namespace Server.Medius
                         data.ClientObject.MediusVersion = (int)scertClient.MediusVersion;
                         data.ClientObject.OnConnected();
 
-                        if (Settings.SystemMessageSingleTest == true)
+                        if (Program.Settings.SystemMessageSingleTest != false)
                         {
-                            QueueBanMessage(data, "MAS.Notification Test: You have been banned from this server.");
-                        } else {
-                            // Reply
-                            data.ClientObject.Queue(new MediusSessionBeginResponse()
+                            QueueBanMessage(data, "MAS.Notification Test:\nYou have been banned from this server.");
+
+                            await data.ClientObject.Logout();
+                        }
+                        else
+                        {
+                            _ = Program.Database.GetServerFlags().ContinueWith((r) =>
                             {
-                                MessageID = SessionBeginRequest1.MessageID,
-                                SessionKey = data.ClientObject.SessionKey,
-                                StatusCode = MediusCallbackStatus.MediusSuccess
+                                if (r.IsCompletedSuccessfully && r.Result != null && r.Result.MaintenanceMode != null)
+                                {
+                                    // Ensure that maintenance is active
+                                    // Ensure that we're past the from date
+                                    // Ensure that we're before the to date (if set)
+                                    if (r.Result.MaintenanceMode.IsActive
+                                         && Utils.GetHighPrecisionUtcTime() > r.Result.MaintenanceMode.FromDt
+                                         && (!r.Result.MaintenanceMode.ToDt.HasValue
+                                             || r.Result.MaintenanceMode.ToDt > Utils.GetHighPrecisionUtcTime()))
+                                    {
+                                        QueueBanMessage(data, "Server in maintenance mode.");
+                                    }
+                                    else
+                                    {
+                                        // Reply
+                                        data.ClientObject.Queue(new MediusSessionBeginResponse()
+                                        {
+                                            MessageID = SessionBeginRequest1.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            SessionKey = data.ClientObject.SessionKey
+                                        });
+                                    }
+                                }
                             });
                         }
                         break;
@@ -531,7 +609,7 @@ namespace Server.Medius
                         {
                             MessageID = getAccessLevelInfoRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                            AccessLevel = MediusAccessLevelType.MEDIUS_ACCESSLEVEL_MODERATOR,
+                            AccessLevel = MediusAccessLevelType.MEDIUS_ACCESSLEVEL_ADMIN,
                         });
                         break;
                     }
@@ -593,8 +671,8 @@ namespace Server.Medius
                         // ERROR - Need a session
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {mediusVersionServerRequest} without a session.");
-						
-						if(Settings.MediusServerVersionOverride == true)
+
+                        if (Settings.MediusServerVersionOverride == true)
                         {
                             #region F1 2005 PAL
                             // F1 2005 PAL SCES / F1 2005 PAL TCES
@@ -603,11 +681,23 @@ namespace Server.Medius
                                 data.ClientObject.Queue(new MediusVersionServerResponse()
                                 {
                                     MessageID = mediusVersionServerRequest.MessageID,
-                                    VersionServer = "Medius Authentication Server Version: 2.10.0009 2.10.00.",
+                                    VersionServer = "Medius Authentication Server Version 2.9.0009",
                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                 });
-                            } else
+                            }
+                            //Socom 1
+                            else if (data.ApplicationId == 10274)
+                            {
+                                data.ClientObject.Queue(new MediusVersionServerResponse()
+                                {
+                                    MessageID = mediusVersionServerRequest.MessageID,
+                                    VersionServer = "Medius Authentcation Server Version 1.40.PRE8",
+                                    StatusCode = MediusCallbackStatus.MediusSuccess,
+                                });
+                            }
+                            else
                             #endregion
+                            //Default
                             {
                                 data.ClientObject.Queue(new MediusVersionServerResponse()
                                 {
@@ -616,7 +706,9 @@ namespace Server.Medius
                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                 });
                             }
-                        } else {
+                        }
+                        else
+                        {
                             // If MediusServerVersionOverride is false, we send our own Version String
                             data.ClientObject.Queue(new MediusVersionServerResponse()
                             {
@@ -1710,7 +1802,6 @@ namespace Server.Medius
         }
 
         #region Login
-
         private async Task Login(MessageId messageId, IChannel clientChannel, ChannelData data, Database.Models.AccountDTO accountDto, bool ticket)
         {
             var fac = new PS2CipherFactory();
@@ -1807,7 +1898,6 @@ namespace Server.Medius
                 #endregion
             }
         }
-
         #endregion 
 
     }

@@ -176,7 +176,10 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        SendTo(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, packet.Source);
+                        SendTo(new RT_MSG_CLIENT_ECHO()
+                        {
+                            Value = 0xA5
+                        }, packet.Source);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_BROADCAST clientAppBroadcast:

@@ -141,6 +141,8 @@ namespace Server.Medius.Config
         public string MLSVersion { get; set; } = "Medius Lobby Server Version 3.03.0000";
 
         public string MPSVersion { get; set; } = "Medius Proxy Server Version 3.03.0000";
+
+        public string MAPSVersion { get; set; } = "Medius Authorative Profile Server Version 3.03.0000";
         #endregion
 
         #region Medius Universe Manager Location

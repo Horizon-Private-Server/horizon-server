@@ -17,7 +17,8 @@ namespace RT.Models
         public int LocationID;
         public int ApplicationID;
         public MGCL_GAME_HOST_TYPE ServerType;
-        public byte[] ServerVersion; // MGCL_SERVERVERSION_MAXLEN
+        public string ServerVersionOld; // MGCL_SERVERVERSION_MAXLEN
+        public string ServerVersionNew;
         public int Port;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
@@ -31,8 +32,12 @@ namespace RT.Models
             LocationID = reader.ReadInt32();
             ApplicationID = reader.ReadInt32();
             ServerType = reader.Read<MGCL_GAME_HOST_TYPE>();
-            ServerVersion = reader.ReadBytes(8);
-            //ServerVersion = reader.ReadString(Constants.MGCL_SERVERVERSION_MAXLEN);
+            if(reader.MediusVersion > 110)
+            {
+                ServerVersionOld = reader.ReadString(Constants.MGCL_SERVERVERSION_MAXLEN);
+            } else {
+                ServerVersionNew = reader.ReadString(Constants.MGCL_SERVERVERSION_MAXLEN1);
+            }
             Port = reader.ReadInt32();
             reader.ReadBytes(4);
         }
@@ -48,8 +53,12 @@ namespace RT.Models
             writer.Write(LocationID);
             writer.Write(ApplicationID);
             writer.Write(ServerType);
-            writer.Write(ServerVersion);
-            //writer.Write(ServerVersion, Constants.MGCL_SERVERVERSION_MAXLEN);
+            if(writer.MediusVersion > 110)
+            { 
+                writer.Write(ServerVersionOld, Constants.MGCL_SERVERVERSION_MAXLEN);
+            } else {
+                writer.Write(ServerVersionNew, Constants.MGCL_SERVERVERSION_MAXLEN1);
+            }
             writer.Write(Port);
             writer.Write(new byte[4]);
         }
@@ -61,7 +70,7 @@ namespace RT.Models
                 $"LocationID: {LocationID} " +
                 $"ApplicationID: {ApplicationID} " +
                 $"ServerType: {ServerType} " +
-                $"ServerVersion: {ServerVersion} " +
+                $"ServerVersion: {ServerVersionNew} || {ServerVersionOld} " +
                 $"Port: {Port}";
         }
     }

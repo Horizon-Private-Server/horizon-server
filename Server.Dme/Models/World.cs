@@ -94,7 +94,7 @@ namespace Server.Dme.Models
                 _pIdIsUsed.TryAdd(i, false);
 
             RegisterWorld();
-            this.MaxPlayers = maxPlayers;
+            MaxPlayers = maxPlayers;
         }
 
         public void Dispose()
@@ -272,7 +272,7 @@ namespace Server.Dme.Models
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_CONNECT_NOTIFY()
                 {
-                    PlayerIndex = (short)player.DmeId,
+                    PlayerIndex = (ushort)player.DmeId,
                     ScertId = (short)player.ScertId,
                     IP = player.RemoteUdpEndpoint?.Address
                 });

@@ -13,10 +13,10 @@ namespace RT.Models
 
 		public override byte PacketType => (byte)MediusLobbyMessageIds.FileListFiles;
 
-        public char[] FileNameBeginsWith;
+        public string FileNameBeginsWith;
         public uint FilesizeGreaterThan;
         public uint FilesizeLessThan;
-        public uint OwnerByID;
+        public int OwnerByID;
         public uint NewerThanTimestamp;
         public uint StartingEntryNumber;
         public uint PageSize;
@@ -28,10 +28,10 @@ namespace RT.Models
             base.Deserialize(reader);
 
             //
-            FileNameBeginsWith = reader.ReadChars(Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
+            FileNameBeginsWith = reader.ReadString(Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
             FilesizeGreaterThan = reader.ReadUInt32();
             FilesizeLessThan = reader.ReadUInt32();
-            OwnerByID = reader.ReadUInt32();
+            OwnerByID = reader.ReadInt32();
             NewerThanTimestamp = reader.ReadUInt32();
             StartingEntryNumber = reader.ReadUInt32();
             PageSize = reader.ReadUInt32();
@@ -64,12 +64,13 @@ namespace RT.Models
         {
             return base.ToString() + " " +
 
-                $"FileNameBeginsWith: {Convert.ToString(FileNameBeginsWith)} " +
+                $"FileNameBeginsWith: {FileNameBeginsWith} " +
                 $"FilesizeGreaterThan: {FilesizeGreaterThan} " +
                 $"FilesizeLessThan: {FilesizeLessThan} " +
                 $"OwnerByID: {OwnerByID} " +
                 $"NewerThanTimestamp: {NewerThanTimestamp} " +
-                $"StartingEntryTimestamp: {StartingEntryNumber} " +
+                $"StartingEntryNumber: {StartingEntryNumber} " +
+                $"PageSize: {PageSize} " +
                 $"MessageID:{MessageID} ";
         }
     }

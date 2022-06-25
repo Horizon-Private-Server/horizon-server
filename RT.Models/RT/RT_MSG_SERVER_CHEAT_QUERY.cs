@@ -12,7 +12,7 @@ namespace RT.Models
         // 
         public CheatQueryType QueryType;
         public int SequenceId;
-        public uint Address;
+        public uint StartAddress;
         public int Length;
         public byte[] Data;
 
@@ -20,7 +20,7 @@ namespace RT.Models
         {
             QueryType = reader.Read<CheatQueryType>();
             SequenceId = reader.ReadInt32();
-            Address = reader.ReadUInt32();
+            StartAddress = reader.ReadUInt32();
             Length = reader.ReadInt32();
             Data = reader.ReadRest();
         }
@@ -29,7 +29,7 @@ namespace RT.Models
         {
             writer.Write(QueryType);
             writer.Write(SequenceId);
-            writer.Write(Address);
+            writer.Write(StartAddress);
             writer.Write(Length);
             if (Data != null)
                 writer.Write(Data);
@@ -40,7 +40,7 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"QueryType: {QueryType} " +
                 $"SequenceId: {SequenceId} " +
-                $"Address: {Address:X8} " +
+                $"StartAddress: {StartAddress:X8} " +
                 $"Length: {Length} " +
                 $"Data :{(Data == null ? "" : BitConverter.ToString(Data))}";
         }

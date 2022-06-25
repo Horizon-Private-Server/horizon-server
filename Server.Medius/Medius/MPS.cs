@@ -37,9 +37,9 @@ namespace Server.Medius
         protected override Task OnConnected(IChannel clientChannel)
         {
             // Get ScertClient data
-            if (!clientChannel.HasAttribute(Server.Pipeline.Constants.SCERT_CLIENT))
+            if (!clientChannel.HasAttribute(Pipeline.Constants.SCERT_CLIENT))
                 clientChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Set(new ScertClientAttribute());
-            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            var scertClient = clientChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Get();
             scertClient.RsaAuthKey = Program.Settings.MPSKey;
             scertClient.CipherService.GenerateCipher(Program.Settings.MPSKey);
 
@@ -50,7 +50,7 @@ namespace Server.Medius
         protected override async Task ProcessMessage(BaseScertMessage message, IChannel clientChannel, ChannelData data)
         {
             // Get ScertClient data
-            var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
+            var scertClient = clientChannel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Get();
             scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
 
 
@@ -104,13 +104,17 @@ namespace Server.Medius
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
 
+
+                        Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                        /*
                         #region Amplitude SERVER_CONNECT_COMPLETE
-                        // Complete MPS Connection on Amplitude or R&C3: Pubeta 
-                        if (data.ApplicationId == 10164 || data.ApplicationId == 10680)
+                        // Complete MPS Connection on Amplitude, R&C3: Pubeta, or My Street 
+                        if (data.ApplicationId == 10164 || data.ApplicationId == 10680 || data.ApplicationId == 10124)
                         {
                             Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
                         }
                         #endregion
+                        */
                         break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
@@ -126,10 +130,7 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        Queue(new RT_MSG_CLIENT_ECHO()
-                        {
-                            Value = clientEcho.Value
-                        }, clientChannel);
+                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
@@ -140,7 +141,7 @@ namespace Server.Medius
                         await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
-
+                case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
                         data.State = ClientState.DISCONNECTED;

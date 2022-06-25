@@ -30,6 +30,7 @@ namespace Server.Medius.Models
         public int Id = 0;
         public int DMEWorldId = -1;
         public int ApplicationId = 0;
+        public ChannelType ChannelType = ChannelType.Game;
         public List<GameClient> Clients = new List<GameClient>();
         public string GameName;
         public string GamePassword;

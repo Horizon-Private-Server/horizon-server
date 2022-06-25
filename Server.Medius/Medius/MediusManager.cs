@@ -1,10 +1,12 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using RT.Common;
 using RT.Models;
+using Server.Common;
 using Server.Medius.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -25,6 +27,7 @@ namespace Server.Medius
         private Dictionary<string, DMEObject> _sessionKeyToDmeClient = new Dictionary<string, DMEObject>();
 
         private List<Channel> _channels = new List<Channel>();
+        private List<Game> _games = new List<Game>();
         private List<MediusFile> _mediusFiles = new List<MediusFile>();
         private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
 
@@ -125,6 +128,14 @@ namespace Server.Medius
         #endregion
 
         #region Games
+
+        public uint GetGameCount(ChannelType channelType, int appId)
+        {
+            lock (_games)
+            {
+                return (uint)_games.Count(x => x.ChannelType == channelType && x.ApplicationId == appId);
+            }
+        }
 
         public Game GetGameByDmeWorldId(int dmeWorldId)
         {
@@ -447,13 +458,49 @@ namespace Server.Medius
 
         #endregion
         
-        public IEnumerable<MediusFile> GetFilesList()
+        public IEnumerable<MediusFile> GetFilesList(string path, string filenameBeginsWith,  uint pageSize, uint startingEntryNumber)
         {
             lock (_mediusFiles)
             {
+
+                string[] files = null;
+                int counter = 0;
+
+                if (filenameBeginsWith.ToString() == "*")
+                {
+                    files = Directory.GetFiles(path).Select(file => Path.GetFileName(file)).ToArray();
+                }
+                else
+                {
+                    files = Directory.GetFiles(path, Convert.ToString(filenameBeginsWith));
+                }
+
+                if (files.Length < pageSize)
+                {
+                    counter = files.Count();
+                }
+                else
+                {
+                    counter = (int)pageSize - 1;
+                }
+
+                for (int i = (int)startingEntryNumber - 1; i < counter; i++)
+                {
+                    string fileName = files[i];
+                    FileInfo fi = new FileInfo(fileName);
+
+                    _mediusFiles.Add(new MediusFile()
+                    {
+                        Filename = files[i],
+                        FileID = (uint)i,
+                        FileSize = (uint)fi.Length,
+                        CreationTimeStamp = Utils.ToUnixTime(fi.CreationTime),
+                    });
+                }
                 return _mediusFiles;
             }
         }
+        
         
         #region Clans
 
@@ -579,7 +626,7 @@ namespace Server.Medius
             {
                 if (!clientKeyPair.Value.IsConnected)
                 {
-                    if (clientKeyPair.Value.Timedout)
+                    if (clientKeyPair.Value.Timedout && Program.Settings.ServerEchoUnsupported != true)
                         Logger.Warn($"Timing out client {clientKeyPair.Value}");
                     else
                         Logger.Info($"Destroying Client {clientKeyPair.Value}");

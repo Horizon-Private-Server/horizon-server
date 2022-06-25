@@ -1,21 +1,18 @@
 ﻿using RT.Common;
 using Server.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace RT.Models
 {
-    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.ChatToggle)]
-    public class MediusChatToggleRequest : BaseLobbyMessage, IMediusRequest
+    [MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.GetTotalGames)]
+    public class MediusGetTotalGamesRequest : BaseLobbyExtMessage, IMediusRequest
     {
-
-        public override byte PacketType => (byte)MediusLobbyMessageIds.ChatToggle;
+        public override byte PacketType => (byte)MediusLobbyMessageIds.GetTotalGames;
 
         public MessageId MessageID { get; set; }
-        public string SessionKey; // SESSIONKEY_MAXLEN
-        public uint ChatToggle; 
+
+        public string SessionKey;
+        public int ApplicationId;
+
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -25,8 +22,10 @@ namespace RT.Models
             //
             MessageID = reader.Read<MessageId>();
 
+            // 
             SessionKey = reader.ReadString(Constants.SESSIONKEY_MAXLEN);
-            ChatToggle = reader.ReadUInt32();
+            reader.ReadBytes(2);
+            ApplicationId = reader.ReadInt32();
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -36,17 +35,19 @@ namespace RT.Models
 
             //
             writer.Write(MessageID ?? MessageId.Empty);
-            writer.Write(SessionKey);
-            writer.Write(ChatToggle);
-        }
 
+            //
+            writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
+            writer.Write(new byte[2]);
+            writer.Write(ApplicationId);
+        }
 
         public override string ToString()
         {
             return base.ToString() + " " +
                 $"MessageID: {MessageID} " +
                 $"SessionKey: {SessionKey} " +
-                $"ChatToggle: {ChatToggle}";
+                $"ApplicationId: {ApplicationId}";
         }
     }
 }

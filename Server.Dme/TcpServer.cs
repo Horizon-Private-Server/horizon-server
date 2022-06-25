@@ -402,7 +402,10 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
+                        Queue(new RT_MSG_CLIENT_ECHO()
+                        {
+                            Value = 0xA5
+                        }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_SET_RECV_FLAG setRecvFlag:

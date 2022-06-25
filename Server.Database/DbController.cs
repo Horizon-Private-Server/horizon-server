@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,19 +32,35 @@ namespace Server.Database
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
         private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
 
-        public DbController(string configPath)
+        public DbController(string configFile)
         {
+            #region Dirs
+            string root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string subdirConfigDir = root + @"\config\";
             // Load db settings
-            if (File.Exists(configPath))
+            string subdirConfigFile = subdirConfigDir + configFile;
+            #endregion
+            
+            #region if db.config.json exists
+            if (File.Exists(configFile))
             {
                 // Populate existing object
-                try { JsonConvert.PopulateObject(File.ReadAllText(configPath), _settings); }
+                try { JsonConvert.PopulateObject(File.ReadAllText(configFile), _settings); }
                 catch (Exception e) { Logger.Error(e); }
             }
+            #endregion
             else
             {
-                // Save default db config
-                File.WriteAllText(configPath, JsonConvert.SerializeObject(_settings, Formatting.Indented));
+                #region Create Dir and Save Default db config
+                // If Logs directory does not exist, create it. 
+                if (!Directory.Exists(configFile))
+                {
+                    //Directory.CreateDirectory(subdirConfigDir);
+
+                    // Save default db config
+                    File.WriteAllText(configFile, JsonConvert.SerializeObject(_settings, Formatting.Indented));
+                }
+                #endregion
             }
         }
 
@@ -1889,7 +1906,8 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     return new DimAnnouncements()
-                    {
+                    { 
+                        Id = 1,
                         AnnouncementTitle = "Welcome to the PSORG Revival Servers!",
                         AnnouncementBody = "" +
                             "This is a work in progress server which may have unfinished features " +
@@ -1967,7 +1985,8 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     return new DimEula()
-                    { 
+                    {
+                        
                         EulaTitle = "Welcome to the PSORG Revival Servers!",
                         EulaBody = "is a work in progress server which may have unfinished features\n " +
                             "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
@@ -1975,6 +1994,7 @@ namespace Server.Database
                             "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
                             "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " +
                             "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
+                        
                     };
                 }
                 else

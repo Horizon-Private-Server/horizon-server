@@ -7,6 +7,9 @@ using System.Text;
 
 namespace RT.Models
 {
+    /// <summary>
+    /// Introduced in Medius 1.42
+    /// </summary>
 	[MediusMessage(NetMessageClass.MessageClassLobby, MediusLobbyMessageIds.RemoveFromIgnoreList)]
     public class MediusRemoveFromIgnoreListRequest : BaseLobbyMessage, IMediusRequest
     {

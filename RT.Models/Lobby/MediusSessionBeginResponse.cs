@@ -54,8 +54,8 @@ namespace RT.Models
         {
             return base.ToString() + " " +
                 $"MessageID: {MessageID} " +
-    $"StatusCode: {StatusCode}" +
-    $"SessionKey: {SessionKey}";
+                $"StatusCode: {StatusCode} " +
+                $"SessionKey: {SessionKey}";
         }
     }
 }

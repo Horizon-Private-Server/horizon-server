@@ -20,6 +20,5 @@ namespace RT.Models
         {
             writer.Write(Value);
         }
-
     }
 }

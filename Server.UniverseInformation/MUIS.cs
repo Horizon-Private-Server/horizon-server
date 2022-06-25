@@ -18,6 +18,10 @@ using DotNetty.Handlers.Timeout;
 
 namespace Server.UniverseInformation
 {
+    /// <summary>
+    /// Introduced in Medius 1.43
+    /// Modified in Medius 1.50 deprecating INFO_UNIVERSES Standard Flow
+    /// </summary>
     public class MUIS
     {
         public static Random RNG = new Random();
@@ -209,34 +213,57 @@ namespace Server.UniverseInformation
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
+                        
                         data.ApplicationId = clientConnectTcp.AppId;
 
-                        //   HSG:F Pubeta, HW:O 
-                        if(data.ApplicationId == 10538 || data.ApplicationId == 10582 || data.ApplicationId == 10130) {
-                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
-                            {
-                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
-                            }, clientChannel);
-
-                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
-                        } else
+                        //   HSG:F Pubeta, HW:O, LemmingsPS2, Arc the Lad, or EyeToy Chat Beta
+                        if (data.ApplicationId == 10538 ||
+                            data.ApplicationId == 10582 ||
+                            data.ApplicationId == 10130 ||
+                            data.ApplicationId == 20474 ||
+                            data.ApplicationId == 10211 ||
+                            data.ApplicationId == 10984 ||
+                            data.ApplicationId == 10550)
                         {
-                            if (scertClient.MediusVersion <= 109)
+                            // If this is NOT Arc the Lad, continue
+                            if(data.ApplicationId != 10984)
+                            {
+                                Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                                {
+                                    IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
+                                }, clientChannel);
+
+                                //if this isn't Lemmings PS2 or Arc the Lad, continue the handshake
+                                if (data.ApplicationId != 20474 || data.ApplicationId != 10984 || data.ApplicationId != 10550)
+                                {
+                                    Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                                }
+                            } 
+                            else
+                            {
+                                if (scertClient.MediusVersion <= 109 || scertClient.MediusVersion == 113)
+                                {
+                                    Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                                }
+                                Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                            }
+                        } else
+                        ///Default flow
+                        {
+                            if (scertClient.MediusVersion <= 109 || data.ApplicationId == 22920)
                             {
                                 Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("004802") }, clientChannel);
-                            }
-                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                            } else
                             {
-                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
-                            }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                                {
+                                    IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address,
+                                }, clientChannel);
 
-                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
-
-                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
+                            }
                         }
-
-                        
-
                          break;
                     }
                 case RT_MSG_CLIENT_CONNECT_READY_REQUIRE clientConnectReadyRequire:
@@ -258,6 +285,18 @@ namespace Server.UniverseInformation
                     {
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ClientCountAtConnect = 0x0001 }, clientChannel);
 
+                        if(data.ApplicationId == 22920)
+                        {
+
+                            byte[] payload = Convert.FromBase64String("http");
+
+                            Queue(new RT_MSG_SERVER_MEMORY_POKE()
+                            { 
+                                Address = 0x130FCB8,
+                                MsgDataLen = payload.Length,
+                                Payload = payload
+                            }, clientChannel);
+                        }
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -267,12 +306,12 @@ namespace Server.UniverseInformation
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
                     {
-                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
+                        Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);    
                         break;
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
-                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
+                        await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
                 case RT_MSG_CLIENT_APP_LIST clientAppList:
@@ -280,7 +319,7 @@ namespace Server.UniverseInformation
 
                         break;
                     }
-
+                case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
                         _ = clientChannel.CloseAsync();
@@ -296,7 +335,7 @@ namespace Server.UniverseInformation
             return;
         }
 
-        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
+        protected virtual async Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             if (message == null)
                 return;
@@ -307,8 +346,8 @@ namespace Server.UniverseInformation
                     {
                         if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var info))
                         {
-                            //GT4 or DDOA, or HOA
-                            if(data.ApplicationId == 10782 || data.ApplicationId == 10538 || data.ApplicationId == 10130 )
+                            //GT4 or DDOA, HOA, or Socom 1 PUBBETA
+                            if(data.ApplicationId == 10782 || data.ApplicationId == 10538 || data.ApplicationId == 10130 || data.ApplicationId == 10211)
                             {
                                 // MUIS Standard Flow - Deprecated after Medius Client/Server Library 1.50
                                 if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_UNIVERSES))
@@ -390,6 +429,8 @@ namespace Server.UniverseInformation
                                         MaxUsers = info.MaxUsers,
                                         DNS = info.Endpoint,
                                         Port = info.Port,
+                                        UniverseBilling = info.UniverseBilling,
+                                        BillingSystemName = info.BillingSystemName,
                                         EndOfList = true
                                     }
                                 }, clientChannel);

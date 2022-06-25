@@ -31,6 +31,7 @@
     <ProjectReference Include="..\Server.Common\Server.Common.csproj" />
     <ProjectReference Include="..\Server.Database\Server.Database.csproj" />
     <ProjectReference Include="..\Server.Plugins\Server.Plugins.csproj" />
+	
   </ItemGroup>
 
 </Project>
