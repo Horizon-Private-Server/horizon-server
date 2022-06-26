@@ -216,7 +216,9 @@ namespace Server.UniverseInformation
                         
                         data.ApplicationId = clientConnectTcp.AppId;
 
-                        //   HSG:F Pubeta, HW:O, LemmingsPS2, Arc the Lad, or EyeToy Chat Beta
+                        Logger.Info($"Retrieved ApplicationID {data.ApplicationId} from client connection");
+
+                        // HSG:F Pubeta, HW:O, LemmingsPS2, Arc the Lad, or EyeToy Chat Beta
                         if (data.ApplicationId == 10538 ||
                             data.ApplicationId == 10582 ||
                             data.ApplicationId == 10130 ||
@@ -248,7 +250,7 @@ namespace Server.UniverseInformation
                                 Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                             }
                         } else
-                        ///Default flow
+                        //Default flow
                         {
                             if (scertClient.MediusVersion <= 109 || data.ApplicationId == 22920)
                             {

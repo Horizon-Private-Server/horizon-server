@@ -56,7 +56,7 @@ namespace RT.Models
             return base.ToString() + " " +
                 $"TargetWorldId: {TargetWorldId:X8} " +
                 $"UNK0: {UNK0:X2} " +
-                $"AppId: {Convert.ToInt32(AppId)} " +
+                $"AppId: {AppId:X8} " +
                 $"Key: {Key} " +
                 $"SessionKey: {SessionKey} " +
                 $"AccessToken: {AccessToken}";
