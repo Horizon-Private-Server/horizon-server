@@ -5,14 +5,11 @@ using Server.Common;
 using Server.Database.Config;
 using Server.Database.Models;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -40,7 +37,7 @@ namespace Server.Database
             // Load db settings
             string subdirConfigFile = subdirConfigDir + configFile;
             #endregion
-            
+
             #region if db.config.json exists
             if (File.Exists(configFile))
             {
@@ -70,7 +67,7 @@ namespace Server.Database
             public string IpAddress { get; set; }
         }
 
-        public class MacBan 
+        public class MacBan
         {
             public string MacAddress { get; set; }
         }
@@ -265,7 +262,7 @@ namespace Server.Database
             return result;
         }
 
-        public async Task<bool> PostAccountUpdatePassword(int accountId, string oldPassword, string newPassword) 
+        public async Task<bool> PostAccountUpdatePassword(int accountId, string oldPassword, string newPassword)
         {
             bool result = false;
 
@@ -524,7 +521,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedClans.Count(x=>!x.IsDisbanded);
+                    result = _simulatedClans.Count(x => !x.IsDisbanded);
                 }
                 else
                 {
@@ -543,7 +540,7 @@ namespace Server.Database
             return result;
         }
 
-        
+
 
         /// <summary>
         /// Gets whether or not the ip is banned.
@@ -875,7 +872,7 @@ namespace Server.Database
                         AccountName = account.AccountName,
                         Index = 1,
                         MediusStats = account.MediusStats,
-                        StatValue = account.AccountWideStats[statId-1],
+                        StatValue = account.AccountWideStats[statId - 1],
                         TotalRankedAccounts = 1
                     };
                 }
@@ -923,7 +920,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId+1}");
+                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId + 1}");
                 }
             }
             catch (Exception e)
@@ -949,7 +946,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedClans.Where(x => x.AppId == appId).Where(x=>!x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedClans.Where(x => x.AppId == appId).Where(x => !x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new ClanLeaderboardDTO()
                     {
                         ClanId = x.ClanId,
@@ -962,7 +959,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId+1}&StartIndex={startIndex}&Size={size}&AppId={appId}");
+                    result = await GetDbAsync<ClanLeaderboardDTO[]>($"Stats/getClanLeaderboard?StatId={statId + 1}&StartIndex={startIndex}&Size={size}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -988,7 +985,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedAccounts.Where(x=>x.AppId == appId).OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedAccounts.Where(x => x.AppId == appId).OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new LeaderboardDTO()
                     {
                         AccountId = x.AccountId,
@@ -1494,7 +1491,7 @@ namespace Server.Database
                     // only allow leader or player remove player
                     if (fromAccountId != accountId && clan.ClanLeaderAccount.AccountId != fromAccountId)
                         return false;
-                    
+
                     // prevent leader from leaving -- must transfer or disband
                     if (clan.ClanLeaderAccount.AccountId == accountId)
                         return false;
@@ -1671,7 +1668,7 @@ namespace Server.Database
                     invite.ResponseMessage = message;
                     invite.ResponseStatus = responseStatus;
                     invite.ResponseTime = (int)Utils.GetUnixTime();
-                    
+
                     // handle accept
                     if (responseStatus == 1)
                     {
@@ -1906,15 +1903,10 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     return new DimAnnouncements()
-                    { 
+                    {
                         Id = 1,
-                        AnnouncementTitle = "Welcome to the PSORG Revival Servers!",
-                        AnnouncementBody = "" +
-                            "This is a work in progress server which may have unfinished features " +
-                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
-                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
-                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
-                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
+                        AnnouncementTitle = "Announcement Title",
+                        AnnouncementBody = "Announcement Body",
                         CreateDt = DateTime.UtcNow,
                     };
                 }
@@ -1947,16 +1939,10 @@ namespace Server.Database
                         new DimAnnouncements()
                         {
                             Id = 1,
-                            AnnouncementTitle = "Welcome to the PSORG Revival Servers!",
-                            
-                            AnnouncementBody = "" +
-                            "This is a work in progress server which may have unfinished features " +
-                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
-                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
-                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
-                            "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " +
-                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
-                            
+                            AnnouncementTitle = "Announcement Title",
+                            AnnouncementBody = "Announcement Body",
+							CreateDt = DateTime.UtcNow,
+
                         }
                     };
                 }
@@ -1986,15 +1972,10 @@ namespace Server.Database
                 {
                     return new DimEula()
                     {
-                        
-                        EulaTitle = "Welcome to the PSORG Revival Servers!",
-                        EulaBody = "is a work in progress server which may have unfinished features\n " +
-                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
-                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
-                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
-                            "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " +
-                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
-                        
+
+                        EulaTitle = "Eula Test",
+                        EulaBody = "Eula Body",
+
                     };
                 }
                 else
@@ -2024,13 +2005,8 @@ namespace Server.Database
                 {
                     return new DimEula()
                     {
-                        EulaTitle = "Welcome to the PSORG Revival Servers!",
-                        EulaBody = "is a work in progress server which may have unfinished features " +
-                            "instabilities, and other bugs you may encounter as we continue to restore online for Sony First Party games! " +
-                            "NO CHEATING is allowed, anything that impacts gameplay to gain an advantage will fall under this rule" +
-                            "BOOSTING IS allowed, We understand circumstances in which the grind is so steep, remember this though the community will frown upon you not PSORG." +
-                            "Outside of Cheating cases, we do ALLOW Modding that fails under 'CUSTOM CONTENT' which expands on gameplay for ALL PLAYERs and not just the Modder/Hacker! " + 
-                            "CHeck out our discord for more games here: https://discord.gg/JHaKNcRcjA !",
+                        EulaTitle = "Eula Test",
+                        EulaBody = "Eula Body",
                     };
                 }
                 else

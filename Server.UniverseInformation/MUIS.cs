@@ -213,7 +213,6 @@ namespace Server.UniverseInformation
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
-                        
                         data.ApplicationId = clientConnectTcp.AppId;
 
                         Logger.Info($"Retrieved ApplicationID {data.ApplicationId} from client connection");

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Server.Database.Models
+﻿namespace Server.Database.Models
 {
     public class AccountDTO
     {
@@ -51,7 +47,7 @@ namespace Server.Database.Models
         /// 
         /// </summary>
         public int? ClanId { get; set; }
-        
+
         /// <summary>
         /// Application specific user data as a Base64 encoded string.
         /// Convert back to byte array for use with Medius application.

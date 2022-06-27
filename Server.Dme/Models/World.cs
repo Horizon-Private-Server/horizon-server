@@ -118,7 +118,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(i, out var client))
                 {
-                    if (client.Destroy || ForceDestruct || Destroyed)
+                    if (client.Destroy && Program.Settings.ServerEchoUnsupported != true || ForceDestruct || Destroyed)
                     {
                         await OnPlayerLeft(client);
                         Manager.RemoveClient(client);
