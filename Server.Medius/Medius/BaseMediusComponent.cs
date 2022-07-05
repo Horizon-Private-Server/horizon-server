@@ -146,7 +146,7 @@ namespace Server.Medius
                 }
 
                 //
-                OnDisconnected(channel);
+                await OnDisconnected(channel);
             };
 
             // Queue all incoming messages
@@ -297,7 +297,7 @@ namespace Server.Medius
                         {
                             // Send to plugins
                             // Ignore if ignored
-                            if (!PassMessageToPlugins(clientChannel, data, message, true) && data.State != ClientState.DISCONNECTED)
+                            if (!await PassMessageToPlugins(clientChannel, data, message, true) && data.State != ClientState.DISCONNECTED)
                                 await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
@@ -317,7 +317,7 @@ namespace Server.Medius
                         {
                             // Send to plugins
                             // Ignore if ignored
-                            if (!PassMessageToPlugins(clientChannel, data, message, false))
+                            if (!await PassMessageToPlugins(clientChannel, data, message, false))
                                 responses.Add(message);
                         }
 
@@ -332,7 +332,7 @@ namespace Server.Medius
                             {
                                 // Send to plugins
                                 // Ignore if ignored
-                                if (!PassMessageToPlugins(clientChannel, data, message, false))
+                                if (!await PassMessageToPlugins(clientChannel, data, message, false))
                                     responses.Add(message);
                             }
                         }
@@ -430,7 +430,7 @@ namespace Server.Medius
 
         #region Plugins
 
-        protected bool PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
+        protected async Task<bool> PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
         {
             var onMsg = new OnMessageArgs(isIncoming)
             {
@@ -440,7 +440,7 @@ namespace Server.Medius
             };
 
             // Send to plugins
-            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            await Program.Plugins.OnMessageEvent(message.Id, onMsg);
             if (onMsg.Ignore)
                 return true;
 
@@ -455,7 +455,7 @@ namespace Server.Medius
                     Channel = clientChannel,
                     Message = clientApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                await Program .Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }
@@ -467,7 +467,7 @@ namespace Server.Medius
                     Channel = clientChannel,
                     Message = serverApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                await Program .Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }

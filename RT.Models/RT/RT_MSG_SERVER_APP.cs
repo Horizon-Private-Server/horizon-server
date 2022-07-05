@@ -15,6 +15,16 @@ namespace RT.Models
 
         public BaseMediusMessage Message { get; set; } = null;
 
+        public override bool SkipEncryption
+        {
+            get => Message?.SkipEncryption ?? base.SkipEncryption;
+            set
+            {
+                if (Message != null) { Message.SkipEncryption = value; }
+                base.SkipEncryption = value;
+            }
+        }
+
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Message = BaseMediusMessage.Instantiate(reader);

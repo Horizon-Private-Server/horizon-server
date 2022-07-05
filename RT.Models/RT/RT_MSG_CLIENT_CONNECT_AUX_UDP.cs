@@ -23,23 +23,46 @@ namespace RT.Models
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
-            WorldId = reader.ReadUInt32();
-            ApplicationId = reader.ReadInt32();
-            EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
-            PlayerId = reader.ReadUInt16();
-            ScertId = reader.ReadUInt16();
-            UNK_26 = reader.ReadUInt16();
+            if (reader.MediusVersion <= 108)
+            {
+                reader.ReadBytes(3);
+                WorldId = reader.ReadUInt16();
+                ApplicationId = reader.ReadInt32();
+                EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
+                PlayerId = reader.ReadUInt16();
+            }
+            else
+            {
+                WorldId = reader.ReadUInt32();
+                ApplicationId = reader.ReadInt32();
+                EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
+                PlayerId = reader.ReadUInt16();
+                ScertId = reader.ReadUInt16();
+                UNK_26 = reader.ReadUInt16();
+            }
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            writer.Write(WorldId);
-            writer.Write(ApplicationId);
-            writer.Write(EndPoint.Address);
-            writer.Write((ushort)EndPoint.Port);
-            writer.Write(PlayerId);
-            writer.Write(ScertId);
-            writer.Write(UNK_26);
+            if (writer.MediusVersion <= 108)
+            {
+                writer.Write(new byte[3]);
+                writer.Write((ushort)WorldId);
+                writer.Write(ApplicationId);
+                writer.Write(EndPoint.Address);
+                writer.Write((ushort)EndPoint.Port);
+                writer.Write(PlayerId);
+            }
+            else
+            {
+                writer.Write(WorldId);
+                writer.Write(ApplicationId);
+                writer.Write(EndPoint.Address);
+                writer.Write((ushort)EndPoint.Port);
+                writer.Write(PlayerId);
+                writer.Write(ScertId);
+                writer.Write(UNK_26);
+            }
         }
 
         public override string ToString()

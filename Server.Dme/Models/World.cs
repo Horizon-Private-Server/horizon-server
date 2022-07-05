@@ -1,9 +1,9 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Microsoft.Extensions.Logging;
-using Microsoft.Scripting.Ast;
 using RT.Common;
 using RT.Models;
 using Server.Dme.PluginArgs;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -124,7 +124,7 @@ namespace Server.Dme.Models
                 {
                     if (client.Destroy || ForceDestruct || Destroyed)
                     {
-                        OnPlayerLeft(client);
+                        await OnPlayerLeft(client);
                         Manager.RemoveClient(client);
                         _ = client.Stop();
                         Clients.TryRemove(i, out _);
@@ -161,7 +161,7 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueTcp(msg);
@@ -178,7 +178,7 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueUdp(msg);
@@ -191,7 +191,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(targetId, out var client))
                 {
-                    if (client == null || !client.IsAuthenticated || !client.IsConnected || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                    if (client == null || !client.IsAuthenticated || !client.IsConnected) // || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
                         continue;
 
                     client.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
@@ -209,7 +209,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(targetId, out var client))
                 {
-                    if (client == null || !client.IsAuthenticated || !client.IsConnected || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                    if (client == null || !client.IsAuthenticated || !client.IsConnected) // || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
                         continue;
 
                     client.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
@@ -225,7 +225,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null && target.IsAuthenticated && target.IsConnected && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (target != null && target.IsAuthenticated && target.IsConnected) // && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -239,7 +239,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null && target.IsAuthenticated && target.IsConnected && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (target != null && target.IsAuthenticated && target.IsConnected) // && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -259,10 +259,10 @@ namespace Server.Dme.Models
             ForceDestruct = request.BrutalFlag;
         }
 
-        public void OnPlayerJoined(ClientObject player)
+        public async Task OnPlayerJoined(ClientObject player)
         {
             // Plugin
-            Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
+            await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this
@@ -271,7 +271,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
+                if (client.Value == player) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION)))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_CONNECT_NOTIFY()
@@ -291,10 +291,10 @@ namespace Server.Dme.Models
             });
         }
 
-        public void OnPlayerLeft(ClientObject player)
+        public async Task OnPlayerLeft(ClientObject player)
         {
             // Plugin
-            Program.Plugins.OnEvent(Plugins.PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
+            await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
             {
                 Player = player,
                 Game = this
@@ -303,7 +303,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
+                if (client.Value == player) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_DISCONNECT_NOTIFY()

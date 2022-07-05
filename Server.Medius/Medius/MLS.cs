@@ -9,6 +9,7 @@ using Server.Database.Models;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -115,9 +116,9 @@ namespace Server.Medius
                                 Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                                 Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                                 {
-                                    UNK_00 = 0,
-                                    UNK_02 = GenerateNewScertClientId(),
-                                    UNK_06 = 0x0001,
+                                    PlayerId = 0,
+                                    ScertId = GenerateNewScertClientId(),
+                                    PlayerCount = 0x0001,
                                     IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                                 }, clientChannel);
                                 Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
@@ -134,9 +135,9 @@ namespace Server.Medius
                         }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
-                            UNK_00 = 0x0019,
-                            UNK_02 = GenerateNewScertClientId(),
-                            UNK_06 = 0x0001,
+                            PlayerId = 0x0019,
+                            ScertId = GenerateNewScertClientId(),
+                            PlayerCount = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
                         break;
@@ -241,7 +242,7 @@ namespace Server.Medius
                             status = MediusCallbackStatus.MediusSuccess;
 
                             // Logout
-                            data.ClientObject.Logout();
+                            await data.ClientObject.Logout();
                         }
 
                         // Reply
@@ -264,7 +265,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAllAnnouncementsRequest} without a session.");
 
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ALL_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ALL_ANNOUNCEMENTS, new OnPlayerRequestArgs()
                         {
                             Player = data.ClientObject,
                             Request = getAllAnnouncementsRequest
@@ -315,7 +316,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getAnnouncementsRequest} without a session.");
 
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ANNOUNCEMENTS, new OnPlayerRequestArgs()
                         {
                             Player = data.ClientObject,
                             Request = getAnnouncementsRequest
@@ -360,7 +361,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getPolicyRequest} without a session.");
 
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_POLICY, new OnPlayerRequestArgs()
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_POLICY, new OnPlayerRequestArgs()
                         {
                             Player = data.ClientObject,
                             Request = getPolicyRequest
@@ -867,7 +868,18 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateLadderStatsWideRequest} without a being logged in.");
 
-                        if (data.ClientObject.CurrentGame != null && !data.ClientObject.CurrentGame.AcceptStats)
+                        // pass to plugins
+                        var pluginMessage = new OnPlayerWideStatsArgs()
+                        {
+                            Game = data.ClientObject.CurrentGame,
+                            Player = data.ClientObject,
+                            IsClan = updateLadderStatsWideRequest.LadderType == MediusLadderType.MediusLadderTypeClan,
+                            WideStats = updateLadderStatsWideRequest.Stats
+                        };
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_POST_WIDE_STATS, pluginMessage);
+
+                        // reject
+                        if (pluginMessage.Reject)
                         {
                             data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
                             {
@@ -885,7 +897,7 @@ namespace Server.Medius
                                     _ = Program.Database.PostAccountLadderStats(new StatPostDTO()
                                     {
                                         AccountId = data.ClientObject.AccountId,
-                                        Stats = updateLadderStatsWideRequest.Stats
+                                        Stats = pluginMessage.WideStats
                                     }).ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
@@ -893,6 +905,7 @@ namespace Server.Medius
 
                                         if (r.IsCompletedSuccessfully && r.Result)
                                         {
+                                            data.ClientObject.WideStats = pluginMessage.WideStats;
                                             data.ClientObject.Queue(new MediusUpdateLadderStatsWideResponse()
                                             {
                                                 MessageID = updateLadderStatsWideRequest.MessageID,
@@ -914,7 +927,7 @@ namespace Server.Medius
                                 }
                             case MediusLadderType.MediusLadderTypeClan:
                                 {
-                                    _ = Program.Database.PostClanLadderStats(data.ClientObject.AccountId, data.ClientObject.ClanId, updateLadderStatsWideRequest.Stats).ContinueWith((r) =>
+                                    _ = Program.Database.PostClanLadderStats(data.ClientObject.AccountId, data.ClientObject.ClanId, pluginMessage.WideStats).ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                             return;
@@ -969,6 +982,7 @@ namespace Server.Medius
 
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
+                                            data.ClientObject.WideStats = r.Result.AccountWideStats;
                                             data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
                                             {
                                                 MessageID = getLadderStatsWideRequest.MessageID,
@@ -2674,7 +2688,7 @@ namespace Server.Medius
                         }
 
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = createGameRequest });
+                        await Program .Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = createGameRequest });
 
                         Program.Manager.CreateGame(data.ClientObject, createGameRequest);
                         break;
@@ -2702,7 +2716,7 @@ namespace Server.Medius
                         }
 
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = createGameRequest1 });
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CREATE_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = createGameRequest1 });
 
                         Program.Manager.CreateGame(data.ClientObject, createGameRequest1);
                         break;
@@ -2720,7 +2734,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
 
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOIN_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = joinGameRequest });
+                        await Program .Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOIN_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = joinGameRequest });
 
                         Program.Manager.JoinGame(data.ClientObject, joinGameRequest);
                         break;
@@ -2751,7 +2765,8 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {worldReport} without a being logged in.");
 
-                        data.ClientObject.CurrentGame?.OnWorldReport(worldReport);
+                        if (data.ClientObject.CurrentGame != null)
+                            await data.ClientObject.CurrentGame.OnWorldReport(worldReport);
 
                         break;
                     }
@@ -2785,7 +2800,8 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {endGameReport} without a being logged in.");
 
-                        data.ClientObject.CurrentGame?.OnEndGameReport(endGameReport);
+                        if (data.ClientObject.CurrentGame != null)
+                            await data.ClientObject.CurrentGame.OnEndGameReport(endGameReport);
                         break;
                     }
 
@@ -2984,7 +3000,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinChannelRequest} without a being logged in.");
 
-                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID, data.ClientObject.ApplicationId);
+                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID);
                         if (channel == null)
                         {
                             // Log
@@ -3049,7 +3065,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelInfoRequest} without a being logged in.");
 
                         // Find channel
-                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID, data.ClientObject.ApplicationId);
+                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID);
 
                         if (channel == null)
                         {
@@ -3141,7 +3157,7 @@ namespace Server.Medius
                         {
                             MessageID = getTotalChannelsRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                            Total = Program.Manager.GetChannelCount(ChannelType.Lobby, data.ClientObject.ApplicationId)
+                            Total = Program.Manager.GetChannelCount(ChannelType.Lobby)
                         });
 
                         break;
@@ -3888,7 +3904,7 @@ namespace Server.Medius
             }
         }
 
-        private async Task ProcessChatMessage(IChannel clientChannel, ClientObject clientObject, MediusChatMessage chatMessage)
+        private Task ProcessChatMessage(IChannel clientChannel, ClientObject clientObject, MediusChatMessage chatMessage)
         {
             var channel = clientObject.CurrentChannel;
             var game = clientObject.CurrentGame;
@@ -3899,11 +3915,11 @@ namespace Server.Medius
 
             // Need to be logged in
             if (!clientObject.IsLoggedIn)
-                return;
+                return Task.CompletedTask;
 
             // Need to be in a channel
             if (channel == null)
-                return;
+                return Task.CompletedTask;
 
             switch (chatMessage.MessageType)
             {
@@ -3942,6 +3958,8 @@ namespace Server.Medius
                         break;
                     }
             }
+
+            return Task.CompletedTask;
         }
 
 
@@ -3978,7 +3996,7 @@ namespace Server.Medius
 
 
             // Send to plugins
-            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CHAT_MESSAGE, new OnPlayerChatMessageArgs() { Player = clientObject, Message = chatMessage });
+            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_CHAT_MESSAGE, new OnPlayerChatMessageArgs() { Player = clientObject, Message = chatMessage });
 
         }
 

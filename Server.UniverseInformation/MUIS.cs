@@ -233,9 +233,9 @@ namespace Server.UnivereInformation
                         Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
-                            UNK_00 = 0,
-                            UNK_02 = GenerateNewScertClientId(),
-                            UNK_06 = 0x0001,
+                            PlayerId = 0,
+                            ScertId = GenerateNewScertClientId(),
+                            PlayerCount = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
                         break;

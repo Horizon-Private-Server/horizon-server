@@ -28,8 +28,10 @@ namespace Server.Database.Models
         public int? GenericField8 { get; set; }
         public string WorldStatus { get; set; }
         public string GameHostType { get; set; }
+        public string Metadata { get; set; }
         public DateTime? GameCreateDt { get; set; }
         public DateTime? GameStartDt { get; set; }
         public DateTime? GameEndDt { get; set; }
+        public bool Destroyed { get; set; }
     }
 }

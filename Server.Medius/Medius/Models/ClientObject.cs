@@ -1,5 +1,4 @@
 ﻿using DotNetty.Common.Internal.Logging;
-using Microsoft.Scripting.Ast;
 using RT.Common;
 using RT.Models;
 using Server.Database;
@@ -14,6 +13,7 @@ using Server.Common;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Server.Plugins.Interface;
 using System.IO;
 
 namespace Server.Medius.Models
@@ -114,6 +114,16 @@ namespace Server.Medius.Models
         /// 
         /// </summary>
         public Dictionary<int, string> FriendsList { get; protected set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int[] WideStats { get; set; } = new int[100];
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int[] CustomWideStats { get; set; } = new int[0];
 
         /// <summary>
         /// 
@@ -253,17 +263,17 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        public void Logout()
+        public async Task Logout()
         {
             // Prevent logout twice
             if (_logoutTime.HasValue || !_loginTime.HasValue)
                 return;
 
             // Raise plugin event
-            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_OUT, new OnPlayerArgs() { Player = this });
+            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_OUT, new OnPlayerArgs() { Player = this });
 
             // Leave game
-            LeaveCurrentGame();
+            await LeaveCurrentGame();
 
             // Leave channel
             LeaveCurrentChannel();
@@ -275,7 +285,7 @@ namespace Server.Medius.Models
             PostStatus();
         }
 
-        public void Login(AccountDTO account)
+        public async Task Login(AccountDTO account)
         {
             if (IsLoggedIn)
                 throw new InvalidOperationException($"{this} attempting to log into {account} but is already logged in!");
@@ -288,12 +298,14 @@ namespace Server.Medius.Models
             AccountName = account.AccountName;
             Metadata = account.Metadata;
             ClanId = account.ClanId;
+            WideStats = account.AccountWideStats;
+            CustomWideStats = account.AccountCustomWideStats;
 
             //
             FriendsList = account.Friends?.ToDictionary(x => x.AccountId, x => x.AccountName) ?? new Dictionary<int, string>();
 
             // Raise plugin event
-            Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
+            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_LOGGED_IN, new OnPlayerArgs() { Player = this });
 
             // Login
             _loginTime = Common.Utils.GetHighPrecisionUtcTime();
@@ -319,10 +331,10 @@ namespace Server.Medius.Models
 
         #region Game
 
-        public void JoinGame(Game game, int dmeClientIndex)
+        public async Task JoinGame(Game game, int dmeClientIndex)
         {
             // Leave current game
-            LeaveCurrentGame();
+            await LeaveCurrentGame();
 
             CurrentGame = game;
             DmeClientId = dmeClientIndex;
@@ -332,22 +344,22 @@ namespace Server.Medius.Models
             PostStatus();
         }
 
-        public void LeaveGame(Game game)
+        public async Task LeaveGame(Game game)
         {
             if (CurrentGame != null && CurrentGame == game)
             {
-                LeaveCurrentGame();
+                await LeaveCurrentGame();
 
                 // Tell database
                 PostStatus();
             }
         }
 
-        private void LeaveCurrentGame()
+        private async Task LeaveCurrentGame()
         {
             if (CurrentGame != null)
             {
-                CurrentGame.RemovePlayer(this);
+                await CurrentGame.RemovePlayer(this);
                 CurrentGame = null;
             }
             DmeClientId = null;

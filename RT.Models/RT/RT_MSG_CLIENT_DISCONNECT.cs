@@ -11,22 +11,19 @@ namespace RT.Models
     {
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_CLIENT_DISCONNECT;
 
-        public byte Reason;
-
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
-            Reason = reader.ReadByte();
+
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            writer.Write(Reason);
+
         }
 
         public override string ToString()
         {
-            return base.ToString() + " " +
-                $"Reason:{Reason}";
+            return base.ToString();
         }
     }
 }

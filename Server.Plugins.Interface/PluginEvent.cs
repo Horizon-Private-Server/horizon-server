@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Server.Plugins
+namespace Server.Plugins.Interface
 {
     public enum PluginEvent
     {
@@ -26,6 +26,8 @@ namespace Server.Plugins
         MEDIUS_GAME_ON_STARTED,
         MEDIUS_GAME_ON_ENDED,
         MEDIUS_GAME_ON_HOST_LEFT,
+
+        MEDIUS_PLAYER_POST_WIDE_STATS,
 
 
         DME_PLAYER_ON_JOINED,

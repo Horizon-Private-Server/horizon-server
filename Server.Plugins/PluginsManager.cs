@@ -1,25 +1,24 @@
 ﻿using DotNetty.Common.Internal.Logging;
-using IronPython.Hosting;
-using Microsoft.Scripting.Hosting;
 using RT.Common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Server.Plugins.Interface;
 
 namespace Server.Plugins
 {
-    public class PluginsManager
+    public class PluginsManager : IPluginHost
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<PluginsManager>();
 
-        private ScriptEngine _engine = null;
-        private ScriptScope _scope = null;
-        private ConcurrentDictionary<PluginEvent, List<object>> _pluginCallbackInstances = new ConcurrentDictionary<PluginEvent, List<object>>();
-        private ConcurrentDictionary<RT_MSG_TYPE, List<object>> _pluginScertMessageCallbackInstances = new ConcurrentDictionary<RT_MSG_TYPE, List<object>>();
-        private ConcurrentDictionary<(NetMessageTypes, byte), List<object>> _pluginMediusMessageCallbackInstances = new ConcurrentDictionary<(NetMessageTypes, byte), List<object>>();
+        private ConcurrentDictionary<PluginEvent, List<OnRegisterActionHandler>> _pluginCallbackInstances = new ConcurrentDictionary<PluginEvent, List<OnRegisterActionHandler>>();
+        private ConcurrentDictionary<RT_MSG_TYPE, List<OnRegisterMessageActionHandler>> _pluginScertMessageCallbackInstances = new ConcurrentDictionary<RT_MSG_TYPE, List<OnRegisterMessageActionHandler>>();
+        private ConcurrentDictionary<(NetMessageTypes, byte), List<OnRegisterMediusMessageActionHandler>> _pluginMediusMessageCallbackInstances = new ConcurrentDictionary<(NetMessageTypes, byte), List<OnRegisterMediusMessageActionHandler>>();
         private bool _reload = false;
         private DirectoryInfo _pluginDir = null;
         private FileSystemWatcher _watcher = null;
@@ -32,7 +31,7 @@ namespace Server.Plugins
                 return;
 
             // Add a watcher so we can auto reload the plugins on change
-            this._watcher = new FileSystemWatcher(this._pluginDir.FullName, "*.py");
+            this._watcher = new FileSystemWatcher(this._pluginDir.FullName, "*.dll");
             this._watcher.IncludeSubdirectories = true;
             this._watcher.Changed += (s, e) => { this._reload = true; };
             this._watcher.Renamed += (s, e) => { this._reload = true; };
@@ -43,7 +42,7 @@ namespace Server.Plugins
             reloadPlugins();
         }
 
-        public void Tick()
+        public async Task Tick()
         {
             if (this._reload)
             {
@@ -51,75 +50,85 @@ namespace Server.Plugins
                 reloadPlugins();
             }
 
-            OnEvent(PluginEvent.TICK, null);
+            try
+            {
+                await OnEvent(PluginEvent.TICK, null);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message, ex);
+            }
         }
 
-        public void OnEvent(PluginEvent eventType, object data)
+        #region On Event
+
+        public async Task OnEvent(PluginEvent eventType, object data)
         {
             if (!_pluginCallbackInstances.ContainsKey(eventType))
                 return;
 
-            Task.Run(() =>
-            {
-                foreach (var callbacks in _pluginCallbackInstances[eventType])
-                {
-                    try
-                    {
-                        _engine.Operations.Invoke(callbacks, eventType, data);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error($"PLUGIN OnEvent Exception. {callbacks}({eventType}, {data})");
-                        Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
-                    }
-                }
-            });
-        }
-
-        public void OnMessageEvent(RT_MSG_TYPE msgId, object data)
-        {
-            if (!_pluginScertMessageCallbackInstances.ContainsKey(msgId))
-                return;
-
-            foreach (var callbacks in _pluginScertMessageCallbackInstances[msgId])
+            foreach (var callback in _pluginCallbackInstances[eventType])
             {
                 try
                 {
-                    _engine.Operations.Invoke(callbacks, msgId, data);
+                    await callback.Invoke(eventType, data);
                 }
                 catch (Exception e)
                 {
-                    Logger.Error($"PLUGIN OnEvent Exception. {callbacks}({msgId}, {data})");
-                    Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
+                    Logger.Error($"PLUGIN OnEvent Exception. {callback}({eventType}, {data})");
+                    Logger.Error(e);
                 }
             }
         }
 
-        public void OnMediusMessageEvent(NetMessageTypes msgClass, byte msgType, object data)
+        public async Task OnMessageEvent(RT_MSG_TYPE msgId, object data)
+        {
+            if (!_pluginScertMessageCallbackInstances.ContainsKey(msgId))
+                return;
+
+            foreach (var callback in _pluginScertMessageCallbackInstances[msgId])
+            {
+                try
+                {
+                    await callback.Invoke(msgId, data);
+                }
+                catch (Exception e)
+                {
+                    Logger.Error($"PLUGIN OnEvent Exception. {callback}({msgId}, {data})");
+                    Logger.Error(e);
+                }
+            }
+        }
+
+        public async Task OnMediusMessageEvent(NetMessageTypes msgClass, byte msgType, object data)
         {
             var key = (msgClass, msgType);
             if (!_pluginMediusMessageCallbackInstances.ContainsKey(key))
                 return;
 
-            foreach (var callbacks in _pluginMediusMessageCallbackInstances[key])
+            foreach (var callback in _pluginMediusMessageCallbackInstances[key])
             {
                 try
                 {
-                    _engine.Operations.Invoke(callbacks, msgClass, msgType, data);
+                    await callback.Invoke(msgClass, msgType, data);
                 }
                 catch (Exception e)
                 {
-                    Logger.Error($"PLUGIN OnEvent Exception. {callbacks}({key}, {data})");
-                    Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
+                    Logger.Error($"PLUGIN OnEvent Exception. {callback}({key}, {data})");
+                    Logger.Error(e);
                 }
             }
         }
 
-        private void registerEventHandler(PluginEvent eventType, object callback)
+        #endregion
+
+        #region Register Event
+
+        public void RegisterAction(PluginEvent eventType, OnRegisterActionHandler callback)
         {
-            List<object> callbacks;
+            List<OnRegisterActionHandler> callbacks;
             if (!_pluginCallbackInstances.ContainsKey(eventType))
-                _pluginCallbackInstances.TryAdd(eventType, callbacks = new List<object>());
+                _pluginCallbackInstances.TryAdd(eventType, callbacks = new List<OnRegisterActionHandler>());
             else
                 callbacks = _pluginCallbackInstances[eventType];
 
@@ -127,11 +136,11 @@ namespace Server.Plugins
             callbacks.Add(callback);
         }
 
-        private void registerMessageEventHandler(RT_MSG_TYPE msgId, object callback)
+        public void RegisterMessageAction(RT_MSG_TYPE msgId, OnRegisterMessageActionHandler callback)
         {
-            List<object> callbacks;
+            List<OnRegisterMessageActionHandler> callbacks;
             if (!_pluginScertMessageCallbackInstances.ContainsKey(msgId))
-                _pluginScertMessageCallbackInstances.TryAdd(msgId, callbacks = new List<object>());
+                _pluginScertMessageCallbackInstances.TryAdd(msgId, callbacks = new List<OnRegisterMessageActionHandler>());
             else
                 callbacks = _pluginScertMessageCallbackInstances[msgId];
 
@@ -139,12 +148,12 @@ namespace Server.Plugins
             callbacks.Add(callback);
         }
 
-        private void registerMediusMessageEventHandler(NetMessageTypes msgClass, byte msgType, object callback)
+        public void RegisterMediusMessageAction(NetMessageTypes msgClass, byte msgType, OnRegisterMediusMessageActionHandler callback)
         {
-            List<object> callbacks;
+            List<OnRegisterMediusMessageActionHandler> callbacks;
             var key = (msgClass, msgType);
             if (!_pluginMediusMessageCallbackInstances.ContainsKey(key))
-                _pluginMediusMessageCallbackInstances.TryAdd(key, callbacks = new List<object>());
+                _pluginMediusMessageCallbackInstances.TryAdd(key, callbacks = new List<OnRegisterMediusMessageActionHandler>());
             else
                 callbacks = _pluginMediusMessageCallbackInstances[key];
 
@@ -152,16 +161,30 @@ namespace Server.Plugins
             callbacks.Add(callback);
         }
 
-        private void log(InternalLogLevel logLevel, object msg)
+        #endregion
+
+        #region Log
+
+        public void Log(InternalLogLevel level, string message)
         {
-            Logger.Log(logLevel, msg?.ToString());
+            Logger.Log(level, message);
         }
+
+        public void Log(InternalLogLevel level, Exception ex)
+        {
+            Logger.Log(level, ex);
+        }
+
+        public void Log(InternalLogLevel level, Exception ex, string message)
+        {
+            Logger.Log(level, message, ex);
+        }
+
+        #endregion
 
         private void reloadPlugins()
         {
             // Clear cache
-            _engine = null;
-            _scope = null;
             _pluginCallbackInstances.Clear();
             _pluginScertMessageCallbackInstances.Clear();
             _pluginMediusMessageCallbackInstances.Clear();
@@ -173,45 +196,26 @@ namespace Server.Plugins
             if (!this._pluginDir.Exists)
                 return;
 
-            // Create python engine
-            _engine = Python.CreateEngine();
-            _scope = _engine.CreateScope();
-
             // Add assemblies
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                _engine.Runtime.LoadAssembly(assembly);
-
-
-            // 
-            var searchPaths = _engine.GetSearchPaths();
-            searchPaths.Add(this._pluginDir.FullName);
-            _engine.SetSearchPaths(searchPaths);
-
-            // Set some global variables
-            var module = _engine.GetBuiltinModule();
-
-            Action<int, object> logAction = (l, m) => { log((InternalLogLevel)l, m); };
-            module.SetVariable("log", logAction);
-
-            Action<PluginEvent, object> registerAction = (t, c) => { registerEventHandler(t, c); };
-            Action<RT_MSG_TYPE, object> registerMessageAction = (t, c) => { registerMessageEventHandler(t, c); };
-            Action<NetMessageTypes, byte, object> registerMediusMessageAction = (mc, mt, c) => { registerMediusMessageEventHandler(mc, mt, c); };
-            module.SetVariable("registerEventHandler", registerAction);
-            module.SetVariable("registerMessageEventHandler", registerMessageAction);
-            module.SetVariable("registerMediusMessageEventHandler", registerMediusMessageAction);
-
-            // Gather all plugins
-            foreach (var pyFile in Directory.GetFiles(this._pluginDir.FullName, "pluginstart.py", SearchOption.AllDirectories))
+            foreach (var file in this._pluginDir.GetFiles("*.dll", SearchOption.AllDirectories))
             {
                 try
                 {
-                    ScriptSource source = _engine.CreateScriptSourceFromFile(pyFile);
+                    Assembly pluginAssembly = Assembly.LoadFile(file.FullName);
+                    Type pluginInterface = typeof(IPlugin);
+                    var plugins = pluginAssembly.GetTypes()
+                        .Where(type => pluginInterface.IsAssignableFrom(type));
 
-                    source.Execute(_scope);
+                    foreach (var plugin in plugins)
+                    {
+                        IPlugin instance = (IPlugin)Activator.CreateInstance(plugin);
+
+                        _ = instance.Start(file.Directory.FullName, this);
+                    }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Logger.Error(_engine.GetService<ExceptionOperations>().FormatException(e));
+                    Logger.Error(ex);
                 }
             }
         }

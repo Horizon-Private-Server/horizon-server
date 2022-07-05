@@ -117,7 +117,7 @@ namespace Server.Dme
                 .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
                     IChannelPipeline pipeline = channel.Pipeline;
-
+                    
                     pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
@@ -213,7 +213,7 @@ namespace Server.Dme
                     {
                         try
                         {
-                            if (!PassMessageToPlugins(clientChannel, data, message, true))
+                            if (!await PassMessageToPlugins(clientChannel, data, message, true))
                                 await ProcessMessage(message, clientChannel, data);
                         }
                         catch (Exception e)
@@ -227,8 +227,9 @@ namespace Server.Dme
                     if (clientChannel.IsWritable)
                     {
                         // Add send queue to responses
-                        while (data.SendQueue.TryDequeue(out var message) && !PassMessageToPlugins(clientChannel, data, message, false))
-                            responses.Add(message);
+                        while (data.SendQueue.TryDequeue(out var message))
+                            if (!await PassMessageToPlugins(clientChannel, data, message, false))
+                                responses.Add(message);
 
                         if (data.ClientObject != null)
                         {
@@ -236,7 +237,7 @@ namespace Server.Dme
                             if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
                             {
                                 var message = new RT_MSG_SERVER_ECHO();
-                                if (!PassMessageToPlugins(clientChannel, data, message, false))
+                                if (!await PassMessageToPlugins(clientChannel, data, message, false))
                                     responses.Add(message);
                                 data.ClientObject.UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
                             }
@@ -244,8 +245,9 @@ namespace Server.Dme
                             // Add client object's send queue to responses
                             // But only if not in a world
                             if (data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.Destroyed)
-                                while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message) && !PassMessageToPlugins(clientChannel, data, message, false))
-                                    responses.Add(message);
+                                while (data.ClientObject.TcpSendMessageQueue.TryDequeue(out var message))
+                                    if (!await PassMessageToPlugins(clientChannel, data, message, false))
+                                        responses.Add(message);
                         }
 
                         //
@@ -297,6 +299,7 @@ namespace Server.Dme
                         data.ClientObject.ApplicationId = clientConnectTcpAuxUdp.AppId;
                         data.ClientObject.OnTcpConnected(clientChannel);
                         data.ClientObject.ScertId = GenerateNewScertClientId();
+                        data.ClientObject.MediusVersion = scertClient.MediusVersion;
                         if (!_scertIdToClient.TryAdd(data.ClientObject.ScertId, data.ClientObject))
                             throw new Exception($"Duplicate scert client id");
 
@@ -311,23 +314,21 @@ namespace Server.Dme
                         }
                         else
                         {
-                            data.ClientObject?.OnConnectionCompleted();
-                            data.ClientObject?.DmeWorld.OnPlayerJoined(data.ClientObject);
-
                             if (scertClient.CipherService.HasKey(CipherContext.RC_CLIENT_SESSION))
                             {
                                 Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                             }
                             Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                             {
-                                UNK_00 = (ushort)data.ClientObject.DmeId,
-                                UNK_02 = data.ClientObject.ScertId,
-                                UNK_06 = (ushort)data.ClientObject.DmeWorld.Clients.Count,
+                                PlayerId = (ushort)data.ClientObject.DmeId,
+                                ScertId = data.ClientObject.ScertId,
+                                PlayerCount = (ushort)data.ClientObject.DmeWorld.Clients.Count,
                                 IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                             }, clientChannel);
-                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE()
+                            Queue(new RT_MSG_SERVER_INFO_AUX_UDP()
                             {
-                                ARG1 = (ushort)data.ClientObject.DmeWorld.Clients.Count
+                                Ip = Program.SERVER_IP,
+                                Port = (ushort)data.ClientObject.UdpPort
                             }, clientChannel);
                         }
                         break;
@@ -345,9 +346,9 @@ namespace Server.Dme
                         }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
-                            UNK_00 = (ushort)data.ClientObject.DmeId,
-                            UNK_02 = data.ClientObject.ScertId,
-                            UNK_06 = (ushort)data.ClientObject.DmeWorld.Clients.Count,
+                            PlayerId = (ushort)data.ClientObject.DmeId,
+                            ScertId = data.ClientObject.ScertId,
+                            PlayerCount = (ushort)data.ClientObject.DmeWorld.Clients.Count,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
                         break;
@@ -379,13 +380,16 @@ namespace Server.Dme
                             ARG1 = (ushort)data.ClientObject.DmeWorld.Clients.Count
                         }, clientChannel);
 
-                        Queue(new RT_MSG_SERVER_APP()
+                        if (scertClient.MediusVersion > 108)
                         {
-                            Message = new DMEServerVersion()
+                            Queue(new RT_MSG_SERVER_APP()
                             {
-                                Version = "2.10.0009"
-                            }
-                        }, clientChannel);
+                                Message = new DMEServerVersion()
+                                {
+                                    Version = "2.10.0009"
+                                }
+                            }, clientChannel);
+                        }
 
                         break;
                     }
@@ -440,7 +444,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
-                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
+                        await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
 
@@ -461,10 +465,12 @@ namespace Server.Dme
             return;
         }
 
-        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
+        protected virtual Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             if (message == null)
-                return;
+                return Task.CompletedTask;
+
+            return Task.CompletedTask;
         }
 
         #endregion
@@ -530,10 +536,10 @@ namespace Server.Dme
 
         #endregion
 
-
         #region Plugins
 
-        protected bool PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
+
+        protected async Task<bool> PassMessageToPlugins(IChannel clientChannel, ChannelData data, BaseScertMessage message, bool isIncoming)
         {
             var onMsg = new OnMessageArgs(isIncoming)
             {
@@ -543,7 +549,7 @@ namespace Server.Dme
             };
 
             // Send to plugins
-            Program.Plugins.OnMessageEvent(message.Id, onMsg);
+            await Program.Plugins.OnMessageEvent(message.Id, onMsg);
             if (onMsg.Ignore)
                 return true;
 
@@ -558,7 +564,7 @@ namespace Server.Dme
                     Channel = clientChannel,
                     Message = clientApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
+                await Program.Plugins.OnMediusMessageEvent(clientApp.Message.PacketClass, clientApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }
@@ -570,7 +576,7 @@ namespace Server.Dme
                     Channel = clientChannel,
                     Message = serverApp.Message
                 };
-                Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
+                await Program.Plugins.OnMediusMessageEvent(serverApp.Message.PacketClass, serverApp.Message.PacketType, onMediusMsg);
                 if (onMediusMsg.Ignore)
                     return true;
             }

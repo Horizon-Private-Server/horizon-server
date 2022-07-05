@@ -53,7 +53,8 @@ namespace RT.Models
                 var msg = new RT_MSG_SERVER_MEMORY_POKE()
                 {
                     Address = (uint)(address + i),
-                    Payload = new byte[len]
+                    Payload = new byte[len],
+                    SkipEncryption = true
                 };
 
                 // 

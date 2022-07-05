@@ -23,6 +23,11 @@ namespace RT.Models
         /// </summary>
         public abstract RT_MSG_TYPE Id { get; }
 
+        /// <summary>
+        /// When true, skips encryption when sending this particular message instance.
+        /// </summary>
+        public virtual bool SkipEncryption { get; set; } = false;
+
         public BaseScertMessage()
         {
 
@@ -82,7 +87,7 @@ namespace RT.Models
 
                             var data = new byte[length];
                             Array.Copy(buffer, data, length);
-                            if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                            if (!this.SkipEncryption && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                             {
                                 totalHeaderSize += HASH_SIZE;
 
@@ -114,7 +119,7 @@ namespace RT.Models
             {
                 var data = new byte[length];
                 Array.Copy(buffer, data, length);
-                if (cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
+                if (!this.SkipEncryption && cipherService != null && cipherService.Encrypt(ctx, data, out var signed, out var hash))
                 {
                     totalHeaderSize += HASH_SIZE;
 

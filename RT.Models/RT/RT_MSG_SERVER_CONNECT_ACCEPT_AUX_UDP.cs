@@ -23,21 +23,45 @@ namespace RT.Models
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
-            PlayerId = reader.ReadUInt16();
-            ScertId = reader.ReadUInt32();
-            PlayerCount = reader.ReadUInt16();
+            if (reader.MediusVersion <= 108)
+            {
+                // unk
+                reader.ReadBytes(3);
+                PlayerId = reader.ReadUInt16();
+                PlayerCount = reader.ReadUInt16();
+                EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
+            }
+            else
+            {
+                PlayerId = reader.ReadUInt16();
+                ScertId = reader.ReadUInt32();
+                PlayerCount = reader.ReadUInt16();
 
-            EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
+                EndPoint = new IPEndPoint(reader.ReadIPAddress(), (int)reader.ReadUInt16());
+            }
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            writer.Write(PlayerId);
-            writer.Write(ScertId);
-            writer.Write(PlayerCount);
+            if (writer.MediusVersion <= 108)
+            {
+                // unk
+                writer.Write(new byte[] { 0x01, 0x08, 0x10 });
+                writer.Write(PlayerId);
+                writer.Write(PlayerCount);
 
-            writer.Write(EndPoint.Address);
-            writer.Write((ushort)EndPoint.Port);
+                writer.Write(EndPoint.Address);
+                writer.Write((ushort)EndPoint.Port);
+            }
+            else
+            {
+                writer.Write(PlayerId);
+                writer.Write(ScertId);
+                writer.Write(PlayerCount);
+
+                writer.Write(EndPoint.Address);
+                writer.Write((ushort)EndPoint.Port);
+            }
         }
     }
 }

@@ -67,6 +67,11 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
+        public int MediusVersion { get; set; } = 0;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public uint ScertId { get; set; } = 0;
 
         /// <summary>

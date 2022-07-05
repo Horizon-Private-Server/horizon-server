@@ -8,6 +8,7 @@ using Server.Database;
 using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Plugins;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -78,9 +79,9 @@ namespace Server.Medius
                             Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
                             Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                             {
-                                UNK_00 = 0,
-                                UNK_02 = GenerateNewScertClientId(),
-                                UNK_06 = 0x0001,
+                                PlayerId = 0,
+                                ScertId = GenerateNewScertClientId(),
+                                PlayerCount = 0x0001,
                                 IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                             }, clientChannel);
                             Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
@@ -95,9 +96,9 @@ namespace Server.Medius
                         }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
-                            UNK_00 = 0,
-                            UNK_02 = GenerateNewScertClientId(),
-                            UNK_06 = 0x0001,
+                            PlayerId = 0,
+                            ScertId = GenerateNewScertClientId(),
+                            PlayerCount = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
                         break;
@@ -120,7 +121,7 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
                     {
-                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
+                        await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
                 case RT_MSG_CLIENT_DISCONNECT _:
@@ -141,7 +142,7 @@ namespace Server.Medius
             return;
         }
 
-        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
+        protected virtual async Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
             if (message == null)
@@ -459,7 +460,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountDeleteRequest} without a being logged in.");
 
-                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName).ContinueWith((r) =>
+                        _ = Program.Database.DeleteAccount(data.ClientObject.AccountName, data.ClientObject.ApplicationId).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result)
                             {
@@ -532,7 +533,7 @@ namespace Server.Medius
                         }
                         else
                         {
-                            Program.Database.GetAccountByName(accountLoginRequest.Username, data.ClientObject.ApplicationId).ContinueWith((r) =>
+                            _ = Program.Database.GetAccountByName(accountLoginRequest.Username, data.ClientObject.ApplicationId).ContinueWith(async (r) =>
                             {
                                 if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                     return;
@@ -572,7 +573,7 @@ namespace Server.Medius
                                     }
                                     else if (Utils.ComputeSHA256(accountLoginRequest.Password) == r.Result.AccountPassword)
                                     {
-                                        Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
+                                        await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
                                     }
                                     else
                                     {
@@ -617,11 +618,11 @@ namespace Server.Medius
                                         MachineId = data.MachineId,
                                         MediusStats = Convert.ToBase64String(new byte[Constants.ACCOUNTSTATS_MAXLEN]),
                                         AppId = data.ClientObject.ApplicationId
-                                    }).ContinueWith((r) =>
+                                    }).ContinueWith(async (r) =>
                                     {
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
-                                            Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
+                                            await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
                                         }
                                         else
                                         {
@@ -662,7 +663,7 @@ namespace Server.Medius
                             result = MediusCallbackStatus.MediusSuccess;
 
                             // Logout
-                            data.ClientObject.Logout();
+                            await data.ClientObject.Logout();
                         }
 
                         data.ClientObject.Queue(new MediusAccountLogoutResponse()
@@ -736,7 +737,7 @@ namespace Server.Medius
                         }
                         else
                         {
-                            Program.Database.GetAccountByName(ticketLoginRequest.Username, data.ClientObject.ApplicationId).ContinueWith((r) =>
+                            _ = Program.Database.GetAccountByName(ticketLoginRequest.Username, data.ClientObject.ApplicationId).ContinueWith(async (r) =>
                             {
                                 if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                     return;
@@ -768,7 +769,7 @@ namespace Server.Medius
                                     }
                                     else
                                     {
-                                        Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
+                                        await Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
                                     }
                                 }
                                 else
@@ -793,11 +794,11 @@ namespace Server.Medius
                                         MachineId = data.MachineId,
                                         MediusStats = Convert.ToBase64String(new byte[Constants.ACCOUNTSTATS_MAXLEN]),
                                         AppId = data.ClientObject.ApplicationId
-                                    }).ContinueWith((r) =>
+                                    }).ContinueWith(async (r) =>
                                     {
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
-                                            Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
+                                            await Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
                                         }
                                         else
                                         {
@@ -822,13 +823,13 @@ namespace Server.Medius
                 case MediusGetAllAnnouncementsRequest getAllAnnouncementsRequest:
                     {
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ALL_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ALL_ANNOUNCEMENTS, new OnPlayerRequestArgs()
                         {
                             Player = data.ClientObject,
                             Request = getAllAnnouncementsRequest
                         });
 
-                        Program.Database.GetLatestAnnouncements(data.ApplicationId).ContinueWith((r) =>
+                        _ = Program.Database.GetLatestAnnouncements(data.ApplicationId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -869,13 +870,13 @@ namespace Server.Medius
                 case MediusGetAnnouncementsRequest getAnnouncementsRequest:
                     {
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ANNOUNCEMENTS, new OnPlayerRequestArgs()
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_ANNOUNCEMENTS, new OnPlayerRequestArgs()
                         {
                             Player = data.ClientObject,
                             Request = getAnnouncementsRequest
                         });
 
-                        Program.Database.GetLatestAnnouncement(data.ApplicationId).ContinueWith((r) =>
+                        _ = Program.Database.GetLatestAnnouncement(data.ApplicationId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -909,7 +910,7 @@ namespace Server.Medius
                 case MediusGetPolicyRequest getPolicyRequest:
                     {
                         // Send to plugins
-                        Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_POLICY, new OnPlayerRequestArgs()
+                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_GET_POLICY, new OnPlayerRequestArgs()
                         {
                             Player = data.ClientObject,
                             Request = getPolicyRequest
@@ -919,7 +920,7 @@ namespace Server.Medius
                         {
                             case MediusPolicyType.Privacy:
                                 {
-                                    Program.Database.GetUsagePolicy().ContinueWith((r) =>
+                                    _ = Program.Database.GetUsagePolicy().ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                             return;
@@ -940,7 +941,7 @@ namespace Server.Medius
                                 }
                             case MediusPolicyType.Usage:
                                 {
-                                    Program.Database.GetUsagePolicy().ContinueWith((r) =>
+                                    _ = Program.Database.GetUsagePolicy().ContinueWith((r) =>
                                     {
                                         if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                             return;
@@ -1018,13 +1019,13 @@ namespace Server.Medius
             }
         }
 
-        private void Login(MessageId messageId, IChannel clientChannel, ChannelData data, Database.Models.AccountDTO accountDto, bool ticket)
+        private async Task Login(MessageId messageId, IChannel clientChannel, ChannelData data, Database.Models.AccountDTO accountDto, bool ticket)
         {
             var fac = new PS2CipherFactory();
             var rsa = fac.CreateNew(CipherContext.RSA_AUTH) as PS2_RSA;
 
             //
-            data.ClientObject.Login(accountDto);
+            await data.ClientObject.Login(accountDto);
 
             // Update db ip
             _ = Program.Database.PostAccountIp(accountDto.AccountId, (clientChannel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString());

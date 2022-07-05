@@ -8,6 +8,7 @@ using Server.Medius.Models;
 using Server.Medius.PluginArgs;
 using Server.Pipeline.Attribute;
 using Server.Plugins;
+using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -97,9 +98,9 @@ namespace Server.Medius
                         data.State = ClientState.AUTHENTICATED;
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
-                            UNK_00 = 0,
-                            UNK_02 = GenerateNewScertClientId(),
-                            UNK_06 = 0x0001,
+                            PlayerId = 0,
+                            ScertId = GenerateNewScertClientId(),
+                            PlayerCount = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
 
@@ -124,7 +125,7 @@ namespace Server.Medius
                         if (data.State != ClientState.AUTHENTICATED)
                             throw new Exception($"Unexpected RT_MSG_CLIENT_APP_TOSERVER from {clientChannel.RemoteAddress}: {clientAppToServer}");
 
-                        ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
+                        await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
 
@@ -145,7 +146,7 @@ namespace Server.Medius
             return;
         }
 
-        protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
+        protected virtual async Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             if (message == null)
                 return;
@@ -197,11 +198,12 @@ namespace Server.Medius
                                 StatusCode = MediusCallbackStatus.MediusFail
                             });
 
-                            game.EndGame();
+                            await game.EndGame();
                         }
                         else
                         {
                             game.DMEWorldId = createGameWithAttrResponse.WorldID;
+                            await game.GameCreated();
                             rClient?.Queue(new MediusCreateGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
@@ -210,7 +212,7 @@ namespace Server.Medius
                             });
 
                             // Send to plugins
-                            Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_CREATED, new OnPlayerGameArgs() { Player = rClient, Game = game });
+                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_CREATED, new OnPlayerGameArgs() { Player = rClient, Game = game });
                         }
 
                         break;
@@ -235,7 +237,7 @@ namespace Server.Medius
                         else
                         {
                             // Join game
-                            rClient?.JoinGame(game, joinGameResponse.DmeClientIndex);
+                            await rClient?.JoinGame(game, joinGameResponse.DmeClientIndex);
 
                             // 
                             rClient?.Queue(new MediusJoinGameResponse()

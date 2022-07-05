@@ -23,20 +23,38 @@ namespace RT.Models
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
-            PlayerIndex = reader.ReadInt16();
-            ScertId = reader.ReadInt16();
-            UNK_04 = reader.ReadInt16();
-            IP = reader.Read<IPAddress>();
-            Key = reader.Read<RSA_KEY>();
+            if (reader.MediusVersion <= 108)
+            {
+                PlayerIndex = reader.ReadInt16();
+                IP = reader.Read<IPAddress>();
+                Key = reader.Read<RSA_KEY>();
+            }
+            else
+            {
+                PlayerIndex = reader.ReadInt16();
+                ScertId = reader.ReadInt16();
+                UNK_04 = reader.ReadInt16();
+                IP = reader.Read<IPAddress>();
+                Key = reader.Read<RSA_KEY>();
+            }
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            writer.Write(PlayerIndex);
-            writer.Write(ScertId);
-            writer.Write(UNK_04);
-            writer.Write(IP ?? IPAddress.Any);
-            writer.Write(Key);
+            if (writer.MediusVersion <= 108)
+            {
+                writer.Write(PlayerIndex);
+                writer.Write(IP ?? IPAddress.Any);
+                writer.Write(Key);
+            }
+            else
+            {
+                writer.Write(PlayerIndex);
+                writer.Write(ScertId);
+                writer.Write(UNK_04);
+                writer.Write(IP ?? IPAddress.Any);
+                writer.Write(Key);
+            }
         }
     }
 }
