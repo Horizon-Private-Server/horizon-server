@@ -68,11 +68,11 @@ namespace Server.Medius
                         data.ApplicationId = clientConnectTcp.AppId;
                         if (scertClient.IsPS3Client)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
                         }
                         else if (scertClient.MediusVersion > 108)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
                         }
                         else
                         {
@@ -127,8 +127,8 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
-                        data.State = ClientState.DISCONNECTED;
-                        _ = clientChannel.CloseAsync();
+                        //data.State = ClientState.DISCONNECTED;
+                        //_ = clientChannel.CloseAsync();
                         break;
                     }
                 default:

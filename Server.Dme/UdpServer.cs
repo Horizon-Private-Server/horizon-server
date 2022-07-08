@@ -20,6 +20,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Server.Dme.PluginArgs;
 using Server.Plugins.Interface;
+using Server.Pipeline.Attribute;
 
 namespace Server.Dme
 {
@@ -74,11 +75,23 @@ namespace Server.Dme
         /// <summary>
         /// Start the Dme Udp Client Server.
         /// </summary>
-        public virtual async void Start()
+        public virtual async Task Start()
         {
             //
             _workerGroup = new MultithreadEventLoopGroup();
             _scertHandler = new ScertDatagramHandler();
+
+            // 
+            _scertHandler.OnChannelActive = channel =>
+            {
+                // get scert client
+                if (!channel.HasAttribute(Pipeline.Constants.SCERT_CLIENT))
+                    channel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Set(new ScertClientAttribute());
+                var scertClient = channel.GetAttribute(Pipeline.Constants.SCERT_CLIENT).Get();
+
+                // pass medius version
+                scertClient.MediusVersion = ClientObject.MediusVersion;
+            };
 
             // Queue all incoming messages
             _scertHandler.OnChannelMessage += async (channel, message) =>
@@ -268,13 +281,10 @@ namespace Server.Dme
 
         #region Tick
 
-        public async Task Tick()
+        public async Task HandleIncomingMessages()
         {
             if (_boundChannel == null || !_boundChannel.Active)
                 return;
-
-            // 
-            List<ScertDatagramPacket> responses = new List<ScertDatagramPacket>();
 
             try
             {
@@ -291,14 +301,32 @@ namespace Server.Dme
                         Logger.Error(e);
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+        }
 
+        public async Task HandleOutgoingMessages()
+        {
+            if (_boundChannel == null || !_boundChannel.Active)
+                return;
+
+            // 
+            List<ScertDatagramPacket> responses = new List<ScertDatagramPacket>();
+
+            try
+            {
                 // Send if writeable
                 if (_boundChannel.IsWritable)
                 {
                     // Add send queue to responses
                     while (_sendQueue.TryDequeue(out var message))
+                    {
                         if (!await PassMessageToPlugins(_boundChannel, ClientObject, message.Message, false))
                             responses.Add(message);
+                    }
 
                     //
                     if (responses.Count > 0)

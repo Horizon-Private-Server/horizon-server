@@ -35,7 +35,7 @@ namespace Server.Pipeline.Tcp
 
             // Log
             if (message.CanLog())
-                Logger.Info($"SEND {ctx.Channel}: {message}");
+                Logger.Debug($"SEND {ctx.Channel}: {message}");
 
             //
             if (!ctx.HasAttribute(Constants.SCERT_CLIENT))

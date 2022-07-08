@@ -42,7 +42,6 @@ namespace Server.Dme.Config
         /// </summary>
         public List<int> ApplicationIds { get; set; } = new List<int>();
 
-
         /// <summary>
         /// By default the server will grab its local ip.
         /// If this is set, it will use its public ip instead.

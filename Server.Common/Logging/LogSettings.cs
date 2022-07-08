@@ -20,6 +20,11 @@ namespace Server.Common.Logging
         public string LogPath { get; set; } = "logs/medius.log";
 
         /// <summary>
+        /// Whether to output metric information.
+        /// </summary>
+        public bool LogMetrics { get; set; } = false;
+
+        /// <summary>
         /// Whether to also log to the console.
         /// </summary>
         public bool LogToConsole { get; set; } = false;

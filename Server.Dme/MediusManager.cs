@@ -139,7 +139,7 @@ namespace Server.Dme
 
                 // Log if id is set
                 if (message.CanLog())
-                    Logger.Info($"MPS RECV {channel}: {message}");
+                    Logger.Debug($"MPS RECV {channel}: {message}");
             };
 
             _bootstrap = new Bootstrap();
@@ -173,8 +173,45 @@ namespace Server.Dme
             _mpsRecvQueue.Clear();
             _mpsSendQueue.Clear();
         }
+        
+        public async Task HandleIncomingMessages()
+        {
+            if (_mpsChannel == null)
+                return;
 
-        public async Task Tick()
+            //
+            if (_mpsState == MPSConnectionState.FAILED || 
+                (_mpsState != MPSConnectionState.AUTHENTICATED && (Utils.GetHighPrecisionUtcTime() - _utcConnectionState).TotalSeconds > 30))
+                throw new Exception("Failed to authenticate with the MPS server.");
+
+            await Program.TimeAsync("mm incoming", async () =>
+            {
+                try
+                {
+                    // Process all messages in queue
+                    while (_mpsRecvQueue.TryDequeue(out var message))
+                    {
+                        try
+                        {
+                            await ProcessMessage(message, _mpsChannel);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Error(e);
+                        }
+                    }
+
+                    // Handle incoming for each world
+                    await Task.WhenAll(_worlds.Select(x => x.HandleIncomingMessages()));
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e);
+                }
+            });
+        }
+
+        public async Task HandleOutgoingMessages()
         {
             if (_mpsChannel == null)
                 return;
@@ -183,27 +220,14 @@ namespace Server.Dme
             List<BaseScertMessage> responses = new List<BaseScertMessage>();
 
             //
-            if (_mpsState == MPSConnectionState.FAILED || 
+            if (_mpsState == MPSConnectionState.FAILED ||
                 (_mpsState != MPSConnectionState.AUTHENTICATED && (Utils.GetHighPrecisionUtcTime() - _utcConnectionState).TotalSeconds > 30))
                 throw new Exception("Failed to authenticate with the MPS server.");
 
             try
             {
-                // Process all messages in queue
-                while (_mpsRecvQueue.TryDequeue(out var message))
-                {
-                    try
-                    {
-                        await ProcessMessage(message, _mpsChannel);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error(e);
-                    }
-                }
-
-                // Process each world
-                await Task.WhenAll(_worlds.Select(x => x.Tick()));
+                // Handle outgoing for each world
+                await Task.WhenAll(_worlds.Select(x => x.HandleOutgoingMessages()));
 
                 // Handle world removals
                 while (_removeWorldQueue.TryDequeue(out var world))
@@ -215,7 +239,6 @@ namespace Server.Dme
                     // Add send queue to responses
                     while (_mpsSendQueue.TryDequeue(out var message))
                         responses.Add(message);
-
 
                     //
                     if (responses.Count > 0)

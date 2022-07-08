@@ -33,9 +33,9 @@ namespace Server.Medius
 
         #region Clients
 
-        public List<ClientObject> GetClients(int appId)
+        public List<ClientObject> GetClients()
         {
-            return _accountIdToClient.Select(x => x.Value).Where(x => x.ApplicationId == appId).ToList();
+            return _accountIdToClient.Select(x => x.Value).ToList();
         }
 
         public ClientObject GetClientByAccountId(int accountId)
@@ -140,7 +140,7 @@ namespace Server.Medius
         {
             return _gameIdToGame
                             .Select(x => x.Value)
-                            .Where(x => x.ApplicationId == appId &&
+                            .Where(x => //x.ApplicationId == appId &&
                                         (x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging) &&
                                         (filters.Count() == 0 || filters.Any(y => y.IsMatch(x))))
                             .Skip((pageIndex - 1) * pageSize)
@@ -279,7 +279,7 @@ namespace Server.Medius
         {
             lock (_channelIdToChannel)
             {
-                return _channelIdToChannel.FirstOrDefault(x => x.Value.Name == channelName && x.Value.ApplicationId == appId).Value;
+                return _channelIdToChannel.FirstOrDefault(x => x.Value.Name == channelName).Value;
             }
         }
 
@@ -295,19 +295,9 @@ namespace Server.Medius
         {
             lock (_channelIdToChannel)
             {
-                // If all app ids are compatible then return the default
-                if (Program.Settings.ApplicationIds == null)
-                {
-                    return _channelIdToChannel
-                        .Select(x => x.Value)
-                        .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == 0);
-                }
-                else
-                {
-                    return _channelIdToChannel
-                        .Select(x => x.Value)
-                        .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == appId);
-                }
+                return _channelIdToChannel
+                    .Select(x => x.Value)
+                    .FirstOrDefault(x => x.Type == ChannelType.Lobby);
             }
         }
 
@@ -323,7 +313,8 @@ namespace Server.Medius
         {
             return _channelIdToChannel
                 .Select(x => x.Value)
-                .Where(x => x.ApplicationId == appId && x.Type == type)
+                //.Where(x => x.ApplicationId == appId && x.Type == type)
+                .Where(x => x.Type == type)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize);
         }

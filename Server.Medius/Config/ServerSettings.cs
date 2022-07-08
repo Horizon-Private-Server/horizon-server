@@ -149,6 +149,11 @@ namespace Server.Medius.Config
         public List<Location> Locations { get; set; }
 
         /// <summary>
+        /// Collection of channels.
+        /// </summary>
+        public List<Channel> Channels { get; set; }
+
+        /// <summary>
         /// Regex text filters for 
         /// </summary>
         public Dictionary<TextFilterContext, string> TextBlacklistFilters { get; set; } = new Dictionary<TextFilterContext, string>();
@@ -170,6 +175,63 @@ namespace Server.Medius.Config
 
             return ApplicationIds.Contains(appId);
         }
+
+        public class Location
+        {
+            /// <summary>
+            /// Id of location.
+            /// </summary>
+            public int Id { get; set; }
+
+            /// <summary>
+            /// Name of location.
+            /// </summary>
+            public string Name { get; set; }
+        }
+
+        public class Channel
+        {
+            /// <summary>
+            /// Id of channel.
+            /// </summary>
+            public int Id { get; set; }
+
+            /// <summary>
+            /// Name of channel.
+            /// </summary>
+            public string Name { get; set; }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public int MaxPlayers { get; set; } = 256;
+            
+            /// <summary>
+            /// 
+            /// </summary>
+            public uint GenericField1 { get; set; }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public uint GenericField2 { get; set; }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public uint GenericField3 { get; set; }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public uint GenericField4 { get; set; }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            public MediusWorldGenericFieldLevelType GenericFieldLevel { get; set; }
+        }
+
     }
 
     public class BetaConfig
@@ -193,34 +255,6 @@ namespace Server.Medius.Config
         /// Accounts that can be logged into with RestrictSignIn set.
         /// </summary>
         public string[] PermittedAccounts { get; set; } = null;
-    }
-
-    public class Location
-    {
-        /// <summary>
-        /// Id of location.
-        /// </summary>
-        public int Id { get; set; }
-
-        /// <summary>
-        /// Name of location.
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Name of respective channel.
-        /// </summary>
-        public string ChannelName { get; set; }
-
-        /// <summary>
-        /// Collection of all compatible app ids.
-        /// </summary>
-        public int[] AppIds { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public MediusWorldGenericFieldLevelType GenericFieldLevel { get; set; }
     }
 
     public enum TextFilterContext

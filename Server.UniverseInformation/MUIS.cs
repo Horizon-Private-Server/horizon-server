@@ -85,7 +85,7 @@ namespace Server.UnivereInformation
 
                 // Log if id is set
                 if (message.CanLog())
-                    Logger.Info($"TCP RECV {channel}: {message}");
+                    Logger.Debug($"TCP RECV {channel}: {message}");
             };
 
             var bootstrap = new ServerBootstrap();
@@ -216,7 +216,7 @@ namespace Server.UnivereInformation
 
                         if (scertClient.MediusVersion >= 109)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("024802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
                         }
                         else
                         {

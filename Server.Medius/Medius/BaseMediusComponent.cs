@@ -171,7 +171,7 @@ namespace Server.Medius
 
                 // Log if id is set
                 if (message.CanLog())
-                    Logger.Info($"RECV {data?.ClientObject},{channel}: {message}");
+                    Logger.Debug($"RECV {data?.ClientObject},{channel}: {message}");
             };
 
             try
@@ -235,7 +235,7 @@ namespace Server.Medius
             {
 
                 // Send disconnect message
-                _ = ForceDisconnectClient(channel);
+                //_ = ForceDisconnectClient(channel);
 
                 // Remove
                 _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);

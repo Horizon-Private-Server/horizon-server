@@ -105,11 +105,11 @@ namespace Server.Medius
 
                             if (scertClient.IsPS3Client)
                             {
-                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
                             }
                             else if (scertClient.MediusVersion > 108)
                             {
-                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
+                                Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
                             }
                             else
                             {
@@ -170,8 +170,8 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
-                        data.State = ClientState.DISCONNECTED;
-                        _ = clientChannel.CloseAsync();
+                        //data.State = ClientState.DISCONNECTED;
+                        //_ = clientChannel.CloseAsync();
                         break;
                     }
                 default:
@@ -3306,7 +3306,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLocationsRequest} without a being logged in.");
 
                         var locations = Program.Settings?.Locations
-                            ?.Where(x => x.AppIds == null || x.AppIds.Contains(data.ClientObject.ApplicationId))
+                            //?.Where(x => x.AppIds == null || x.AppIds.Contains(data.ClientObject.ApplicationId))
                             ?.ToList()
                             ;
 
@@ -3352,11 +3352,10 @@ namespace Server.Medius
                         var path = Program.GetFileSystemPath(fileCreateRequest.MediusFileToCreate.Filename);
                         if (path == null)
                         {
-                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                            data.ClientObject.Queue(new MediusFileCreateResponse()
                             {
                                 MessageID = fileCreateRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusDBError,
-                                iXferStatus = MediusFileXferStatus.Error
                             });
                             break;
                         }
@@ -3557,11 +3556,10 @@ namespace Server.Medius
                         var path = Program.GetFileSystemPath(fileDownloadRequest.MediusFileInfo.Filename);
                         if (path == null)
                         {
-                            data.ClientObject.Queue(new MediusFileUploadServerRequest()
+                            data.ClientObject.Queue(new MediusFileDownloadResponse()
                             {
                                 MessageID = fileDownloadRequest.MessageID,
-                                StatusCode = MediusCallbackStatus.MediusDBError,
-                                iXferStatus = MediusFileXferStatus.Error
+                                StatusCode = MediusCallbackStatus.MediusDBError
                             });
                             break;
                         }

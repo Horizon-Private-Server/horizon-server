@@ -105,7 +105,7 @@ namespace Server.Dme
 
                 // Log if id is set
                 if (message.CanLog())
-                    Logger.Info($"TCP RECV {data?.ClientObject},{channel}: {message}");
+                    Logger.Debug($"TCP RECV {data?.ClientObject},{channel}: {message}");
             };
 
             var bootstrap = new ServerBootstrap();
@@ -148,14 +148,25 @@ namespace Server.Dme
         }
 
         /// <summary>
-        /// Process messages.
+        /// Process incoming messages.
         /// </summary>
-        public async Task Tick()
+        public async Task HandleIncomingMessages()
         {
             if (_scertHandler == null || _scertHandler.Group == null)
                 return;
 
-            await Task.WhenAll(_scertHandler.Group.Select(c => Tick(c)));
+            await Program.TimeAsync("tcp incoming", () => Task.WhenAll(_scertHandler.Group.Select(c => HandleIncomingMessages(c))));
+        }
+
+        /// <summary>
+        /// Process outgoing messages.
+        /// </summary>
+        public async Task HandleOutgoingMessages()
+        {
+            if (_scertHandler == null || _scertHandler.Group == null)
+                return;
+
+            await Task.WhenAll(_scertHandler.Group.Select(c => HandleOutgoingMessages(c)));
 
             // Disconnect and remove timedout unauthenticated channels
             while (_forceDisconnectQueue.TryDequeue(out var channel))
@@ -180,7 +191,42 @@ namespace Server.Dme
             }
         }
 
-        private async Task Tick(IChannel clientChannel)
+        private async Task HandleIncomingMessages(IChannel clientChannel)
+        {
+            if (clientChannel == null)
+                return;
+
+            // 
+            string key = clientChannel.Id.AsLongText();
+
+            try
+            {
+                // 
+                if (_channelDatas.TryGetValue(key, out var data))
+                {
+                    // Process all messages in queue
+                    while (data.RecvQueue.TryDequeue(out var message))
+                    {
+                        try
+                        {
+                            if (!await PassMessageToPlugins(clientChannel, data, message, true))
+                                await ProcessMessage(message, clientChannel, data);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Error(e);
+                            _ = ForceDisconnectClient(clientChannel);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+        }
+
+        private async Task HandleOutgoingMessages(IChannel clientChannel)
         {
             if (clientChannel == null)
                 return;
@@ -206,21 +252,6 @@ namespace Server.Dme
                     {
                         data.Ignore = true;
                         return;
-                    }
-
-                    // Process all messages in queue
-                    while (data.RecvQueue.TryDequeue(out var message))
-                    {
-                        try
-                        {
-                            if (!await PassMessageToPlugins(clientChannel, data, message, true))
-                                await ProcessMessage(message, clientChannel, data);
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.Error(e);
-                            _ = ForceDisconnectClient(clientChannel);
-                        }
                     }
 
                     // Send if writeable
@@ -303,14 +334,17 @@ namespace Server.Dme
                         if (!_scertIdToClient.TryAdd(data.ClientObject.ScertId, data.ClientObject))
                             throw new Exception($"Duplicate scert client id");
 
+                        // start udp server
+                        data.ClientObject.BeginUdp();
+
 
                         if (scertClient.IsPS3Client)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("0648024802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { MaxPacketSize = 584, MaxUdpPacketSize = 584 }, clientChannel);
                         }
                         else if (scertClient.MediusVersion > 108)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { Contents = Utils.FromString("0648024802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { MaxPacketSize = 584, MaxUdpPacketSize = 584 }, clientChannel);
                         }
                         else
                         {
@@ -451,7 +485,7 @@ namespace Server.Dme
                 case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
-                        _ = clientChannel.CloseAsync();
+                        //_ = clientChannel.CloseAsync();
                         break;
                     }
                 default:

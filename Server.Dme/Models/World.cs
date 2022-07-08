@@ -115,7 +115,23 @@ namespace Server.Dme.Models
             Dispose();
         }
 
-        public async Task Tick()
+        public Task HandleIncomingMessages()
+        {
+            List<Task> tasks = new List<Task>();
+
+            // Process clients
+            for (int i = 0; i < MAX_CLIENTS_PER_WORLD; ++i)
+            {
+                if (Clients.TryGetValue(i, out var client))
+                {
+                    tasks.Add(client.HandleIncomingMessages());
+                }
+            }
+
+            return Task.WhenAll(tasks);
+        }
+
+        public async Task HandleOutgoingMessages()
         {
             // Process clients
             for (int i = 0; i < MAX_CLIENTS_PER_WORLD; ++i)
@@ -131,7 +147,7 @@ namespace Server.Dme.Models
                     }
                     else if (client.IsAggTime)
                     {
-                        client.Tick();
+                        client.HandleOutgoingMessages();
                     }
                 }
             }
@@ -161,7 +177,7 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueTcp(msg);
@@ -178,7 +194,8 @@ namespace Server.Dme.Models
 
             foreach (var client in Clients)
             {
-                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                if (client.Value == source || !client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_BROADCAST))
+                //if (!client.Value.IsAuthenticated || !client.Value.IsConnected || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_BROADCAST))
                     continue;
 
                 client.Value.EnqueueUdp(msg);
@@ -191,7 +208,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(targetId, out var client))
                 {
-                    if (client == null || !client.IsAuthenticated || !client.IsConnected) // || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                    if (client == null || !client.IsAuthenticated || !client.IsConnected || !client.HasRecvFlag(RT_RECV_FLAG.RECV_LIST))
                         continue;
 
                     client.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
@@ -209,7 +226,7 @@ namespace Server.Dme.Models
             {
                 if (Clients.TryGetValue(targetId, out var client))
                 {
-                    if (client == null || !client.IsAuthenticated || !client.IsConnected) // || !client.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_LIST))
+                    if (client == null || !client.IsAuthenticated || !client.IsConnected || !client.HasRecvFlag(RT_RECV_FLAG.RECV_LIST))
                         continue;
 
                     client.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
@@ -225,7 +242,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null && target.IsAuthenticated && target.IsConnected) // && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (target != null && target.IsAuthenticated && target.IsConnected && target.HasRecvFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -239,7 +256,7 @@ namespace Server.Dme.Models
         {
             var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
 
-            if (target != null && target.IsAuthenticated && target.IsConnected) // && target.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (target != null && target.IsAuthenticated && target.IsConnected && target.HasRecvFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -271,7 +288,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION)))
+                if (client.Value == player || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_CONNECT_NOTIFY()
@@ -303,7 +320,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player) // || !client.Value.RecvFlag.HasFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
+                if (client.Value == player || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_DISCONNECT_NOTIFY()

@@ -30,6 +30,7 @@ namespace Server.Dme
         public const string CONFIG_FILE = "config.json";
         public const string PLUGINS_PATH = "plugins/";
 
+        public static readonly Stopwatch Stopwatch = Stopwatch.StartNew();
         public static ServerSettings Settings = new ServerSettings();
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
@@ -50,18 +51,20 @@ namespace Server.Dme
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
+        static int metricCooldownTicks = 0;
+        static string metricPrintString = null;
+        static int metricIndent = 0;
 
         static async Task TickAsync()
         {
-
             try
             {
-#if DEBUG || RELEASE
+#if DEBUG
                 if (!_sw.IsRunning)
                     _sw.Start();
 #endif
 
-#if DEBUG || RELEASE
+#if DEBUG
                 ++_ticks;
                 if (_sw.Elapsed.TotalSeconds > 5f)
                 {
@@ -70,8 +73,8 @@ namespace Server.Dme
                     var averageMsPerTick = 1000 * (_sw.Elapsed.TotalSeconds / _ticks);
                     var error = Math.Abs(Settings.MainLoopSleepMs - averageMsPerTick) / Settings.MainLoopSleepMs;
 
-                    if (error > 0.1f)
-                        Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
+                    //if (error > 0.1f)
+                    //    Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
 
                     //var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
                     //if (Math.Abs(dt.TotalMilliseconds) > 50)
@@ -82,31 +85,61 @@ namespace Server.Dme
                 }
 #endif
 
-                var tasks = new List<Task>()
+                await TimeAsync("in", async () =>
                 {
-                    TcpServer.Tick()
-                };
-
-                foreach (var manager in Managers)
-                {
-                    if (manager.Value.IsConnected)
+                    // handle incoming
                     {
-                        tasks.Add(manager.Value.Tick());
-                    }
-                    else if ((Utils.GetHighPrecisionUtcTime() - manager.Value.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                        var tasks = new List<Task>()
                     {
-                        tasks.Add(manager.Value.Start());
+                        TcpServer.HandleIncomingMessages()
+                    };
+
+                        foreach (var manager in Managers)
+                        {
+                            if (manager.Value.IsConnected)
+                            {
+                                tasks.Add(manager.Value.HandleIncomingMessages());
+                            }
+                        }
+
+                        await Task.WhenAll(tasks);
                     }
-                }
+                });
 
-                // Tick plugins
-                if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                await TimeAsync("plugins", async () =>
                 {
-                    _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
-                    await Plugins.Tick();
-                }
+                    // Tick plugins
+                    if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                    {
+                        _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
+                        await Plugins.Tick();
+                    }
+                });
 
-                await Task.WhenAll(tasks);
+                await TimeAsync("out", async () =>
+                {
+                    // handle outgoing
+                    {
+                        var tasks = new List<Task>()
+                    {
+                        TcpServer.HandleOutgoingMessages()
+                    };
+
+                        foreach (var manager in Managers)
+                        {
+                            if (manager.Value.IsConnected)
+                            {
+                                tasks.Add(manager.Value.HandleOutgoingMessages());
+                            }
+                            else if ((Utils.GetHighPrecisionUtcTime() - manager.Value.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                            {
+                                tasks.Add(manager.Value.Start());
+                            }
+                        }
+
+                        await Task.WhenAll(tasks);
+                    }
+                });
 
                 // Reload config
                 if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -114,6 +147,7 @@ namespace Server.Dme
                     RefreshConfig();
                     _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
                 }
+
             }
             catch (Exception ex)
             {
@@ -135,7 +169,7 @@ namespace Server.Dme
             Logger.Info($"TCP started.");
 
             // build and start medius managers per app id
-           foreach (var applicationId in Settings.ApplicationIds)
+            foreach (var applicationId in Settings.ApplicationIds)
             {
                 var manager = new MediusManager(applicationId);
                 Logger.Info($"Starting MPS for appid {applicationId}.");
@@ -155,6 +189,12 @@ namespace Server.Dme
             // iterate
             while (true)
             {
+                // 
+                if (metricCooldownTicks > 0)
+                    metricCooldownTicks--;
+                else
+                    metricCooldownTicks = (1000 * 5) / waitMs; // 5 seconds
+
                 // handle tick rate change
                 if (Settings.MainLoopSleepMs != waitMs)
                 {
@@ -165,10 +205,30 @@ namespace Server.Dme
                 }
 
                 // tick
-                await TickAsync();
+                await TimeAsync("tick", TickAsync);
+
+
+                if (Settings.Logging.LogMetrics && !String.IsNullOrEmpty(metricPrintString))
+                {
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                        Logger.Info("\n" + metricPrintString);
+                    else
+                        Logger.Info(metricPrintString);
+                    metricPrintString = "";
+                }
+
+                var l1 = Stopwatch.ElapsedMilliseconds;
 
                 // wait for next tick
                 _timer.WaitForTrigger();
+                //Thread.Sleep(TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.9)));
+
+                var l2 = Stopwatch.ElapsedMilliseconds;
+
+                if ((l2 - l1) > 1)
+                {
+                    //Logger.Error($"LOOP DT {l2 - l1}");
+                }
             }
         }
 
@@ -284,5 +344,123 @@ namespace Server.Dme
                 return (++_sessionKeyCounter).ToString();
             }
         }
+
+        #region Metrics
+
+        public static void Time(string name, Action action)
+        {
+            if (!Settings.Logging.LogMetrics || metricCooldownTicks > 0)
+            {
+                action();
+                return;
+            }
+
+            // 
+            long ticksAtStart = Stopwatch.ElapsedTicks;
+
+            // insert row before action
+            metricPrintString += $"({"".PadRight(metricIndent * 2, ' ') + name,-32}:    {100:#.000} ms)\n";
+            int stringIndex = metricPrintString.Length - 5 - 7;
+
+            // run
+            ++metricIndent;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                --metricIndent;
+            }
+
+            //
+            long ticksAfterAction = Stopwatch.ElapsedTicks;
+            var actionDurationMs = (1000f * (ticksAfterAction - ticksAtStart)) / (float)System.Diagnostics.Stopwatch.Frequency;
+
+            //
+            var replacementString = actionDurationMs.ToString("#.000").PadLeft(7, ' ').Substring(0, 7);
+            char[] charArr = metricPrintString.ToCharArray();
+            replacementString.CopyTo(0, charArr, stringIndex, replacementString.Length);
+            metricPrintString = new string(charArr);
+        }
+
+        public static async Task TimeAsync(string name, Func<Task> action)
+        {
+            if (!Settings.Logging.LogMetrics || metricCooldownTicks > 0)
+            {
+                await action();
+                return;
+            }
+
+            // 
+            long ticksAtStart = Stopwatch.ElapsedTicks;
+
+            // insert row before action
+            metricPrintString += $"({"".PadRight(metricIndent * 2, ' ') + name,-32}:    {100:#.000} ms)\n";
+            int stringIndex = metricPrintString.Length - 5 - 7;
+
+            // run
+            ++metricIndent;
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                --metricIndent;
+            }
+
+            //
+            long ticksAfterAction = Stopwatch.ElapsedTicks;
+            var actionDurationMs = (1000f * (ticksAfterAction - ticksAtStart)) / (float)System.Diagnostics.Stopwatch.Frequency;
+
+            //
+            var replacementString = actionDurationMs.ToString("#.000").PadLeft(7, ' ').Substring(0, 7);
+            char[] charArr = metricPrintString.ToCharArray();
+            replacementString.CopyTo(0, charArr, stringIndex, replacementString.Length);
+            metricPrintString = new string(charArr);
+        }
+
+        public static async Task<T> TimeAsync<T>(string name, Func<Task<T>> action)
+        {
+            T result;
+            if (!Settings.Logging.LogMetrics || metricCooldownTicks > 0)
+            {
+                return await action();
+            }
+
+            // 
+            long ticksAtStart = Stopwatch.ElapsedTicks;
+
+            // insert row before action
+            metricPrintString += $"({"".PadRight(metricIndent * 2, ' ') + name,-32}:    {100:#.000} ms)\n";
+            int stringIndex = metricPrintString.Length - 5 - 7;
+
+            // run
+            ++metricIndent;
+            try
+            {
+                result = await action();
+            }
+            finally
+            {
+                --metricIndent;
+            }
+
+            //
+            long ticksAfterAction = Stopwatch.ElapsedTicks;
+            var actionDurationMs = (1000f * (ticksAfterAction - ticksAtStart)) / (float)System.Diagnostics.Stopwatch.Frequency;
+
+            //
+            var replacementString = actionDurationMs.ToString("#.000").PadLeft(7, ' ').Substring(0, 7);
+            char[] charArr = metricPrintString.ToCharArray();
+            replacementString.CopyTo(0, charArr, stringIndex, replacementString.Length);
+            metricPrintString = new string(charArr);
+
+            return result;
+        }
+
+        #endregion
+
     }
 }

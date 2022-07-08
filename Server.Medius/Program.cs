@@ -242,15 +242,21 @@ namespace Server.Medius
             RefreshConfig();
 
             // 
-            if (Settings.ApplicationIds != null)
+            if (Settings.Channels != null)
             {
-                foreach (var appId in Settings.ApplicationIds)
+                foreach (var channel in Settings.Channels)
                 {
                     Manager.AddChannel(new Channel()
                     {
-                        ApplicationId = appId,
-                        MaxPlayers = 256,
-                        Name = "Default",
+                        Id = channel.Id,
+                        Name = channel.Name,
+                        ApplicationId = 0,
+                        MaxPlayers = channel.MaxPlayers,
+                        GenericField1 = channel.GenericField1,
+                        GenericField2 = channel.GenericField2,
+                        GenericField3 = channel.GenericField3,
+                        GenericField4 = channel.GenericField4,
+                        GenericFieldLevel = channel.GenericFieldLevel,
                         Type = ChannelType.Lobby
                     });
                 }
