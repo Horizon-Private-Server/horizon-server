@@ -69,9 +69,9 @@ namespace Server.Medius
 
 
             /// <summary>
-            /// Timesout client if they authenticated after a given number of seconds.
+            /// Timesout client if they haven't authenticated after a given number of seconds.
             /// </summary>
-            public bool ShouldDestroy => ClientObject == null && (Utils.GetHighPrecisionUtcTime() - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+            public bool ShouldDestroy => ClientObject == null && (Utils.GetHighPrecisionUtcTime() - TimeConnected).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
         }
 
         protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
@@ -165,6 +165,8 @@ namespace Server.Medius
 
                             if (message is RT_MSG_SERVER_ECHO serverEcho)
                                 data.ClientObject?.OnRecvServerEcho(serverEcho);
+                            else if (message is RT_MSG_CLIENT_ECHO clientEcho)
+                                data.ClientObject?.OnRecvClientEcho(clientEcho);
                         }
                     }
                 }
@@ -186,7 +188,7 @@ namespace Server.Medius
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
 
-                        pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
+                        pipeline.AddLast(new WriteTimeoutHandler(30));
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
                         pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
@@ -324,7 +326,7 @@ namespace Server.Medius
                         if (data.ClientObject != null)
                         {
                             // Echo
-                            if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
+                            if (data.ClientObject.MediusVersion > 108 && (Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.GetAppSettingsOrDefault(data.ClientObject.ApplicationId).ServerEchoIntervalSeconds)
                                 data.ClientObject.QueueServerEcho();
 
                             // Add client object's send queue to responses
@@ -360,7 +362,7 @@ namespace Server.Medius
             // Send ban message
             data.SendQueue.Enqueue(new RT_MSG_SERVER_SYSTEM_MESSAGE()
             {
-                Severity = Program.Settings.BanSystemMessageSeverity,
+                Severity = (byte)Program.GetAppSettingsOrDefault(data.ApplicationId).BanSystemMessageSeverity,
                 EncodingType = 1,
                 LanguageType = 2,
                 EndOfMessage = true,

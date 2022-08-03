@@ -18,7 +18,8 @@ namespace Server.UnivereInformation
 {
     class Program
     {
-        public const string CONFIG_FILE = "config.json";
+        private static string CONFIG_DIRECTIORY = "./";
+        public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "muis.json");
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
         public static ServerSettings Settings = new ServerSettings();
@@ -70,6 +71,10 @@ namespace Server.UnivereInformation
 
         static async Task Main(string[] args)
         {
+            // get path to config directory from first argument
+            if (args.Length > 0)
+                CONFIG_DIRECTIORY = args[0];
+
             // 
             Initialize();
 
@@ -123,12 +128,14 @@ namespace Server.UnivereInformation
             else
             {
                 // Add default localhost entry
-                Settings.Universes.Add(0, new UniverseInfo()
-                {
-                    Name = "sample universe",
-                    Endpoint = "url",
-                    Port = 10075,
-                    UniverseId = 1
+                Settings.Universes.Add(0, new UniverseInfo[] {
+                    new UniverseInfo()
+                    {
+                        Name = "sample universe",
+                        Endpoint = "url",
+                        Port = 10075,
+                        UniverseId = 1
+                    }
                 });
 
                 // Save defaults

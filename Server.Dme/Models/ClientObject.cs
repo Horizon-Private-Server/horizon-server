@@ -127,15 +127,15 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public int AggTimeMs { get; set; } = Program.Settings.DefaultWorldAggTime;
+        public int AggTimeMs { get; set; } = 20;
 
         /// <summary>
         /// 
         /// </summary>
         long? LastAggTime { get; set; } = null;
 
-        public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
+        public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
+        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
@@ -155,6 +155,7 @@ namespace Server.Dme.Models
             // 
             this.DmeId = dmeId;
             this.DmeWorld = dmeWorld;
+            this.AggTimeMs = Program.GetAppSettingsOrDefault(ApplicationId).DefaultClientWorldAggTime;
 
             // Generate new token
             byte[] tokenBuf = new byte[12];
@@ -188,6 +189,17 @@ namespace Server.Dme.Models
             }
         }
 
+        public void OnRecvClientEcho(RT_MSG_CLIENT_ECHO echo)
+        {
+            // older medius doesn't use server echo
+            // so instead we'll increment our timeout dates by the client echo
+            if (MediusVersion <= 108)
+            {
+                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
+                UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+            }
+        }
+
         public Task HandleIncomingMessages()
         {
             // udp
@@ -204,10 +216,10 @@ namespace Server.Dme.Models
             // set aggtime to locked intervals of whatever is stored in AggTimeMs
             // sometimes this server will be +- a few milliseconds on an agg and
             // we don't want that to change when messages get sent
-            if (LastAggTime.HasValue)
-                LastAggTime += AggTimeMs * ((Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) / AggTimeMs);
-            else
-                LastAggTime = Utils.GetMillisecondsSinceStartup();
+            //if (LastAggTime.HasValue)
+            //    LastAggTime += AggTimeMs * ((Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) / AggTimeMs);
+            //else
+            LastAggTime = Utils.GetMillisecondsSinceStartup();
 
             // tcp
             while (TcpSendMessageQueue.TryDequeue(out var message))

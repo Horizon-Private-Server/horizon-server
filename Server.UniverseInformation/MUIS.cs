@@ -18,6 +18,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetty.Handlers.Timeout;
+using System.IO;
 
 namespace Server.UnivereInformation
 {
@@ -285,38 +286,43 @@ namespace Server.UnivereInformation
             {
                 case MediusGetUniverseInformationRequest getUniverseInfo:
                     {
-                        if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var info))
+                        if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var infos))
                         {
-                            // 
-                            if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                            foreach (var info in infos)
                             {
+                                var isLast = infos.LastOrDefault() == info;
+
+                                // 
+                                if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                                {
+                                    Queue(new RT_MSG_SERVER_APP()
+                                    {
+                                        Message = new MediusUniverseVariableSvoURLResponse()
+                                        {
+                                            MessageID = new MessageId(),
+                                            URL = info.SvoURL
+                                        }
+                                    }, clientChannel);
+                                }
+
                                 Queue(new RT_MSG_SERVER_APP()
                                 {
-                                    Message = new MediusUniverseVariableSvoURLResponse()
+                                    Message = new MediusUniverseVariableInformationResponse()
                                     {
-                                        MessageID = new MessageId(),
-                                        URL = info.SvoURL
+                                        MessageID = getUniverseInfo.MessageID,
+                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        InfoFilter = getUniverseInfo.InfoType,
+                                        UniverseID = info.UniverseId,
+                                        ExtendedInfo = info.ExtendedInfo,
+                                        UniverseName = info.Name,
+                                        UniverseDescription = info.Description,
+                                        SvoURL = info.SvoURL,
+                                        DNS = info.Endpoint,
+                                        Port = info.Port,
+                                        EndOfList = isLast
                                     }
                                 }, clientChannel);
                             }
-
-                            Queue(new RT_MSG_SERVER_APP()
-                            {
-                                Message = new MediusUniverseVariableInformationResponse()
-                                {
-                                    MessageID = getUniverseInfo.MessageID,
-                                    StatusCode = MediusCallbackStatus.MediusSuccess,
-                                    InfoFilter = getUniverseInfo.InfoType,
-                                    UniverseID = info.UniverseId,
-                                    ExtendedInfo = info.ExtendedInfo,
-                                    UniverseName = info.Name,
-                                    UniverseDescription = info.Description,
-                                    SvoURL = info.SvoURL,
-                                    DNS = info.Endpoint,
-                                    Port = info.Port,
-                                    EndOfList = true
-                                }
-                            }, clientChannel);
 
                             if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_NEWS))
                             {

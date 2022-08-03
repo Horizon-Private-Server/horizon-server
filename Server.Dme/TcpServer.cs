@@ -50,7 +50,7 @@ namespace Server.Dme
             /// <summary>
             /// Timesout client if they authenticated after a given number of seconds.
             /// </summary>
-            public bool ShouldDestroy => ClientObject == null && (Utils.GetHighPrecisionUtcTime() - TimeConnected).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+            public bool ShouldDestroy => ClientObject == null && (Utils.GetHighPrecisionUtcTime() - TimeConnected).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
         }
 
         protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
@@ -100,6 +100,8 @@ namespace Server.Dme
 
                         if (message is RT_MSG_SERVER_ECHO serverEcho)
                             data.ClientObject?.OnRecvServerEcho(serverEcho);
+                        else if (message is RT_MSG_CLIENT_ECHO clientEcho)
+                            data.ClientObject?.OnRecvClientEcho(clientEcho);
                     }
                 }
 
@@ -118,7 +120,7 @@ namespace Server.Dme
                 {
                     IChannelPipeline pipeline = channel.Pipeline;
                     
-                    pipeline.AddLast(new WriteTimeoutHandler(Program.Settings.ClientTimeoutSeconds));
+                    pipeline.AddLast(new WriteTimeoutHandler(30));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
@@ -265,7 +267,7 @@ namespace Server.Dme
                         if (data.ClientObject != null)
                         {
                             // Echo
-                            if ((Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.Settings.ServerEchoInterval)
+                            if (data.ClientObject.MediusVersion > 108 && (Utils.GetHighPrecisionUtcTime() - data.ClientObject.UtcLastServerEchoSent).TotalSeconds > Program.GetAppSettingsOrDefault(data.ClientObject.ApplicationId).ServerEchoIntervalSeconds)
                             {
                                 var message = new RT_MSG_SERVER_ECHO();
                                 if (!await PassMessageToPlugins(clientChannel, data, message, false))
@@ -299,7 +301,8 @@ namespace Server.Dme
         {
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
-            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+            var enableEncryption = Program.GetAppSettingsOrDefault(data.ApplicationId).EnableDmeEncryption;
+            scertClient.CipherService.EnableEncryption = enableEncryption;
 
             // 
             switch (message)
@@ -307,7 +310,7 @@ namespace Server.Dme
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
                         // send hello
-                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = enableEncryption ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
@@ -395,7 +398,7 @@ namespace Server.Dme
                         Queue(new RT_MSG_SERVER_STARTUP_INFO_NOTIFY()
                         {
                             GameHostType = (byte)MGCL_GAME_HOST_TYPE.MGCLGameHostClientServerAuxUDP,
-                            Timestamp = (uint)(Utils.GetHighPrecisionUtcTime() - data.ClientObject.DmeWorld.WorldCreatedTimeUtc).TotalMilliseconds
+                            Timestamp = (uint)data.ClientObject.DmeWorld.WorldTimer.ElapsedMilliseconds
                         }, clientChannel);
                         Queue(new RT_MSG_SERVER_INFO_AUX_UDP()
                         {
@@ -449,11 +452,32 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_TIMEBASE_QUERY timebaseQuery:
                     {
-                        Queue(new RT_MSG_SERVER_TIMEBASE_QUERY_NOTIFY()
+                        var timebaseQueryNotifyMessage = new RT_MSG_SERVER_TIMEBASE_QUERY_NOTIFY()
                         {
                             ClientTime = timebaseQuery.Timestamp,
-                            ServerTime = (uint)(Utils.GetHighPrecisionUtcTime() - data.ClientObject.DmeWorld.WorldCreatedTimeUtc).TotalMilliseconds
-                        }, clientChannel);
+                            ServerTime = (uint)data.ClientObject.DmeWorld.WorldTimer.ElapsedMilliseconds
+                        };
+
+                        //if (data.ClientObject?.Udp != null && data.ClientObject.RemoteUdpEndpoint != null)
+                        //{
+                        //    await data.ClientObject.Udp.SendImmediate(timebaseQueryNotifyMessage);
+                        //}
+                        //else
+                        //{
+                        //    await clientChannel.WriteAndFlushAsync(timebaseQueryNotifyMessage);
+                        //}
+
+                        await clientChannel.WriteAndFlushAsync(timebaseQueryNotifyMessage);
+                        //await clientChannel.WriteAndFlushAsync(new RT_MSG_SERVER_TIMEBASE_QUERY_NOTIFY()
+                        //{
+                        //    ClientTime = timebaseQuery.Timestamp,
+                        //    ServerTime = (uint)data.ClientObject.DmeWorld.WorldTimer.ElapsedMilliseconds
+                        //});
+                        //Queue(new RT_MSG_SERVER_TIMEBASE_QUERY_NOTIFY()
+                        //{
+                        //    ClientTime = timebaseQuery.Timestamp,
+                        //    ServerTime = (uint)data.ClientObject.DmeWorld.WorldTimer.ElapsedMilliseconds
+                        //}, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_TOKEN_MESSAGE tokenMessage:

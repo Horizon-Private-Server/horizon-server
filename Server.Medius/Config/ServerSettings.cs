@@ -15,19 +15,9 @@ namespace Server.Medius.Config
     public class ServerSettings
     {
         /// <summary>
-        /// Beta specific config.
-        /// </summary>
-        public BetaConfig Beta { get; set; } = new BetaConfig();
-
-        /// <summary>
         /// How many milliseconds before refreshing the config.
         /// </summary>
         public int RefreshConfigInterval = 5000;
-
-        /// <summary>
-        /// Compatible application ids. Null means all are accepted.
-        /// </summary>
-        public int[] ApplicationIds { get; set; } = null;
 
         /// <summary>
         /// By default the server will grab its local ip.
@@ -40,34 +30,6 @@ namespace Server.Medius.Config
         /// ip address finder, since it goes down often enough to throw exceptions
         /// </summary>
         public string PublicIpOverride { get; set; } = string.Empty;
-
-        /// <summary>
-        /// When a client attempts to log into a non-existent account,
-        /// instead of returning account not found,
-        /// create the account and log them in.
-        /// Necessary for Central Station support.
-        /// </summary>
-        public bool CreateAccountOnNotFound { get; set; } = false;
-
-        /// <summary>
-        /// Time since last echo response before timing the client out.
-        /// </summary>
-        public int ClientTimeoutSeconds { get; set; } = 30;
-
-        /// <summary>
-        /// Time since game created and host never connected to close the game world.
-        /// </summary>
-        public int GameTimeoutSeconds { get; set; } = 30;
-
-        /// <summary>
-        /// Number of seconds before the server should send an echo to the client.
-        /// </summary>
-        public int ServerEchoInterval { get; set; } = 10;
-
-        /// <summary>
-        /// Period of time when a client is moving between medius server components where the client object will be kept alive.
-        /// </summary>
-        public int KeepAliveGracePeriod { get; set; } = 8;
 
         /// <summary>
         /// Number of ticks per second.
@@ -100,25 +62,14 @@ namespace Server.Medius.Config
         public int NATPort { get; set; } = 10070;
 
         /// <summary>
-        /// Time, in seconds, before timing out a Dme server.
-        /// </summary>
-        public int DmeTimeoutSeconds { get; set; } = 60;
-
-        /// <summary>
-        /// 'Severity' of the system message sent to notify the user has been banned.
-        ///  This is game specific.
-        /// </summary>
-        public byte BanSystemMessageSeverity { get; set; } = 200;
-
-        /// <summary>
-        /// When true, will allow messages like MediusCreateFile, MediusUploadFile, MediusDownloadFile
-        /// </summary>
-        public bool AllowMediusFileServices { get; set; } = false;
-
-        /// <summary>
         /// Root path of the medius file service directory.
         /// </summary>
         public string MediusFileServerRootPath { get; set; } = "files";
+
+        /// <summary>
+        /// Path to the plugins directory.
+        /// </summary>
+        public string PluginsPath { get; set; } = "plugins/";
 
         /// <summary>
         /// Key used to authenticate dme servers.
@@ -139,122 +90,9 @@ namespace Server.Medius.Config
             );
 
         /// <summary>
-        /// Whether or not to encrypt messages.
-        /// </summary>
-        public bool EncryptMessages { get; set; } = true;
-
-        /// <summary>
-        /// Collection of locations.
-        /// </summary>
-        public List<Location> Locations { get; set; }
-
-        /// <summary>
-        /// Collection of channels.
-        /// </summary>
-        public List<Channel> Channels { get; set; }
-
-        /// <summary>
-        /// Regex text filters for 
-        /// </summary>
-        public Dictionary<TextFilterContext, string> TextBlacklistFilters { get; set; } = new Dictionary<TextFilterContext, string>();
-
-        /// <summary>
         /// Logging settings.
         /// </summary>
         public LogSettings Logging { get; set; } = new LogSettings();
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="appId"></param>
-        /// <returns></returns>
-        public bool IsCompatAppId(int appId)
-        {
-            if (ApplicationIds == null)
-                return true;
-
-            return ApplicationIds.Contains(appId);
-        }
-
-        public class Location
-        {
-            /// <summary>
-            /// Id of location.
-            /// </summary>
-            public int Id { get; set; }
-
-            /// <summary>
-            /// Name of location.
-            /// </summary>
-            public string Name { get; set; }
-        }
-
-        public class Channel
-        {
-            /// <summary>
-            /// Id of channel.
-            /// </summary>
-            public int Id { get; set; }
-
-            /// <summary>
-            /// Name of channel.
-            /// </summary>
-            public string Name { get; set; }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public int MaxPlayers { get; set; } = 256;
-            
-            /// <summary>
-            /// 
-            /// </summary>
-            public uint GenericField1 { get; set; }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public uint GenericField2 { get; set; }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public uint GenericField3 { get; set; }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public uint GenericField4 { get; set; }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public MediusWorldGenericFieldLevelType GenericFieldLevel { get; set; }
-        }
-
-    }
-
-    public class BetaConfig
-    {
-        /// <summary>
-        /// Whether the beta settings are enabled.
-        /// </summary>
-        public bool Enabled { get; set; } = false;
-
-        /// <summary>
-        /// Allow the creation of new accounts.
-        /// </summary>
-        public bool AllowAccountCreation { get; set; } = false;
-
-        /// <summary>
-        /// When true, only accounts in the whitelist will be allowed to login.
-        /// </summary>
-        public bool RestrictSignin { get; set; } = false;
-
-        /// <summary>
-        /// Accounts that can be logged into with RestrictSignIn set.
-        /// </summary>
-        public string[] PermittedAccounts { get; set; } = null;
     }
 
     public enum TextFilterContext

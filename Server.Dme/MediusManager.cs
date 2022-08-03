@@ -419,7 +419,7 @@ namespace Server.Dme
                 //
                 case MediusServerCreateGameWithAttributesRequest createGameWithAttributesRequest:
                     {
-                        World world = new World(this, createGameWithAttributesRequest.MaxClients);
+                        World world = new World(this, createGameWithAttributesRequest.ApplicationID, createGameWithAttributesRequest.MaxClients);
                         _worlds.Add(world);
 
                         Enqueue(new MediusServerCreateGameWithAttributesResponse()

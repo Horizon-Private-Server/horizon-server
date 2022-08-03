@@ -33,14 +33,14 @@ namespace Server.Medius
 {
     public class Program
     {
-        public const string CONFIG_FILE = "config.json";
-        public const string DB_CONFIG_FILE = "db.config.json";
-        public const string PLUGINS_PATH = "plugins/";
+        private static string CONFIG_DIRECTIORY = "./";
+        public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "medius.json");
+        public static string DB_CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "db.config.json");
 
         public static RSA_KEY GlobalAuthPublic = null;
 
         public static ServerSettings Settings = new ServerSettings();
-        public static DbController Database = new DbController(DB_CONFIG_FILE);
+        public static DbController Database = null;
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
@@ -53,6 +53,8 @@ namespace Server.Medius
 
         public static int TickMS => 1000 / (Settings?.TickRate ?? 10);
 
+        private static Dictionary<int, AppSettings> _appSettings = new Dictionary<int, AppSettings>();
+        private static AppSettings _defaultAppSettings = new AppSettings(0);
         private static FileLoggerProvider _fileLogger = null;
         private static ulong _sessionKeyCounter = 0;
         private static int sleepMS = 0;
@@ -111,6 +113,12 @@ namespace Server.Medius
                     else
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
+
+                        // refresh app settings
+                        await RefreshAppSettings();
+
+                        // pass to manager
+                        await Manager.OnDatabaseAuthenticated();
 
 #if !DEBUG
                         if (!_hasPurgedAccountStatuses)
@@ -205,6 +213,13 @@ namespace Server.Medius
 
         static async Task Main(string[] args)
         {
+            // get path to config directory from first argument
+            if (args.Length > 0)
+                CONFIG_DIRECTIORY = args[0];
+
+            // 
+            Database = new DbController(DB_CONFIG_FILE);
+
             // 
             Initialize();
 
@@ -230,7 +245,7 @@ namespace Server.Medius
 #endif
 
             // Initialize plugins
-            Plugins = new PluginsManager(PLUGINS_PATH);
+            Plugins = new PluginsManager(Settings.PluginsPath);
 
             // 
             await StartServerAsync();
@@ -240,37 +255,6 @@ namespace Server.Medius
         {
             RefreshServerIp();
             RefreshConfig();
-
-            // 
-            if (Settings.Channels != null)
-            {
-                foreach (var channel in Settings.Channels)
-                {
-                    Manager.AddChannel(new Channel()
-                    {
-                        Id = channel.Id,
-                        Name = channel.Name,
-                        ApplicationId = 0,
-                        MaxPlayers = channel.MaxPlayers,
-                        GenericField1 = channel.GenericField1,
-                        GenericField2 = channel.GenericField2,
-                        GenericField3 = channel.GenericField3,
-                        GenericField4 = channel.GenericField4,
-                        GenericFieldLevel = channel.GenericFieldLevel,
-                        Type = ChannelType.Lobby
-                    });
-                }
-            }
-            else
-            {
-                Manager.AddChannel(new Channel()
-                {
-                    ApplicationId = 0,
-                    MaxPlayers = 256,
-                    Name = "Default",
-                    Type = ChannelType.Lobby
-                });
-            }
         }
 
 
@@ -290,8 +274,6 @@ namespace Server.Medius
             // Load settings
             if (File.Exists(CONFIG_FILE))
             {
-                Settings.Locations?.Clear();
-
                 // Populate existing object
                 JsonConvert.PopulateObject(File.ReadAllText(CONFIG_FILE), Settings, serializerSettings);
             }
@@ -338,8 +320,80 @@ namespace Server.Medius
             if (Settings.DefaultKey != null)
                 GlobalAuthPublic = new RSA_KEY(Settings.DefaultKey.N.ToByteArrayUnsigned().Reverse().ToArray());
 
+            //
+            _ = RefreshAppSettings();
+
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;
+        }
+
+        static async Task RefreshAppSettings()
+        {
+            try
+            {
+                if (!await Database.AmIAuthenticated())
+                    return;
+
+                // get supported app ids
+                var appIdGroups = await Database.GetAppIds();
+
+                // get settings
+                foreach (var appIdGroup in appIdGroups)
+                {
+                    foreach (var appId in appIdGroup.AppIds)
+                    {
+                        var settings = await Database.GetServerSettings(appId);
+                        if (settings != null)
+                        {
+                            if (_appSettings.TryGetValue(appId, out var appSettings))
+                            {
+                                appSettings.SetSettings(settings);
+                            }
+                            else
+                            {
+                                appSettings = new AppSettings(appId);
+                                appSettings.SetSettings(settings);
+                                _appSettings.Add(appId, appSettings);
+
+                                // we also want to send this back to the server since this is new locally
+                                // and there might be new setting fields that aren't yet on the db
+                                await Database.SetServerSettings(appId, appSettings.GetSettings());
+                            }
+                        }
+                    }
+                }
+
+                // get locations
+                var locations = await Database.GetLocations();
+                var channels = await Database.GetChannels();
+
+                // 
+
+                // add new channels
+                foreach (var channel in channels)
+                {
+                    if (Manager.GetChannelByChannelId(channel.Id, channel.AppId) == null)
+                    {
+                        Manager.AddChannel(new Channel()
+                        {
+                            Id = channel.Id,
+                            Name = channel.Name,
+                            ApplicationId = channel.AppId,
+                            MaxPlayers = channel.MaxPlayers,
+                            GenericField1 = (uint)channel.GenericField1,
+                            GenericField2 = (uint)channel.GenericField2,
+                            GenericField3 = (uint)channel.GenericField3,
+                            GenericField4 = (uint)channel.GenericField4,
+                            GenericFieldLevel = (RT.Common.MediusWorldGenericFieldLevelType)channel.GenericFieldFilter,
+                            Type = ChannelType.Lobby
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
         }
 
         static void RefreshServerIp()
@@ -365,20 +419,30 @@ namespace Server.Medius
             }
         }
 
-        private static string GetTextFilterRegexExpression(TextFilterContext context)
+        private static string GetTextFilterRegexExpression(int appId, TextFilterContext context)
         {
-            if (Settings.TextBlacklistFilters.TryGetValue(context, out var rExp) && !String.IsNullOrEmpty(rExp))
-                return rExp;
+            var appSettings = GetAppSettingsOrDefault(appId);
+            string regex = null;
 
-            if (Settings.TextBlacklistFilters.TryGetValue(TextFilterContext.DEFAULT, out rExp) && !String.IsNullOrEmpty(rExp))
-                return rExp;
+            switch (context)
+            {
+                case TextFilterContext.ACCOUNT_NAME: regex = appSettings.TextFilterAccountName; break;
+                case TextFilterContext.CHAT: regex = appSettings.TextFilterChat; break;
+                case TextFilterContext.CLAN_MESSAGE: regex = appSettings.TextFilterClanMessage; break;
+                case TextFilterContext.CLAN_NAME: regex = appSettings.TextFilterClanName; break;
+                case TextFilterContext.DEFAULT: regex = appSettings.TextFilterDefault; break;
+                case TextFilterContext.GAME_NAME: regex = appSettings.TextFilterGameName; break;
+            }
 
-            return null;
+            if (String.IsNullOrEmpty(regex))
+                return appSettings.TextFilterDefault;
+
+            return regex;
         }
 
-        public static bool PassTextFilter(TextFilterContext context, string text)
+        public static bool PassTextFilter(int appId, TextFilterContext context, string text)
         {
-            var rExp = GetTextFilterRegexExpression(context);
+            var rExp = GetTextFilterRegexExpression(appId, context);
             if (String.IsNullOrEmpty(rExp))
                 return true;
 
@@ -386,9 +450,9 @@ namespace Server.Medius
             return !r.IsMatch(text);
         }
 
-        public static string FilterTextFilter(TextFilterContext context, string text)
+        public static string FilterTextFilter(int appId, TextFilterContext context, string text)
         {
-            var rExp = GetTextFilterRegexExpression(context);
+            var rExp = GetTextFilterRegexExpression(appId, context);
             if (String.IsNullOrEmpty(rExp))
                 return text;
 
@@ -396,9 +460,9 @@ namespace Server.Medius
             return r.Replace(text, "");
         }
 
-        public static string? GetFileSystemPath(string filename)
+        public static string? GetFileSystemPath(int appId, string filename)
         {
-            if (!Settings.AllowMediusFileServices)
+            if (!GetAppSettingsOrDefault(appId).EnableMediusFileServices)
                 return null;
             if (String.IsNullOrEmpty(Settings.MediusFileServerRootPath))
                 return null;
@@ -406,13 +470,21 @@ namespace Server.Medius
                 return null;
 
             var rootPath = Path.GetFullPath(Settings.MediusFileServerRootPath);
-            var path = Path.GetFullPath(Path.Combine(Settings.MediusFileServerRootPath, filename));
+            var path = Path.GetFullPath(Path.Combine(Settings.MediusFileServerRootPath, filename, appId.ToString()));
 
             // prevent filename from moving up directories
             if (!path.StartsWith(rootPath))
                 return null;
 
             return path;
+        }
+
+        public static AppSettings GetAppSettingsOrDefault(int appId)
+        {
+            if (_appSettings.TryGetValue(appId, out var appSettings))
+                return appSettings;
+
+            return _defaultAppSettings;
         }
     }
 }

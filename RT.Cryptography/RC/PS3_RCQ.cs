@@ -101,6 +101,14 @@ namespace RT.Cryptography
 
         #region Hash
 
+        public virtual bool IsHashValid(byte[] hash)
+        {
+            if (hash == null || hash.Length != 4)
+                return false;
+
+            return !(hash[0] == 0 && hash[1] == 0 && hash[2] == 0 && (hash[3] & 0x1F) == 0);
+        }
+
         public virtual void Hash(byte[] input, out byte[] hash)
         {
             hash = Hash(input, Context);

@@ -277,6 +277,22 @@ namespace Server.Dme
                 _sendQueue.Enqueue(new ScertDatagramPacket(message, AuthenticatedEndPoint));
         }
 
+        public Task SendImmediate(BaseScertMessage message)
+        {
+            if (AuthenticatedEndPoint == null || _boundChannel == null)
+                return Task.CompletedTask;
+
+            return _boundChannel.WriteAndFlushAsync(new ScertDatagramPacket(message, AuthenticatedEndPoint));
+        }
+
+        public Task SendImmediate(IEnumerable<BaseScertMessage> messages)
+        {
+            if (AuthenticatedEndPoint == null || _boundChannel == null)
+                return Task.CompletedTask;
+
+            return _boundChannel.WriteAndFlushAsync(messages.Select(x => new ScertDatagramPacket(x, AuthenticatedEndPoint)));
+        }
+
         #endregion
 
         #region Tick

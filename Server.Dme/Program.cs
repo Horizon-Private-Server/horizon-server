@@ -8,6 +8,7 @@ using RT.Cryptography;
 using RT.Models;
 using Server.Common;
 using Server.Common.Logging;
+using Server.Database;
 using Server.Dme.Config;
 using Server.Plugins;
 using System;
@@ -27,11 +28,16 @@ namespace Server.Dme
 
     class Program
     {
-        public const string CONFIG_FILE = "config.json";
-        public const string PLUGINS_PATH = "plugins/";
+        private static string CONFIG_DIRECTIORY = "./";
+        public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "dme.json");
+        public static string DB_CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "db.config.json");
 
         public static readonly Stopwatch Stopwatch = Stopwatch.StartNew();
+        public static DbController Database = null;
+
         public static ServerSettings Settings = new ServerSettings();
+        private static Dictionary<int, AppSettings> _appSettings = new Dictionary<int, AppSettings>();
+        private static AppSettings _defaultAppSettings = new AppSettings(0);
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
@@ -48,6 +54,7 @@ namespace Server.Dme
         private static Stopwatch _sw = new Stopwatch();
         private static HighResolutionTimer _timer;
         private static DateTime _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
+        private static DateTime? _lastSuccessfulDbAuth = null;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -84,6 +91,25 @@ namespace Server.Dme
                     _ticks = 0;
                 }
 #endif
+
+                // Attempt to authenticate with the db middleware
+                // We do this every 24 hours to get a fresh new token
+                if ((_lastSuccessfulDbAuth == null || (Utils.GetHighPrecisionUtcTime() - _lastSuccessfulDbAuth.Value).TotalHours > 24))
+                {
+                    if (!await Database.Authenticate())
+                    {
+                        // Log and exit when unable to authenticate
+                        Logger.Error("Unable to authenticate with the db middleware server");
+                        return;
+                    }
+                    else
+                    {
+                        _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
+
+                        // refresh app settings
+                        await RefreshAppSettings();
+                    }
+                }
 
                 await TimeAsync("in", async () =>
                 {
@@ -234,6 +260,13 @@ namespace Server.Dme
 
         static async Task Main(string[] args)
         {
+            // get path to config directory from first argument
+            if (args.Length > 0)
+                CONFIG_DIRECTIORY = args[0];
+
+            // 
+            Database = new DbController(DB_CONFIG_FILE);
+
             // 
             Initialize();
 
@@ -259,7 +292,7 @@ namespace Server.Dme
 #endif
 
             // Initialize plugins
-            Plugins = new PluginsManager(PLUGINS_PATH);
+            Plugins = new PluginsManager(Settings.PluginsPath);
 
             // 
             await StartServerAsync();
@@ -309,6 +342,48 @@ namespace Server.Dme
             // Determine server ip
             if (usePublicIp != Settings.UsePublicIp)
                 RefreshServerIp();
+
+            // refresh app settings
+            _ = RefreshAppSettings();
+        }
+
+        static async Task RefreshAppSettings()
+        {
+            try
+            {
+                // get supported app ids
+                var appIdGroups = await Database.GetAppIds();
+
+                // get settings
+                foreach (var appIdGroup in appIdGroups)
+                {
+                    foreach (var appId in appIdGroup.AppIds)
+                    {
+                        var settings = await Database.GetServerSettings(appId);
+                        if (settings != null)
+                        {
+                            if (_appSettings.TryGetValue(appId, out var appSettings))
+                            {
+                                appSettings.SetSettings(settings);
+                            }
+                            else
+                            {
+                                appSettings = new AppSettings(appId);
+                                appSettings.SetSettings(settings);
+                                _appSettings.Add(appId, appSettings);
+
+                                // we also want to send this back to the server since this is new locally
+                                // and there might be new setting fields that aren't yet on the db
+                                await Database.SetServerSettings(appId, appSettings.GetSettings());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
         }
 
         static void RefreshServerIp()
@@ -343,6 +418,14 @@ namespace Server.Dme
             {
                 return (++_sessionKeyCounter).ToString();
             }
+        }
+
+        public static AppSettings GetAppSettingsOrDefault(int appId)
+        {
+            if (_appSettings.TryGetValue(appId, out var appSettings))
+                return appSettings;
+
+            return _defaultAppSettings;
         }
 
         #region Metrics

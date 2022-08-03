@@ -57,7 +57,8 @@ namespace Server.Medius
         {
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
-            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+            var enableEncryption = Program.GetAppSettingsOrDefault(data.ApplicationId).EnableEncryption;
+            scertClient.CipherService.EnableEncryption = enableEncryption;
 
             // 
             switch (message)
@@ -65,7 +66,7 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
                         // send hello
-                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = enableEncryption ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
@@ -79,7 +80,7 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
-                        if (!Program.Settings.IsCompatAppId(clientConnectTcp.AppId))
+                        if (!Program.Manager.IsAppIdSupported(clientConnectTcp.AppId))
                         {
                             Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with incompatible app id {clientConnectTcp.AppId}");
                             await clientChannel.CloseAsync();
@@ -88,7 +89,7 @@ namespace Server.Medius
 
                         // 
                         data.ApplicationId = clientConnectTcp.AppId;
-                        data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken);
+                        data.ClientObject = Program.Manager.GetClientByAccessToken(clientConnectTcp.AccessToken, clientConnectTcp.AppId);
                         if (data.ClientObject == null)
                         {
                             Logger.Error($"IGNORING CLIENT 1 {data} || {data.ClientObject}");
@@ -145,7 +146,9 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
-                        Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
+
+                        if (scertClient.MediusVersion > 108)
+                            Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -189,6 +192,8 @@ namespace Server.Medius
         {
             if (message == null)
                 return;
+            
+            var appSettings = Program.GetAppSettingsOrDefault(data.ApplicationId);
 
             switch (message)
             {
@@ -603,7 +608,7 @@ namespace Server.Medius
                                 OnlineState = new MediusPlayerOnlineState()
                                 {
                                     ConnectStatus = (friendClient != null && friendClient.IsLoggedIn) ? friendClient.Status : MediusPlayerStatus.MediusPlayerDisconnected,
-                                    MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                                    MediusLobbyWorldID = friendClient?.CurrentChannel?.Id ?? Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId).Id,
                                     MediusGameWorldID = friendClient?.CurrentGame?.Id ?? -1,
                                     GameName = friendClient?.CurrentGame?.GameName ?? "",
                                     LobbyName = friendClient?.CurrentChannel?.Name ?? ""
@@ -1199,7 +1204,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ladderPosition_ExtraInfoRequest} without a being logged in.");
 
 
-                        _ = Program.Database.GetPlayerLeaderboardIndex(ladderPosition_ExtraInfoRequest.AccountID, ladderPosition_ExtraInfoRequest.LadderStatIndex + 1).ContinueWith((r) =>
+                        _ = Program.Database.GetPlayerLeaderboardIndex(ladderPosition_ExtraInfoRequest.AccountID, ladderPosition_ExtraInfoRequest.LadderStatIndex + 1, data.ClientObject.ApplicationId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -1314,7 +1319,7 @@ namespace Server.Medius
                         }
                         else if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountName)
                         {
-                            foundPlayer = Program.Manager.GetClientByAccountName(findPlayerRequest.Name);
+                            foundPlayer = Program.Manager.GetClientByAccountName(findPlayerRequest.Name, data.ClientObject.ApplicationId);
                         }
 
                         if (foundPlayer == null || !foundPlayer.IsLoggedIn)
@@ -1429,7 +1434,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createClanRequest} without a being logged in.");
 
                         // validate name
-                        if (!Program.PassTextFilter(Config.TextFilterContext.CLAN_NAME, createClanRequest.ClanName))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.CLAN_NAME, createClanRequest.ClanName))
                         {
                             data.ClientObject.Queue(new MediusCreateClanResponse()
                             {
@@ -1808,7 +1813,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanLadderPositionRequest} without a being logged in.");
 
-                        _ = Program.Database.GetClanLeaderboardIndex(getClanLadderPositionRequest.ClanID, getClanLadderPositionRequest.ClanLadderStatIndex).ContinueWith((r) =>
+                        _ = Program.Database.GetClanLeaderboardIndex(getClanLadderPositionRequest.ClanID, getClanLadderPositionRequest.ClanLadderStatIndex, data.ClientObject.ApplicationId).ContinueWith((r) =>
                         {
                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                 return;
@@ -2135,7 +2140,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {sendClanMessageRequest} without having a clan.");
 
                         // validate message
-                        if (!Program.PassTextFilter(Config.TextFilterContext.CLAN_MESSAGE, sendClanMessageRequest.Message))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.CLAN_MESSAGE, sendClanMessageRequest.Message))
                         {
                             data.ClientObject.Queue(new MediusSendClanMessageResponse()
                             {
@@ -2186,7 +2191,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {modifyClanMessageRequest} without having a clan.");
 
                         // validate message
-                        if (!Program.PassTextFilter(Config.TextFilterContext.CLAN_MESSAGE, modifyClanMessageRequest.NewMessage))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.CLAN_MESSAGE, modifyClanMessageRequest.NewMessage))
                         {
                             data.ClientObject.Queue(new MediusModifyClanMessageResponse()
                             {
@@ -2677,7 +2682,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest} without a being logged in.");
 
                         // validate name
-                        if (!Program.PassTextFilter(Config.TextFilterContext.GAME_NAME, createGameRequest.GameName))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.GAME_NAME, createGameRequest.GameName))
                         {
                             data.ClientObject.Queue(new MediusCreateGameResponse()
                             {
@@ -2705,7 +2710,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createGameRequest1} without a being logged in.");
 
                         // validate name
-                        if (!Program.PassTextFilter(Config.TextFilterContext.GAME_NAME, createGameRequest1.GameName))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.GAME_NAME, createGameRequest1.GameName))
                         {
                             data.ClientObject.Queue(new MediusCreateGameResponse()
                             {
@@ -2959,11 +2964,8 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {createChannelRequest} without a being logged in.");
 
-                        // Create channel
-                        Channel channel = new Channel(createChannelRequest);
-
                         // Check for channel with same name
-                        var existingChannel = Program.Manager.GetChannelByChannelName(channel.Name, channel.ApplicationId);
+                        var existingChannel = Program.Manager.GetChannelByChannelName(createChannelRequest.LobbyName, createChannelRequest.ApplicationID);
                         if (existingChannel != null)
                         {
                             // Send to client
@@ -2976,6 +2978,9 @@ namespace Server.Medius
                         }
                         else
                         {
+                            // Create channel
+                            Channel channel = new Channel(createChannelRequest);
+
                             // Add
                             Program.Manager.AddChannel(channel);
 
@@ -3000,7 +3005,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinChannelRequest} without a being logged in.");
 
-                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID);
+                        var channel = Program.Manager.GetChannelByChannelId(joinChannelRequest.MediusWorldID, data.ClientObject.ApplicationId);
                         if (channel == null)
                         {
                             // Log
@@ -3065,7 +3070,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {channelInfoRequest} without a being logged in.");
 
                         // Find channel
-                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID);
+                        var channel = Program.Manager.GetChannelByChannelId(channelInfoRequest.MediusWorldID, data.ClientObject.ApplicationId);
 
                         if (channel == null)
                         {
@@ -3157,7 +3162,7 @@ namespace Server.Medius
                         {
                             MessageID = getTotalChannelsRequest.MessageID,
                             StatusCode = MediusCallbackStatus.MediusSuccess,
-                            Total = Program.Manager.GetChannelCount(ChannelType.Lobby)
+                            Total = Program.Manager.GetChannelCount(ChannelType.Lobby, getTotalChannelsRequest.ApplicationId)
                         });
 
                         break;
@@ -3305,12 +3310,9 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLocationsRequest} without a being logged in.");
 
-                        var locations = Program.Settings?.Locations
-                            //?.Where(x => x.AppIds == null || x.AppIds.Contains(data.ClientObject.ApplicationId))
-                            ?.ToList()
-                            ;
+                        var locations = await Program.Database.GetLocations(data.ClientObject.ApplicationId);
 
-                        if (locations == null || locations.Count == 0)
+                        if (locations == null || locations.Length == 0)
                         {
                             data.ClientObject.Queue(new MediusGetLocationsResponse()
                             {
@@ -3349,7 +3351,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileCreateRequest} without a being logged in.");
 
-                        var path = Program.GetFileSystemPath(fileCreateRequest.MediusFileToCreate.Filename);
+                        var path = Program.GetFileSystemPath(data.ApplicationId, fileCreateRequest.MediusFileToCreate.Filename);
                         if (path == null)
                         {
                             data.ClientObject.Queue(new MediusFileCreateResponse()
@@ -3414,7 +3416,7 @@ namespace Server.Medius
 
                         try
                         {
-                            var path = Program.GetFileSystemPath(fileUploadRequest.MediusFileInfo.Filename);
+                            var path = Program.GetFileSystemPath(data.ApplicationId, fileUploadRequest.MediusFileInfo.Filename);
                             if (path == null)
                             {
                                 data.ClientObject.Queue(new MediusFileUploadServerRequest()
@@ -3553,7 +3555,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {fileDownloadRequest} without a being logged in.");
 
-                        var path = Program.GetFileSystemPath(fileDownloadRequest.MediusFileInfo.Filename);
+                        var path = Program.GetFileSystemPath(data.ApplicationId, fileDownloadRequest.MediusFileInfo.Filename);
                         if (path == null)
                         {
                             data.ClientObject.Queue(new MediusFileDownloadResponse()
@@ -3674,7 +3676,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a being logged in.");
 
                         // validate message
-                        if (!Program.PassTextFilter(Config.TextFilterContext.CHAT, genericChatMessage.Message))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.CHAT, genericChatMessage.Message))
                             return;
 
                         await ProcessGenericChatMessage(clientChannel, data.ClientObject, genericChatMessage);
@@ -3692,7 +3694,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {genericChatMessage} without a being logged in.");
 
                         // validate message
-                        if (!Program.PassTextFilter(Config.TextFilterContext.CHAT, genericChatMessage.Message))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.CHAT, genericChatMessage.Message))
                             return;
 
                         await ProcessGenericChatMessage(clientChannel, data.ClientObject, genericChatMessage);
@@ -3710,7 +3712,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {chatMessage} without a being logged in.");
 
                         // validate message
-                        if (!Program.PassTextFilter(Config.TextFilterContext.CHAT, chatMessage.Message))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.CHAT, chatMessage.Message))
                             return;
 
                         await ProcessChatMessage(clientChannel, data.ClientObject, chatMessage);
@@ -3792,7 +3794,7 @@ namespace Server.Medius
 
                         if (textFilterRequest.TextFilterType == MediusTextFilterType.MediusTextFilterPassFail)
                         {
-                            if (Program.PassTextFilter(Config.TextFilterContext.DEFAULT, textFilterRequest.Text))
+                            if (Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.DEFAULT, textFilterRequest.Text))
                             {
                                 data.ClientObject.Queue(new MediusTextFilterResponse()
                                 {
@@ -3816,7 +3818,7 @@ namespace Server.Medius
                             {
                                 MessageID = textFilterRequest.MessageID,
                                 StatusCode = MediusCallbackStatus.MediusSuccess,
-                                Text = Program.FilterTextFilter(Config.TextFilterContext.DEFAULT, textFilterRequest.Text).Trim()
+                                Text = Program.FilterTextFilter(data.ApplicationId, Config.TextFilterContext.DEFAULT, textFilterRequest.Text).Trim()
                             });
                         }
 
@@ -3833,7 +3835,7 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {textFilterRequest1} without a being logged in.");
 
-                        if (Program.PassTextFilter(Config.TextFilterContext.DEFAULT, textFilterRequest1.Text))
+                        if (Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.DEFAULT, textFilterRequest1.Text))
                         {
                             data.ClientObject.Queue(new MediusTextFilterResponse1()
                             {

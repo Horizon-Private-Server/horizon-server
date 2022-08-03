@@ -36,7 +36,7 @@ namespace Server.UnivereInformation.Config
         /// <summary>
         /// Universes.
         /// </summary>
-        public Dictionary<int, UniverseInfo> Universes { get; set; } = new Dictionary<int, UniverseInfo>();
+        public Dictionary<int, UniverseInfo[]> Universes { get; set; } = new Dictionary<int, UniverseInfo[]>();
 
         /// <summary>
         /// Logging settings.

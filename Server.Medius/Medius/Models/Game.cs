@@ -198,7 +198,7 @@ namespace Server.Medius.Models
             }
 
             // Auto close when everyone leaves or if host fails to connect after timeout time
-            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (hasHostJoined || (Utils.GetHighPrecisionUtcTime() - utcTimeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds))
+            if (!utcTimeEmpty.HasValue && Clients.Count(x=>x.InGame) == 0 && (hasHostJoined || (Utils.GetHighPrecisionUtcTime() - utcTimeCreated).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).GameTimeoutSeconds))
             {
                 utcTimeEmpty = Utils.GetHighPrecisionUtcTime();
                 await SetWorldStatus(MediusWorldStatus.WorldClosed);

@@ -27,10 +27,11 @@ namespace Server.Dme.Config
             );
 
 
+
         /// <summary>
-        /// Whether or not to encrypt messages.
+        /// Path to the plugins directory.
         /// </summary>
-        public bool EncryptMessages { get; set; } = true;
+        public string PluginsPath { get; set; } = "plugins/";
 
         /// <summary>
         /// How many milliseconds before refreshing the config.
@@ -55,24 +56,9 @@ namespace Server.Dme.Config
         public string PublicIpOverride { get; set; } = string.Empty;
 
         /// <summary>
-        /// Time since last echo response before timing the client out.
-        /// </summary>
-        public int ClientTimeoutSeconds { get; set; } = 30;
-
-        /// <summary>
-        /// Time since game created and host never connected to close the game world.
-        /// </summary>
-        public int GameTimeoutSeconds { get; set; } = 30;
-
-        /// <summary>
         /// Seconds between disconnects before the client attempts to reconnect to the proxy server.
         /// </summary>
         public int MPSReconnectInterval { get; set; } = 15;
-
-        /// <summary>
-        /// Number of seconds before the server should send an echo to the client.
-        /// </summary>
-        public int ServerEchoInterval { get; set; } = 10;
 
         /// <summary>
         /// Number of milliseconds for main loop thread to sleep.
@@ -83,11 +69,6 @@ namespace Server.Dme.Config
         /// Milliseconds between plugin ticks.
         /// </summary>
         public int PluginTickIntervalMs { get; set; } = 50;
-
-        /// <summary>
-        /// Default millisecond interval between sending aggregated messages.
-        /// </summary>
-        public int DefaultWorldAggTime { get; set; } = 20;
 
         /// <summary>
         /// Port of the TCP server.

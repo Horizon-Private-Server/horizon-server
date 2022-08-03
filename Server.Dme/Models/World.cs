@@ -7,6 +7,7 @@ using Server.Plugins.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -71,27 +72,27 @@ namespace Server.Dme.Models
 
         public int WorldId { get; protected set; } = -1;
 
+        public int ApplicationId { get; protected set; } = 0;
+
         public int MaxPlayers { get; protected set; } = 0;
 
         public bool SelfDestructFlag { get; protected set; } = false;
 
         public bool ForceDestruct { get; protected set; } = false;
 
-        public bool Timedout => !WorldTimeUtc.HasValue && (Server.Common.Utils.GetHighPrecisionUtcTime() - WorldCreatedTimeUtc).TotalSeconds > Program.Settings.GameTimeoutSeconds;
-
-        public bool Destroy => (Timedout || SelfDestructFlag) && Clients.Count == 0;
+        public bool Destroy => ((WorldTimer.Elapsed.TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).GameTimeoutSeconds) || SelfDestructFlag) && Clients.Count == 0;
         public bool Destroyed { get; protected set; } = false;
 
-        public DateTime WorldCreatedTimeUtc { get; protected set; } = Server.Common.Utils.GetHighPrecisionUtcTime();
-        public DateTime? WorldTimeUtc { get; protected set; } = null;
+        public Stopwatch WorldTimer { get; protected set; } = Stopwatch.StartNew();
 
         public ConcurrentDictionary<int, ClientObject> Clients = new ConcurrentDictionary<int, ClientObject>();
 
         public MediusManager Manager { get; } = null;
         
-        public World(MediusManager manager, int maxPlayers)
+        public World(MediusManager manager, int appId, int maxPlayers)
         {
             Manager = manager;
+            ApplicationId = appId;
 
             // populate collection of used player ids
             for (int i = 0; i < MAX_CLIENTS_PER_WORLD; ++i)

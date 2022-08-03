@@ -133,10 +133,10 @@ namespace Server.Medius.Models
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool Timedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoSent).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
         public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !Timedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
-        public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.Settings.KeepAliveGracePeriod;
+        public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).KeepAliveGracePeriodSeconds;
 
         /// <summary>
         /// 
@@ -200,6 +200,17 @@ namespace Server.Medius.Models
                 _lastServerEchoValue = echoTime;
                 UtcLastServerEchoReply = Common.Utils.GetHighPrecisionUtcTime();
                 LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
+            }
+        }
+
+        public void OnRecvClientEcho(RT_MSG_CLIENT_ECHO echo)
+        {
+            // older medius doesn't use server echo
+            // so instead we'll increment our timeout dates by the client echo
+            if (MediusVersion <= 108)
+            {
+                UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
             }
         }
 

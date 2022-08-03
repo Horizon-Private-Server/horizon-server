@@ -42,6 +42,11 @@ namespace RT.Cryptography
         void Hash(byte[] input, out byte[] hash);
 
         /// <summary>
+        /// Whether or not the input hash sequence is valid.
+        /// </summary>
+        bool IsHashValid(byte[] hash);
+
+        /// <summary>
         /// Returns the public key.
         /// </summary>
         byte[] GetPublicKey();

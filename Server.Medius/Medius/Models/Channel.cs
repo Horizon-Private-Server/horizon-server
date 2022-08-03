@@ -34,7 +34,7 @@ namespace Server.Medius.Models
         public uint GenericField4 = 0;
         public MediusWorldGenericFieldLevelType GenericFieldLevel = MediusWorldGenericFieldLevelType.MediusWorldGenericFieldLevel0;
 
-        public virtual bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((Utils.GetHighPrecisionUtcTime() - _timeCreated).TotalSeconds > Program.Settings.GameTimeoutSeconds) && GameCount == 0);
+        public virtual bool ReadyToDestroy => Type == ChannelType.Game && (_removeChannel || ((Utils.GetHighPrecisionUtcTime() - _timeCreated).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).GameTimeoutSeconds) && GameCount == 0 && Clients.Count == 0);
         public virtual int PlayerCount => Clients.Count;
         public int GameCount => _games.Count;
 
