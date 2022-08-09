@@ -8,7 +8,9 @@ using RT.Cryptography;
 using RT.Models;
 using Server.Common;
 using Server.Common.Logging;
+using Server.Database;
 using Server.Dme.Config;
+using Server.Dme.Models;
 using Server.Plugins;
 using System;
 using System.Collections.Generic;
@@ -27,10 +29,16 @@ namespace Server.Dme
 
     class Program
     {
-        public const string CONFIG_FILE = "config.json";
-        public const string PLUGINS_PATH = "plugins/";
+        private static string CONFIG_DIRECTIORY = "./";
+        public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "dme.json");
+        public static string DB_CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "db.config.json");
+
+        public static readonly Stopwatch Stopwatch = Stopwatch.StartNew();
+        public static DbController Database = null;
 
         public static ServerSettings Settings = new ServerSettings();
+        private static Dictionary<int, AppSettings> _appSettings = new Dictionary<int, AppSettings>();
+        private static AppSettings _defaultAppSettings = new AppSettings(0);
 
         public static IPAddress SERVER_IP = IPAddress.Parse("192.168.0.178");
 
@@ -47,21 +55,24 @@ namespace Server.Dme
         private static Stopwatch _sw = new Stopwatch();
         private static HighResolutionTimer _timer;
         private static DateTime _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
+        private static DateTime? _lastSuccessfulDbAuth = null;
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
+        static int metricCooldownTicks = 0;
+        static string metricPrintString = null;
+        static int metricIndent = 0;
 
         static async Task TickAsync()
         {
-
             try
             {
-#if DEBUG || RELEASE
+#if DEBUG
                 if (!_sw.IsRunning)
                     _sw.Start();
 #endif
 
-#if DEBUG || RELEASE
+#if DEBUG
                 ++_ticks;
                 if (_sw.Elapsed.TotalSeconds > 5f)
                 {
@@ -70,8 +81,8 @@ namespace Server.Dme
                     var averageMsPerTick = 1000 * (_sw.Elapsed.TotalSeconds / _ticks);
                     var error = Math.Abs(Settings.MainLoopSleepMs - averageMsPerTick) / Settings.MainLoopSleepMs;
 
-                    if (error > 0.1f)
-                        Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
+                    //if (error > 0.1f)
+                    //    Logger.Error($"Average Ms between ticks is: {averageMsPerTick} is {error * 100}% off of target {Settings.MainLoopSleepMs}");
 
                     //var dt = DateTime.UtcNow - Utils.GetHighPrecisionUtcTime();
                     //if (Math.Abs(dt.TotalMilliseconds) > 50)
@@ -82,31 +93,80 @@ namespace Server.Dme
                 }
 #endif
 
-                var tasks = new List<Task>()
+                // Attempt to authenticate with the db middleware
+                // We do this every 24 hours to get a fresh new token
+                if ((_lastSuccessfulDbAuth == null || (Utils.GetHighPrecisionUtcTime() - _lastSuccessfulDbAuth.Value).TotalHours > 24))
                 {
-                    TcpServer.Tick()
-                };
-
-                foreach (var manager in Managers)
-                {
-                    if (manager.Value.IsConnected)
+                    if (!await Database.Authenticate())
                     {
-                        tasks.Add(manager.Value.Tick());
+                        // Log and exit when unable to authenticate
+                        Logger.Error("Unable to authenticate with the db middleware server");
+                        return;
                     }
-                    else if ((Utils.GetHighPrecisionUtcTime() - manager.Value.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                    else
                     {
-                        tasks.Add(manager.Value.Start());
+                        _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
+
+                        // refresh app settings
+                        await RefreshAppSettings();
                     }
                 }
 
-                // Tick plugins
-                if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                await TimeAsync("in", async () =>
                 {
-                    _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
-                    await Plugins.Tick();
-                }
+                    // handle incoming
+                    {
+                        var tasks = new List<Task>()
+                    {
+                        TcpServer.HandleIncomingMessages()
+                    };
 
-                await Task.WhenAll(tasks);
+                        foreach (var manager in Managers)
+                        {
+                            if (manager.Value.IsConnected)
+                            {
+                                tasks.Add(manager.Value.HandleIncomingMessages());
+                            }
+                        }
+
+                        await Task.WhenAll(tasks);
+                    }
+                });
+
+                await TimeAsync("plugins", async () =>
+                {
+                    // Tick plugins
+                    if ((Utils.GetHighPrecisionUtcTime() - _timeLastPluginTick).TotalMilliseconds > Settings.PluginTickIntervalMs)
+                    {
+                        _timeLastPluginTick = Utils.GetHighPrecisionUtcTime();
+                        await Plugins.Tick();
+                    }
+                });
+
+                await TimeAsync("out", async () =>
+                {
+                    // handle outgoing
+                    {
+                        var tasks = new List<Task>()
+                    {
+                        TcpServer.HandleOutgoingMessages()
+                    };
+
+                        foreach (var manager in Managers)
+                        {
+                            if (manager.Value.IsConnected)
+                            {
+                                tasks.Add(manager.Value.HandleOutgoingMessages());
+                            }
+                            else if ((Utils.GetHighPrecisionUtcTime() - manager.Value.TimeLostConnection)?.TotalSeconds > Settings.MPSReconnectInterval)
+                            {
+                                tasks.Add(manager.Value.Start());
+                            }
+                        }
+
+                        await Task.WhenAll(tasks);
+                    }
+                });
 
                 // Reload config
                 if ((Utils.GetHighPrecisionUtcTime() - _lastConfigRefresh).TotalMilliseconds > Settings.RefreshConfigInterval)
@@ -114,6 +174,7 @@ namespace Server.Dme
                     RefreshConfig();
                     _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
                 }
+
             }
             catch (Exception ex)
             {
@@ -135,7 +196,7 @@ namespace Server.Dme
             Logger.Info($"TCP started.");
 
             // build and start medius managers per app id
-           foreach (var applicationId in Settings.ApplicationIds)
+            foreach (var applicationId in Settings.ApplicationIds)
             {
                 var manager = new MediusManager(applicationId);
                 Logger.Info($"Starting MPS for appid {applicationId}.");
@@ -155,6 +216,12 @@ namespace Server.Dme
             // iterate
             while (true)
             {
+                // 
+                if (metricCooldownTicks > 0)
+                    metricCooldownTicks--;
+                else
+                    metricCooldownTicks = (1000 * 5) / waitMs; // 5 seconds
+
                 // handle tick rate change
                 if (Settings.MainLoopSleepMs != waitMs)
                 {
@@ -165,15 +232,42 @@ namespace Server.Dme
                 }
 
                 // tick
-                await TickAsync();
+                await TimeAsync("tick", TickAsync);
+
+
+                if (Settings.Logging.LogMetrics && !String.IsNullOrEmpty(metricPrintString))
+                {
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                        Logger.Info("\n" + metricPrintString);
+                    else
+                        Logger.Info(metricPrintString);
+                    metricPrintString = "";
+                }
+
+                var l1 = Stopwatch.ElapsedMilliseconds;
 
                 // wait for next tick
                 _timer.WaitForTrigger();
+                //Thread.Sleep(TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.9)));
+
+                var l2 = Stopwatch.ElapsedMilliseconds;
+
+                if ((l2 - l1) > 1)
+                {
+                    //Logger.Error($"LOOP DT {l2 - l1}");
+                }
             }
         }
 
         static async Task Main(string[] args)
         {
+            // get path to config directory from first argument
+            if (args.Length > 0)
+                CONFIG_DIRECTIORY = args[0];
+
+            // 
+            Database = new DbController(DB_CONFIG_FILE);
+
             // 
             Initialize();
 
@@ -199,7 +293,7 @@ namespace Server.Dme
 #endif
 
             // Initialize plugins
-            Plugins = new PluginsManager(PLUGINS_PATH);
+            Plugins = new PluginsManager(Settings.PluginsPath);
 
             // 
             await StartServerAsync();
@@ -249,6 +343,51 @@ namespace Server.Dme
             // Determine server ip
             if (usePublicIp != Settings.UsePublicIp)
                 RefreshServerIp();
+
+            // refresh app settings
+            _ = RefreshAppSettings();
+        }
+
+        static async Task RefreshAppSettings()
+        {
+            try
+            {
+                if (!await Database.AmIAuthenticated())
+                    return;
+
+                // get supported app ids
+                var appIdGroups = await Database.GetAppIds();
+
+                // get settings
+                foreach (var appIdGroup in appIdGroups)
+                {
+                    foreach (var appId in appIdGroup.AppIds)
+                    {
+                        var settings = await Database.GetServerSettings(appId);
+                        if (settings != null)
+                        {
+                            if (_appSettings.TryGetValue(appId, out var appSettings))
+                            {
+                                appSettings.SetSettings(settings);
+                            }
+                            else
+                            {
+                                appSettings = new AppSettings(appId);
+                                appSettings.SetSettings(settings);
+                                _appSettings.Add(appId, appSettings);
+
+                                // we also want to send this back to the server since this is new locally
+                                // and there might be new setting fields that aren't yet on the db
+                                await Database.SetServerSettings(appId, appSettings.GetSettings());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
         }
 
         static void RefreshServerIp()
@@ -277,6 +416,11 @@ namespace Server.Dme
             return null;
         }
 
+        public static ClientObject GetClientByAccessToken(string accessToken)
+        {
+            return Managers.Select(x => x.Value.GetClientByAccessToken(accessToken)).FirstOrDefault(x => x != null);
+        }
+
         public static string GenerateSessionKey()
         {
             lock (_sessionKeyCounterLock)
@@ -284,5 +428,131 @@ namespace Server.Dme
                 return (++_sessionKeyCounter).ToString();
             }
         }
+
+        public static AppSettings GetAppSettingsOrDefault(int appId)
+        {
+            if (_appSettings.TryGetValue(appId, out var appSettings))
+                return appSettings;
+
+            return _defaultAppSettings;
+        }
+
+        #region Metrics
+
+        public static void Time(string name, Action action)
+        {
+            if (!Settings.Logging.LogMetrics || metricCooldownTicks > 0)
+            {
+                action();
+                return;
+            }
+
+            // 
+            long ticksAtStart = Stopwatch.ElapsedTicks;
+
+            // insert row before action
+            metricPrintString += $"({"".PadRight(metricIndent * 2, ' ') + name,-32}:    {100:#.000} ms)\n";
+            int stringIndex = metricPrintString.Length - 5 - 7;
+
+            // run
+            ++metricIndent;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                --metricIndent;
+            }
+
+            //
+            long ticksAfterAction = Stopwatch.ElapsedTicks;
+            var actionDurationMs = (1000f * (ticksAfterAction - ticksAtStart)) / (float)System.Diagnostics.Stopwatch.Frequency;
+
+            //
+            var replacementString = actionDurationMs.ToString("#.000").PadLeft(7, ' ').Substring(0, 7);
+            char[] charArr = metricPrintString.ToCharArray();
+            replacementString.CopyTo(0, charArr, stringIndex, replacementString.Length);
+            metricPrintString = new string(charArr);
+        }
+
+        public static async Task TimeAsync(string name, Func<Task> action)
+        {
+            if (!Settings.Logging.LogMetrics || metricCooldownTicks > 0)
+            {
+                await action();
+                return;
+            }
+
+            // 
+            long ticksAtStart = Stopwatch.ElapsedTicks;
+
+            // insert row before action
+            metricPrintString += $"({"".PadRight(metricIndent * 2, ' ') + name,-32}:    {100:#.000} ms)\n";
+            int stringIndex = metricPrintString.Length - 5 - 7;
+
+            // run
+            ++metricIndent;
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                --metricIndent;
+            }
+
+            //
+            long ticksAfterAction = Stopwatch.ElapsedTicks;
+            var actionDurationMs = (1000f * (ticksAfterAction - ticksAtStart)) / (float)System.Diagnostics.Stopwatch.Frequency;
+
+            //
+            var replacementString = actionDurationMs.ToString("#.000").PadLeft(7, ' ').Substring(0, 7);
+            char[] charArr = metricPrintString.ToCharArray();
+            replacementString.CopyTo(0, charArr, stringIndex, replacementString.Length);
+            metricPrintString = new string(charArr);
+        }
+
+        public static async Task<T> TimeAsync<T>(string name, Func<Task<T>> action)
+        {
+            T result;
+            if (!Settings.Logging.LogMetrics || metricCooldownTicks > 0)
+            {
+                return await action();
+            }
+
+            // 
+            long ticksAtStart = Stopwatch.ElapsedTicks;
+
+            // insert row before action
+            metricPrintString += $"({"".PadRight(metricIndent * 2, ' ') + name,-32}:    {100:#.000} ms)\n";
+            int stringIndex = metricPrintString.Length - 5 - 7;
+
+            // run
+            ++metricIndent;
+            try
+            {
+                result = await action();
+            }
+            finally
+            {
+                --metricIndent;
+            }
+
+            //
+            long ticksAfterAction = Stopwatch.ElapsedTicks;
+            var actionDurationMs = (1000f * (ticksAfterAction - ticksAtStart)) / (float)System.Diagnostics.Stopwatch.Frequency;
+
+            //
+            var replacementString = actionDurationMs.ToString("#.000").PadLeft(7, ' ').Substring(0, 7);
+            char[] charArr = metricPrintString.ToCharArray();
+            replacementString.CopyTo(0, charArr, stringIndex, replacementString.Length);
+            metricPrintString = new string(charArr);
+
+            return result;
+        }
+
+        #endregion
+
     }
 }

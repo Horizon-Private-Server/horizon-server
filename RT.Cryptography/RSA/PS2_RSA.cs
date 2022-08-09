@@ -41,6 +41,14 @@ namespace RT.Cryptography
             if (input.Length > this.N.BitLength/8)
                 throw new NotImplementedException($"Unable to decrypt RSA cipher with length greater than key ({input.Length}).");
 
+            // Check if empty hash
+            // If hash is 0, the data is already in plaintext
+            if (!IsHashValid(hash))
+            {
+                Array.Copy(input, 0, plain, 0, input.Length);
+                return true;
+            }
+
             // decrypt
             var plainBigInt = Decrypt(input.ToBigInteger());
             var plainBytes = plainBigInt.ToBA();
@@ -70,6 +78,14 @@ namespace RT.Cryptography
         public virtual void Hash(byte[] input, out byte[] hash)
         {
             hash = SHA1.Hash(input, Context);
+        }
+
+        public virtual bool IsHashValid(byte[] hash)
+        {
+            if (hash == null || hash.Length != 4)
+                return false;
+
+            return !(hash[0] == 0 && hash[1] == 0 && hash[2] == 0 && (hash[3] & 0x1F) == 0);
         }
 
         #region Comparison

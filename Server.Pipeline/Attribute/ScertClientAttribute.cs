@@ -11,16 +11,26 @@ namespace Server.Pipeline.Attribute
     {
         public static RsaKeyPair DefaultRsaAuthKey = null;
 
-        public int MediusVersion { get; set; }
+        public int MediusVersion
+        {
+            get => _mediusVersion;
+            set
+            {
+                _mediusVersion = value;
+                OnMediusVersionChanged();
+            }
+        }
+
         public bool IsPS3Client => MediusVersion >= 112;
         public CipherService CipherService { get; set; } = null;
         public RsaKeyPair RsaAuthKey { get; set; } = null;
+
+        private int _mediusVersion = 0;
 
         public ScertClientAttribute()
         {
             // default
             MediusVersion = 108;
-            OnMediusVersionChanged();
         }
 
         public bool OnMessage(BaseScertMessage message)
@@ -28,13 +38,11 @@ namespace Server.Pipeline.Attribute
             if (message is RT_MSG_CLIENT_HELLO clientHello)
             {
                 MediusVersion = clientHello.Parameters[1];
-                OnMediusVersionChanged();
                 return true;
             }
             else if (message is RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp && MediusVersion == 0)
             {
                 MediusVersion = 108;
-                OnMediusVersionChanged();
                 return true;
             }
 

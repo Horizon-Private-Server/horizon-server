@@ -110,7 +110,7 @@ namespace Server.Test.Medius
 
                 // Log if id is set
                 if (message.CanLog())
-                    Logger.Info($"RECV {channel}: {message}");
+                    Logger.Debug($"RECV {channel}: {message}");
             };
 
             try

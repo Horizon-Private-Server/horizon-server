@@ -36,7 +36,8 @@ namespace Server.Medius
         {
             // Get ScertClient data
             var scertClient = clientChannel.GetAttribute(Server.Pipeline.Constants.SCERT_CLIENT).Get();
-            scertClient.CipherService.EnableEncryption = Program.Settings.EncryptMessages;
+            var enableEncryption = Program.GetAppSettingsOrDefault(data.ApplicationId).EnableEncryption;
+            scertClient.CipherService.EnableEncryption = enableEncryption;
 
             // 
             switch (message)
@@ -44,7 +45,7 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_HELLO clientHello:
                     {
                         // send hello
-                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = Program.Settings.EncryptMessages ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
+                        Queue(new RT_MSG_SERVER_HELLO() { RsaPublicKey = enableEncryption ? Program.Settings.DefaultKey.N : Org.BouncyCastle.Math.BigInteger.Zero }, clientChannel);
                         break;
                     }
                 case RT_MSG_CLIENT_CRYPTKEY_PUBLIC clientCryptKeyPublic:
@@ -58,7 +59,7 @@ namespace Server.Medius
                     }
                 case RT_MSG_CLIENT_CONNECT_TCP clientConnectTcp:
                     {
-                        if (!Program.Settings.IsCompatAppId(clientConnectTcp.AppId))
+                        if (!Program.Manager.IsAppIdSupported(clientConnectTcp.AppId))
                         {
                             Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with incompatible app id {clientConnectTcp.AppId}");
                             await clientChannel.CloseAsync();
@@ -66,13 +67,25 @@ namespace Server.Medius
                         }
 
                         data.ApplicationId = clientConnectTcp.AppId;
-                        if (!scertClient.IsPS3Client)
+                        if (scertClient.IsPS3Client)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x02, Contents = Utils.FromString("4802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
+                        }
+                        else if (scertClient.MediusVersion > 108)
+                        {
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE(), clientChannel);
                         }
                         else
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { ReqServerPassword = 0x00, Contents = Utils.FromString("4802") }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CRYPTKEY_GAME() { Key = scertClient.CipherService.GetPublicKey(CipherContext.RC_CLIENT_SESSION) }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
+                            {
+                                PlayerId = 0,
+                                ScertId = GenerateNewScertClientId(),
+                                PlayerCount = 0x0001,
+                                IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
+                            }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
                         }
                         break;
                     }
@@ -84,9 +97,9 @@ namespace Server.Medius
                         }
                         Queue(new RT_MSG_SERVER_CONNECT_ACCEPT_TCP()
                         {
-                            UNK_00 = 0,
-                            UNK_02 = GenerateNewScertClientId(),
-                            UNK_06 = 0x0001,
+                            PlayerId = 0,
+                            ScertId = GenerateNewScertClientId(),
+                            PlayerCount = 0x0001,
                             IP = (clientChannel.RemoteAddress as IPEndPoint)?.Address
                         }, clientChannel);
                         break;
@@ -94,7 +107,9 @@ namespace Server.Medius
                 case RT_MSG_CLIENT_CONNECT_READY_TCP clientConnectReadyTcp:
                     {
                         Queue(new RT_MSG_SERVER_CONNECT_COMPLETE() { ARG1 = 0x0001 }, clientChannel);
-                        Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
+
+                        if (scertClient.MediusVersion > 108)
+                            Queue(new RT_MSG_SERVER_ECHO(), clientChannel);
                         break;
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
@@ -112,11 +127,11 @@ namespace Server.Medius
                         await ProcessMediusMessage(clientAppToServer.Message, clientChannel, data);
                         break;
                     }
-
-                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
+                case RT_MSG_CLIENT_DISCONNECT _:
+                case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
-                        data.State = ClientState.DISCONNECTED;
-                        _ = clientChannel.CloseAsync();
+                        //data.State = ClientState.DISCONNECTED;
+                        //_ = clientChannel.CloseAsync();
                         break;
                     }
                 default:
@@ -136,6 +151,7 @@ namespace Server.Medius
             if (message == null)
                 return;
 
+            var appSettings = Program.GetAppSettingsOrDefault(data.ApplicationId);
 
             switch (message)
             {
@@ -353,7 +369,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountRegRequest} without a session.");
 
                         // Check that account creation is enabled
-                        if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && !Program.Settings.Beta.AllowAccountCreation)
+                        if (appSettings.DisableAccountCreation)
                         {
                             // Reply error
                             data.ClientObject.Queue(new MediusAccountRegistrationResponse()
@@ -366,7 +382,7 @@ namespace Server.Medius
                         }
 
                         // validate name
-                        if (!Program.PassTextFilter(Config.TextFilterContext.ACCOUNT_NAME, accountRegRequest.AccountName))
+                        if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, accountRegRequest.AccountName))
                         {
                             data.ClientObject.Queue(new MediusAccountRegistrationResponse()
                             {
@@ -484,7 +500,7 @@ namespace Server.Medius
                             StatusCode = MediusCallbackStatus.MediusSuccess,
                             AccountID = -1,
                             AccountType = MediusAccountType.MediusMasterAccount,
-                            MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                            MediusWorldID = Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId).Id,
                             ConnectInfo = new NetConnectionInfo()
                             {
                                 SessionKey = anonymousLoginRequest.SessionKey,
@@ -511,7 +527,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLoginRequest} without a session.");
 
                         // Check the client isn't already logged in
-                        if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username)?.IsLoggedIn ?? false)
+                        if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username, data.ClientObject.ApplicationId)?.IsLoggedIn ?? false)
                         {
                             data.ClientObject.Queue(new MediusAccountLoginResponse()
                             {
@@ -542,7 +558,7 @@ namespace Server.Medius
                                         });
 
                                     }
-                                    else if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && Program.Settings.Beta.RestrictSignin && !Program.Settings.Beta.PermittedAccounts.Contains(r.Result.AccountName))
+                                    else if (appSettings.EnableAccountWhitelist && !appSettings.AccountIdWhitelist.Contains(r.Result.AccountId))
                                     {
                                         // Account not allowed to sign in
                                         data?.ClientObject?.Queue(new MediusAccountLoginResponse()
@@ -551,7 +567,7 @@ namespace Server.Medius
                                             StatusCode = MediusCallbackStatus.MediusFail
                                         });
                                     }
-                                    else if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username)?.IsLoggedIn ?? false)
+                                    else if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username, data.ClientObject.ApplicationId)?.IsLoggedIn ?? false)
                                     {
                                         data.ClientObject.Queue(new MediusAccountLoginResponse()
                                         {
@@ -573,11 +589,11 @@ namespace Server.Medius
                                         });
                                     }
                                 }
-                                else if (Program.Settings.CreateAccountOnNotFound)
+                                else if (appSettings.CreateAccountOnNotFound)
                                 {
                                     // Account not found, create new and login
                                     // Check that account creation is enabled
-                                    if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && !Program.Settings.Beta.AllowAccountCreation)
+                                    if (appSettings.DisableAccountCreation)
                                     {
                                         // Reply error
                                         data.ClientObject.Queue(new MediusAccountLoginResponse()
@@ -589,7 +605,7 @@ namespace Server.Medius
                                     }
 
                                     // validate name
-                                    if (!Program.PassTextFilter(Config.TextFilterContext.ACCOUNT_NAME, accountLoginRequest.Username))
+                                    if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, accountLoginRequest.Username))
                                     {
                                         data.ClientObject.Queue(new MediusAccountLoginResponse()
                                         {
@@ -673,7 +689,7 @@ namespace Server.Medius
                             case MediusTextFilterType.MediusTextFilterPassFail:
                                 {
                                     // validate name
-                                    if (!Program.PassTextFilter(Config.TextFilterContext.ACCOUNT_NAME, textFilterRequest.Text))
+                                    if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, textFilterRequest.Text))
                                     {
                                         data.ClientObject.Queue(new MediusTextFilterResponse()
                                         {
@@ -700,7 +716,7 @@ namespace Server.Medius
                                     {
                                         MessageID = textFilterRequest.MessageID,
                                         StatusCode = MediusCallbackStatus.MediusSuccess,
-                                        Text = Program.FilterTextFilter(Config.TextFilterContext.ACCOUNT_NAME, textFilterRequest.Text).Trim()
+                                        Text = Program.FilterTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, textFilterRequest.Text).Trim()
                                     });
                                     break;
                                 }
@@ -715,7 +731,7 @@ namespace Server.Medius
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {ticketLoginRequest} without a session.");
 
                         // Check the client isn't already logged in
-                        if (Program.Manager.GetClientByAccountName(ticketLoginRequest.Username)?.IsLoggedIn ?? false)
+                        if (Program.Manager.GetClientByAccountName(ticketLoginRequest.Username, data.ClientObject.ApplicationId)?.IsLoggedIn ?? false)
                         {
                             data.ClientObject.Queue(new MediusTicketLoginResponse()
                             {
@@ -746,7 +762,7 @@ namespace Server.Medius
                                         });
 
                                     }
-                                    else if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && Program.Settings.Beta.RestrictSignin && !Program.Settings.Beta.PermittedAccounts.Contains(r.Result.AccountName))
+                                    else if (appSettings.EnableAccountWhitelist && !appSettings.AccountIdWhitelist.Contains(r.Result.AccountId))
                                     {
                                         // Account not allowed to sign in
                                         data?.ClientObject?.Queue(new MediusTicketLoginResponse()
@@ -764,7 +780,7 @@ namespace Server.Medius
                                 {
                                     // Account not found, create new and login
                                     // Check that account creation is enabled
-                                    if (Program.Settings.Beta != null && Program.Settings.Beta.Enabled && !Program.Settings.Beta.AllowAccountCreation)
+                                    if (appSettings.DisableAccountCreation)
                                     {
                                         // Reply error
                                         data.ClientObject.Queue(new MediusTicketLoginResponse()
@@ -1027,7 +1043,7 @@ namespace Server.Medius
             Logger.Info($"LOGGING IN AS {data.ClientObject.AccountName} with access token {data.ClientObject.Token}");
 
             // Put client in default channel
-            data.ClientObject.JoinChannel(Program.Manager.GetDefaultLobbyChannel(data.ApplicationId));
+            data.ClientObject.JoinChannel(Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId));
 
 
             // Tell client
@@ -1042,7 +1058,7 @@ namespace Server.Medius
                     {
                         AccessKey = data.ClientObject.Token,
                         SessionKey = data.ClientObject.SessionKey,
-                        WorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                        WorldID = Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId).Id,
                         ServerKey = new RSA_KEY(), //Program.GlobalAuthPublic,
                         AddressList = new NetAddressList()
                         {
@@ -1054,7 +1070,7 @@ namespace Server.Medius
                         },
                         Type = NetConnectionType.NetConnectionTypeClientServerTCP
                     },
-                    MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                    MediusWorldID = Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId).Id,
                     StatusCode = MediusCallbackStatus.MediusSuccess
                 });
 
@@ -1072,7 +1088,7 @@ namespace Server.Medius
                     {
                         AccessKey = data.ClientObject.Token,
                         SessionKey = data.ClientObject.SessionKey,
-                        WorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                        WorldID = Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId).Id,
                         ServerKey = Program.GlobalAuthPublic,
                         AddressList = new NetAddressList()
                         {
@@ -1084,7 +1100,7 @@ namespace Server.Medius
                         },
                         Type = NetConnectionType.NetConnectionTypeClientServerTCP
                     },
-                    MediusWorldID = Program.Manager.GetDefaultLobbyChannel(data.ApplicationId).Id,
+                    MediusWorldID = Program.Manager.GetOrCreateDefaultLobbyChannel(data.ApplicationId).Id,
                     StatusCode = MediusCallbackStatus.MediusSuccess
                 });
 

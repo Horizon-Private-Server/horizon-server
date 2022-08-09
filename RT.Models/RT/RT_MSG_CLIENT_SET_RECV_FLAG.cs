@@ -16,12 +16,30 @@ namespace RT.Models
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
-            Flag = reader.Read<RT_RECV_FLAG>();
+            if (reader.MediusVersion <= 108)
+            {
+                var bytes = reader.ReadBytes(2);
+                Flag = RT_RECV_FLAG.RECV_LIST | RT_RECV_FLAG.RECV_SINGLE | RT_RECV_FLAG.RECV_NOTIFICATION;
+                if (bytes[1] == 1)
+                    Flag |= RT_RECV_FLAG.RECV_BROADCAST;
+            }
+            else
+            {
+                Flag = reader.Read<RT_RECV_FLAG>();
+            }
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
-            writer.Write(Flag);
+            if (writer.MediusVersion <= 108)
+            {
+                writer.Write((byte)2);
+                writer.Write(Flag.HasFlag(RT_RECV_FLAG.RECV_BROADCAST));
+            }
+            else
+            {
+                writer.Write(Flag);
+            }
         }
 
         public override string ToString()

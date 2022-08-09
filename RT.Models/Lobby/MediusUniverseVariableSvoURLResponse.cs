@@ -52,8 +52,15 @@ namespace RT.Models
             if (writer.MediusVersion >= 109)
             {
                 // 1 byte length prefixed url
-                writer.Write((byte)(URL.Length+1));
-                writer.Write(URL, URL.Length);
+                if (URL == null)
+                {
+                    writer.Write((byte)0);
+                }
+                else
+                {
+                    writer.Write((byte)(URL.Length + 1));
+                    writer.Write(URL, URL.Length);
+                }
             }
             else
             {

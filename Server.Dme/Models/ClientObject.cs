@@ -67,12 +67,17 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
+        public int MediusVersion { get; set; } = 0;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public uint ScertId { get; set; } = 0;
 
         /// <summary>
         /// 
         /// </summary>
-        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_BROADCAST;
+        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_SINGLE;
 
         /// <summary>
         /// 
@@ -122,20 +127,20 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public int AggTimeMs { get; set; } = Program.Settings.DefaultWorldAggTime;
+        public int AggTimeMs { get; set; } = 20;
 
         /// <summary>
         /// 
         /// </summary>
-        public DateTime? LastAggTime { get; set; } = null;
+        long? LastAggTime { get; set; } = null;
 
-        public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.Settings.ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds);
+        public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
+        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
         public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
         public virtual bool IsDestroyed { get; protected set; } = false;
-        public virtual bool IsAggTime => !LastAggTime.HasValue || (Utils.GetHighPrecisionUtcTime() - LastAggTime.Value).TotalMilliseconds >= AggTimeMs;
+        public virtual bool IsAggTime => !LastAggTime.HasValue || (Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) >= AggTimeMs;
 
         public Action<ClientObject> OnDestroyed;
 
@@ -150,15 +155,21 @@ namespace Server.Dme.Models
             // 
             this.DmeId = dmeId;
             this.DmeWorld = dmeWorld;
-
-            //
-            Udp = new UdpServer(this);
-            Udp.Start();
+            this.AggTimeMs = Program.GetAppSettingsOrDefault(ApplicationId).DefaultClientWorldAggTime;
 
             // Generate new token
             byte[] tokenBuf = new byte[12];
             RNG.NextBytes(tokenBuf);
             Token = Convert.ToBase64String(tokenBuf);
+        }
+
+        public void BeginUdp()
+        {
+            if (Udp != null)
+                return;
+
+            Udp = new UdpServer(this);
+            _ = Udp.Start();
         }
 
         public void QueueServerEcho()
@@ -178,10 +189,37 @@ namespace Server.Dme.Models
             }
         }
 
-        public void Tick()
+        public void OnRecvClientEcho(RT_MSG_CLIENT_ECHO echo)
+        {
+            // older medius doesn't use server echo
+            // so instead we'll increment our timeout dates by the client echo
+            if (MediusVersion <= 108)
+            {
+                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
+                UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+            }
+        }
+
+        public Task HandleIncomingMessages()
+        {
+            // udp
+            if (Udp != null)
+                return Udp.HandleIncomingMessages();
+
+            return Task.CompletedTask;
+        }
+
+        public void HandleOutgoingMessages()
         {
             List<BaseScertMessage> responses = new List<BaseScertMessage>();
-            LastAggTime = Utils.GetHighPrecisionUtcTime();
+
+            // set aggtime to locked intervals of whatever is stored in AggTimeMs
+            // sometimes this server will be +- a few milliseconds on an agg and
+            // we don't want that to change when messages get sent
+            //if (LastAggTime.HasValue)
+            //    LastAggTime += AggTimeMs * ((Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) / AggTimeMs);
+            //else
+            LastAggTime = Utils.GetMillisecondsSinceStartup();
 
             // tcp
             while (TcpSendMessageQueue.TryDequeue(out var message))
@@ -192,7 +230,7 @@ namespace Server.Dme.Models
                 _ = Tcp.WriteAndFlushAsync(responses);
 
             // udp
-            Udp?.Tick();
+            Udp?.HandleOutgoingMessages();
         }
 
         #region Connection / Disconnection
@@ -291,6 +329,11 @@ namespace Server.Dme.Models
         }
 
         #endregion
+
+        public bool HasRecvFlag(RT_RECV_FLAG flag)
+        {
+            return RecvFlag.HasFlag(flag);
+        }
 
         public override string ToString()
         {

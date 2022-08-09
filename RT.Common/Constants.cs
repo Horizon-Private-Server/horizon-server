@@ -26,7 +26,7 @@ namespace RT.Common
         public const int ANNOUNCEMENT_MAXLEN = 1000;
         public const int MEDIUS_GENERIC_CHAT_FILTER_BYTES_LEN = 16;
         public const int MEDIUS_MESSAGE_MAXLEN = 512;
-        public const int MEDIUS_UDP_MESSAGE_MAXLEN = 512;
+        public const int MEDIUS_UDP_MESSAGE_MAXLEN = 584;
         public const int NEWS_MAXLEN = 256;
         public const int POLICY_MAXLEN = 256;
         public const int PLAYERNAME_MAXLEN = 32;
@@ -35,6 +35,7 @@ namespace RT.Common
         public const int BINARYMESSAGE_MAXLEN = 400;
         public const int IP_MAXLEN = 20;
         public const int MEDIUS_TOKEN_MAXSIZE = 8;
+        public const int LOCATIONNAME_MAXLEN = 64;
 
         public const int UNIVERSENAME_MAXLEN = 128;
         public const int UNIVERSEDNS_MAXLEN = 128;

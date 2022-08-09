@@ -15,19 +15,25 @@ namespace Server.Medius
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<MediusManager>();
 
-        private Dictionary<int, ClientObject> _accountIdToClient = new Dictionary<int, ClientObject>();
-        private Dictionary<string, ClientObject> _accountNameToClient = new Dictionary<string, ClientObject>();
-        private Dictionary<string, ClientObject> _accessTokenToClient = new Dictionary<string, ClientObject>();
-        private Dictionary<string, ClientObject> _sessionKeyToClient = new Dictionary<string, ClientObject>();
+        class QuickLookup
+        {
+            public Dictionary<int, ClientObject> AccountIdToClient = new Dictionary<int, ClientObject>();
+            public Dictionary<string, ClientObject> AccountNameToClient = new Dictionary<string, ClientObject>();
+            public Dictionary<string, ClientObject> AccessTokenToClient = new Dictionary<string, ClientObject>();
+            public Dictionary<string, ClientObject> SessionKeyToClient = new Dictionary<string, ClientObject>();
 
-        private Dictionary<string, DMEObject> _accessTokenToDmeClient = new Dictionary<string, DMEObject>();
-        private Dictionary<string, DMEObject> _sessionKeyToDmeClient = new Dictionary<string, DMEObject>();
+            public Dictionary<string, DMEObject> AccessTokenToDmeClient = new Dictionary<string, DMEObject>();
+            public Dictionary<string, DMEObject> SessionKeyToDmeClient = new Dictionary<string, DMEObject>();
 
-        private Dictionary<int, Channel> _channelIdToChannel = new Dictionary<int, Channel>();
-        private Dictionary<int, Game> _gameIdToGame = new Dictionary<int, Game>();
+            public Dictionary<int, Channel> ChannelIdToChannel = new Dictionary<int, Channel>();
+            public Dictionary<int, Game> GameIdToGame = new Dictionary<int, Game>();
 
-        private Dictionary<int, Clan> _clanIdToClan = new Dictionary<int, Clan>();
-        private Dictionary<string, Clan> _clanNameToClan = new Dictionary<string, Clan>();
+            public Dictionary<int, Clan> ClanIdToClan = new Dictionary<int, Clan>();
+            public Dictionary<string, Clan> ClanNameToClan = new Dictionary<string, Clan>();
+        }
+
+        private Dictionary<string, int[]> _appIdGroups = new Dictionary<string, int[]>();
+        private Dictionary<int, QuickLookup> _lookupsByAppId = new Dictionary<int, QuickLookup>();
 
         private ConcurrentQueue<ClientObject> _addQueue = new ConcurrentQueue<ClientObject>();
 
@@ -35,46 +41,83 @@ namespace Server.Medius
 
         public List<ClientObject> GetClients(int appId)
         {
-            return _accountIdToClient.Select(x => x.Value).Where(x => x.ApplicationId == appId).ToList();
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            return _lookupsByAppId.Where(x => appIdsInGroup.Contains(x.Key)).SelectMany(x => x.Value.AccountIdToClient.Select(x => x.Value)).ToList();
         }
 
         public ClientObject GetClientByAccountId(int accountId)
         {
-            if (_accountIdToClient.TryGetValue(accountId, out var result))
-                return result;
+            foreach (var lookupByAppId in _lookupsByAppId)
+            {
+                if (lookupByAppId.Value.AccountIdToClient.TryGetValue(accountId, out var result))
+                    return result;
+            }
 
             return null;
         }
 
-        public ClientObject GetClientByAccountName(string accountName)
+        public ClientObject GetClientByAccountName(string accountName, int appId)
         {
+            var appIdsInGroup = GetAppIdsInGroup(appId);
             accountName = accountName.ToLower();
-            if (_accountNameToClient.TryGetValue(accountName, out var result))
-                return result;
+
+            foreach (var appIdInGroup in appIdsInGroup)
+            {
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    if (quickLookup.AccountNameToClient.TryGetValue(accountName, out var result))
+                        return result;
+                }
+            }
 
             return null;
         }
 
-        public ClientObject GetClientByAccessToken(string accessToken)
+        public ClientObject GetClientByAccessToken(string accessToken, int appId)
         {
-            if (_accessTokenToClient.TryGetValue(accessToken, out var result))
-                return result;
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            foreach (var appIdInGroup in appIdsInGroup)
+            {
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    if (quickLookup.AccessTokenToClient.TryGetValue(accessToken, out var result))
+                        return result;
+                }
+            }
 
             return null;
         }
 
-        public DMEObject GetDmeByAccessToken(string accessToken)
+        public DMEObject GetDmeByAccessToken(string accessToken, int appId)
         {
-            if (_accessTokenToDmeClient.TryGetValue(accessToken, out var result))
-                return result;
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            foreach (var appIdInGroup in appIdsInGroup)
+            {
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    if (quickLookup.AccessTokenToDmeClient.TryGetValue(accessToken, out var result))
+                        return result;
+                }
+            }
 
             return null;
         }
 
-        public DMEObject GetDmeBySessionKey(string sessionKey)
+        public DMEObject GetDmeBySessionKey(string sessionKey, int appId)
         {
-            if (_sessionKeyToDmeClient.TryGetValue(sessionKey, out var result))
-                return result;
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            foreach (var appIdInGroup in appIdsInGroup)
+            {
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    if (quickLookup.SessionKeyToDmeClient.TryGetValue(sessionKey, out var result))
+                        return result;
+                }
+            }
 
             return null;
         }
@@ -84,10 +127,14 @@ namespace Server.Medius
             if (!dmeClient.IsLoggedIn)
                 throw new InvalidOperationException($"Attempting to add DME client {dmeClient} to MediusManager but client has not yet logged in.");
 
+            if (!_lookupsByAppId.TryGetValue(dmeClient.ApplicationId, out var quickLookup))
+                _lookupsByAppId.Add(dmeClient.ApplicationId, quickLookup = new QuickLookup());
+
+
             try
             {
-                _accessTokenToDmeClient.Add(dmeClient.Token, dmeClient);
-                _sessionKeyToDmeClient.Add(dmeClient.SessionKey, dmeClient);
+                quickLookup.AccessTokenToDmeClient.Add(dmeClient.Token, dmeClient);
+                quickLookup.SessionKeyToDmeClient.Add(dmeClient.SessionKey, dmeClient);
             }
             catch (Exception e)
             {
@@ -95,10 +142,10 @@ namespace Server.Medius
                 if (dmeClient != null)
                 {
                     if (dmeClient.Token != null)
-                        _accessTokenToDmeClient.Remove(dmeClient.Token);
+                        quickLookup.AccessTokenToDmeClient.Remove(dmeClient.Token);
 
                     if (dmeClient.SessionKey != null)
-                        _sessionKeyToDmeClient.Remove(dmeClient.SessionKey);
+                        quickLookup.SessionKeyToDmeClient.Remove(dmeClient.SessionKey);
                 }
 
                 throw e;
@@ -119,45 +166,71 @@ namespace Server.Medius
 
         public Game GetGameByDmeWorldId(int dmeWorldId)
         {
-            return _gameIdToGame.FirstOrDefault(x => x.Value?.DMEWorldId == dmeWorldId).Value;
+            foreach (var lookupByAppId in _lookupsByAppId)
+            {
+                lock (lookupByAppId.Value.GameIdToGame)
+                {
+                    var game = lookupByAppId.Value.GameIdToGame.FirstOrDefault(x => x.Value?.DMEWorldId == dmeWorldId).Value;
+                    if (game != null)
+                        return game;
+                }
+            }
+
+            return null;
         }
 
         public Game GetGameByGameId(int gameId)
         {
-            if (_gameIdToGame.TryGetValue(gameId, out var result))
-                return result;
+            foreach (var lookupByAppId in _lookupsByAppId)
+            {
+                lock (lookupByAppId.Value.GameIdToGame)
+                {
+                    if (lookupByAppId.Value.GameIdToGame.TryGetValue(gameId, out var game))
+                        return game;
+                }
+            }
 
             return null;
         }
 
         public void AddGame(Game game)
         {
-            _gameIdToGame.Add(game.Id, game);
+            if (!_lookupsByAppId.TryGetValue(game.ApplicationId, out var quickLookup))
+                _lookupsByAppId.Add(game.ApplicationId, quickLookup = new QuickLookup());
+
+            quickLookup.GameIdToGame.Add(game.Id, game);
             _ = Program.Database.CreateGame(game.ToGameDTO());
         }
 
         public IEnumerable<Game> GetGameList(int appId, int pageIndex, int pageSize, IEnumerable<GameListFilter> filters)
         {
-            return _gameIdToGame
-                            .Select(x => x.Value)
-                            .Where(x => x.ApplicationId == appId &&
-                                        (x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging) &&
-                                        !filters.Any(y => !y.IsMatch(x)))
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            return _lookupsByAppId.Where(x => appIdsInGroup.Contains(x.Key))
+                            .SelectMany(x => x.Value.GameIdToGame.Select(x => x.Value))
+                            .Where(x => (x.WorldStatus == MediusWorldStatus.WorldActive || x.WorldStatus == MediusWorldStatus.WorldStaging) &&
+                                        (filters.Count() == 0 || filters.Any(y => y.IsMatch(x))))
                             .Skip((pageIndex - 1) * pageSize)
                             .Take(pageSize);
         }
 
         public void CreateGame(ClientObject client, IMediusRequest request)
         {
+            if (!_lookupsByAppId.TryGetValue(client.ApplicationId, out var quickLookup))
+                _lookupsByAppId.Add(client.ApplicationId, quickLookup = new QuickLookup());
+
+            var appIdsInGroup = GetAppIdsInGroup(client.ApplicationId);
             string gameName = null;
             if (request is MediusCreateGameRequest r)
                 gameName = r.GameName;
             else if (request is MediusCreateGameRequest1 r1)
                 gameName = r1.GameName;
 
+            var existingGames = _lookupsByAppId.Where(x => appIdsInGroup.Contains(client.ApplicationId)).SelectMany(x => x.Value.GameIdToGame.Select(g => g.Value));
+            
             // Ensure the name is unique
             // If the host leaves then we unreserve the name
-            if (_gameIdToGame.Select(x => x.Value).Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == gameName && x.Host != null && x.Host.IsConnected))
+            if (existingGames.Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == gameName && x.Host != null && x.Host.IsConnected))
             {
                 client.Queue(new RT_MSG_SERVER_APP()
                 {
@@ -264,12 +337,20 @@ namespace Server.Medius
 
         #region Channels
 
-        public Channel GetChannelByChannelId(int channelId)
+        public Channel GetChannelByChannelId(int channelId, int appId)
         {
-            lock (_channelIdToChannel)
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            foreach (var appIdInGroup in appIdsInGroup)
             {
-                if (_channelIdToChannel.TryGetValue(channelId, out var result))
-                    return result;
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    lock (quickLookup.ChannelIdToChannel)
+                    {
+                        if (quickLookup.ChannelIdToChannel.TryGetValue(channelId, out var result))
+                            return result;
+                    }
+                }
             }
 
             return null;
@@ -277,53 +358,90 @@ namespace Server.Medius
 
         public Channel GetChannelByChannelName(string channelName, int appId)
         {
-            lock (_channelIdToChannel)
-            {
-                return _channelIdToChannel.FirstOrDefault(x => x.Value.Name == channelName && x.Value.ApplicationId == appId).Value;
-            }
-        }
+            var appIdsInGroup = GetAppIdsInGroup(appId);
 
-        public uint GetChannelCount(ChannelType type)
-        {
-            lock (_channelIdToChannel)
+            foreach (var appIdInGroup in appIdsInGroup)
             {
-                return (uint)_channelIdToChannel.Count(x => x.Value.Type == type);
-            }
-        }
-
-        public Channel GetDefaultLobbyChannel(int appId)
-        {
-            lock (_channelIdToChannel)
-            {
-                // If all app ids are compatible then return the default
-                if (Program.Settings.ApplicationIds == null)
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
                 {
-                    return _channelIdToChannel
-                        .Select(x => x.Value)
-                        .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == 0);
-                }
-                else
-                {
-                    return _channelIdToChannel
-                        .Select(x => x.Value)
-                        .FirstOrDefault(x => x.Type == ChannelType.Lobby && x.ApplicationId == appId);
+                    lock (quickLookup.ChannelIdToChannel)
+                    {
+                        return quickLookup.ChannelIdToChannel.FirstOrDefault(x => x.Value.Name == channelName && appIdsInGroup.Contains(x.Value.ApplicationId)).Value;
+                    }
                 }
             }
+
+            return null;
+        }
+
+        public uint GetChannelCount(ChannelType type, int appId)
+        {
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+            uint count = 0;
+
+            foreach (var appIdInGroup in appIdsInGroup)
+            {
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    lock (quickLookup.ChannelIdToChannel)
+                    {
+                        count += (uint)quickLookup.ChannelIdToChannel.Count(x => x.Value.Type == type);
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        public Channel GetOrCreateDefaultLobbyChannel(int appId)
+        {
+            Channel channel = null;
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            foreach (var appIdInGroup in appIdsInGroup)
+            {
+                if (_lookupsByAppId.TryGetValue(appIdInGroup, out var quickLookup))
+                {
+                    lock (quickLookup.ChannelIdToChannel)
+                    {
+                        channel = quickLookup.ChannelIdToChannel.FirstOrDefault(x => x.Value.Type == ChannelType.Lobby).Value;
+                        if (channel != null)
+                            return channel;
+                    }
+                }
+            }
+
+            // create default
+            channel = new Channel()
+            {
+                ApplicationId = appId,
+                Name = "Default",
+                Type = ChannelType.Lobby
+            };
+            AddChannel(channel);
+
+            return channel;
         }
 
         public void AddChannel(Channel channel)
         {
-            lock (_channelIdToChannel)
+            if (!_lookupsByAppId.TryGetValue(channel.ApplicationId, out var quickLookup))
+                _lookupsByAppId.Add(channel.ApplicationId, quickLookup = new QuickLookup());
+
+            lock (quickLookup.ChannelIdToChannel)
             {
-                _channelIdToChannel.Add(channel.Id, channel);
+                quickLookup.ChannelIdToChannel.Add(channel.Id, channel);
             }
         }
 
         public IEnumerable<Channel> GetChannelList(int appId, int pageIndex, int pageSize, ChannelType type)
         {
-            return _channelIdToChannel
-                .Select(x => x.Value)
-                .Where(x => x.ApplicationId == appId && x.Type == type)
+            var appIdsInGroup = GetAppIdsInGroup(appId);
+
+            return _lookupsByAppId
+                .Where(x => appIdsInGroup.Contains(x.Key))
+                .SelectMany(x => x.Value.ChannelIdToChannel.Select(x => x.Value))
+                .Where(x => x.Type == type)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize);
         }
@@ -332,28 +450,31 @@ namespace Server.Medius
 
         #region Clans
 
-        public Clan GetClanByAccountId(int clanId)
-        {
-            if (_clanIdToClan.TryGetValue(clanId, out var result))
-                return result;
+        //public Clan GetClanByAccountId(int clanId, int appId)
+        //{
+        //    if (_clanIdToClan.TryGetValue(clanId, out var result))
+        //        return result;
 
-            return null;
-        }
+        //    return null;
+        //}
 
-        public Clan GetClanByAccountName(string clanName)
-        {
-            clanName = clanName.ToLower();
-            if (_clanNameToClan.TryGetValue(clanName, out var result))
-                return result;
+        //public Clan GetClanByAccountName(string clanName, int appId)
+        //{
+        //    clanName = clanName.ToLower();
+        //    if (_clanNameToClan.TryGetValue(clanName, out var result))
+        //        return result;
 
-            return null;
-        }
+        //    return null;
+        //}
 
-        public void AddClan(Clan clan)
-        {
-            _clanNameToClan.Add(clan.Name.ToLower(), clan);
-            _clanIdToClan.Add(clan.Id, clan);
-        }
+        //public void AddClan(Clan clan)
+        //{
+        //    if (!_lookupsByAppId.TryGetValue(clan.ApplicationId, out var quickLookup))
+        //        _lookupsByAppId.Add(dmeClient.ApplicationId, quickLookup = new QuickLookup());
+
+        //    _clanNameToClan.Add(clan.Name.ToLower(), clan);
+        //    _clanIdToClan.Add(clan.Id, clan);
+        //}
 
         #endregion
 
@@ -370,79 +491,88 @@ namespace Server.Medius
 
         private async Task TickChannels()
         {
-            Queue<int> channelsToRemove = new Queue<int>();
+            Queue<(QuickLookup, int)> channelsToRemove = new Queue<(QuickLookup, int)>();
 
             // Tick channels
-            foreach (var channelKeyPair in _channelIdToChannel)
+            foreach (var quickLookup in _lookupsByAppId)
             {
-                if (channelKeyPair.Value.ReadyToDestroy)
+                foreach (var channelKeyPair in quickLookup.Value.ChannelIdToChannel)
                 {
-                    Logger.Info($"Destroying Channel {channelKeyPair.Value}");
-                    channelsToRemove.Enqueue(channelKeyPair.Key);
-                }
-                else
-                {
-                    await channelKeyPair.Value.Tick();
+                    if (channelKeyPair.Value.ReadyToDestroy)
+                    {
+                        Logger.Info($"Destroying Channel {channelKeyPair.Value}");
+                        channelsToRemove.Enqueue((quickLookup.Value, channelKeyPair.Key));
+                    }
+                    else
+                    {
+                        await channelKeyPair.Value.Tick();
+                    }
                 }
             }
 
             // Remove channels
-            while (channelsToRemove.TryDequeue(out var channelId))
-                _channelIdToChannel.Remove(channelId);
+            while (channelsToRemove.TryDequeue(out var lookupAndChannelId))
+                lookupAndChannelId.Item1.ChannelIdToChannel.Remove(lookupAndChannelId.Item2);
         }
 
         private async Task TickGames()
         {
-            Queue<int> gamesToRemove = new Queue<int>();
+            Queue<(QuickLookup, int)> gamesToRemove = new Queue<(QuickLookup, int)>();
 
             // Tick games
-            foreach (var gameKeyPair in _gameIdToGame)
+            foreach (var quickLookup in _lookupsByAppId)
             {
-                if (gameKeyPair.Value.ReadyToDestroy)
+                foreach (var gameKeyPair in quickLookup.Value.GameIdToGame)
                 {
-                    Logger.Info($"Destroying Game {gameKeyPair.Value}");
-                    await gameKeyPair.Value.EndGame();
-                    gamesToRemove.Enqueue(gameKeyPair.Key);
-                }
-                else
-                {
-                    await gameKeyPair.Value.Tick();
+                    if (gameKeyPair.Value.ReadyToDestroy)
+                    {
+                        Logger.Info($"Destroying Game {gameKeyPair.Value}");
+                        await gameKeyPair.Value.EndGame();
+                        gamesToRemove.Enqueue((quickLookup.Value, gameKeyPair.Key));
+                    }
+                    else
+                    {
+                        await gameKeyPair.Value.Tick();
+                    }
                 }
             }
 
             // Remove games
-            while (gamesToRemove.TryDequeue(out var gameId))
-                _gameIdToGame.Remove(gameId);
+            while (gamesToRemove.TryDequeue(out var lookupAndGameId))
+                lookupAndGameId.Item1.GameIdToGame.Remove(lookupAndGameId.Item2);
         }
 
         private async Task TickClients()
         {
-            Queue<string> clientsToRemove = new Queue<string>();
+            Queue<(int, string)> clientsToRemove = new Queue<(int, string)>();
 
             while (_addQueue.TryDequeue(out var newClient))
             {
+                if (!_lookupsByAppId.TryGetValue(newClient.ApplicationId, out var quickLookup))
+                    _lookupsByAppId.Add(newClient.ApplicationId, quickLookup = new QuickLookup());
+
                 try
                 {
-                    _accountIdToClient.Add(newClient.AccountId, newClient);
-                    _accountNameToClient.Add(newClient.AccountName.ToLower(), newClient);
-                    _accessTokenToClient.Add(newClient.Token, newClient);
-                    _sessionKeyToClient.Add(newClient.SessionKey, newClient);
+                    quickLookup.AccountIdToClient.Add(newClient.AccountId, newClient);
+                    quickLookup.AccountNameToClient.Add(newClient.AccountName.ToLower(), newClient);
+                    quickLookup.AccessTokenToClient.Add(newClient.Token, newClient);
+                    quickLookup.SessionKeyToClient.Add(newClient.SessionKey, newClient);
                 }
                 catch (Exception e)
                 {
                     // clean up
                     if (newClient != null)
                     {
-                        _accountIdToClient.Remove(newClient.AccountId);
+                        quickLookup.AccountIdToClient.Remove(newClient.AccountId);
 
                         if (newClient.AccountName != null)
-                            _accountNameToClient.Remove(newClient.AccountName.ToLower());
+                            quickLookup.AccountNameToClient.Remove(newClient.AccountName.ToLower());
 
                         if (newClient.Token != null)
-                            _accessTokenToClient.Remove(newClient.Token);
+                            quickLookup.AccessTokenToClient.Remove(newClient.Token);
 
                         if (newClient.SessionKey != null)
-                            _sessionKeyToClient.Remove(newClient.SessionKey);
+                            quickLookup.SessionKeyToClient.Remove(newClient.SessionKey);
                     }
 
                     Logger.Error(e);
@@ -450,61 +580,96 @@ namespace Server.Medius
                 }
             }
 
-            foreach (var clientKeyPair in _sessionKeyToClient)
+            foreach (var quickLookup in _lookupsByAppId)
             {
-                if (!clientKeyPair.Value.IsConnected)
+                foreach (var clientKeyPair in quickLookup.Value.SessionKeyToClient)
                 {
-                    if (clientKeyPair.Value.Timedout)
-                        Logger.Warn($"Timing out client {clientKeyPair.Value}");
-                    else
-                        Logger.Info($"Destroying Client {clientKeyPair.Value}");
+                    if (!clientKeyPair.Value.IsConnected)
+                    {
+                        if (clientKeyPair.Value.Timedout)
+                            Logger.Warn($"Timing out client {clientKeyPair.Value}");
+                        else
+                            Logger.Info($"Destroying Client {clientKeyPair.Value}");
 
-                    // Logout and end session
-                    await clientKeyPair.Value.Logout();
-                    clientKeyPair.Value.EndSession();
+                        // Logout and end session
+                        await clientKeyPair.Value.Logout();
+                        clientKeyPair.Value.EndSession();
 
-                    clientsToRemove.Enqueue(clientKeyPair.Key);
+                        clientsToRemove.Enqueue((quickLookup.Key, clientKeyPair.Key));
+                    }
                 }
             }
 
             // Remove
-            while (clientsToRemove.TryDequeue(out var sessionKey))
+            while (clientsToRemove.TryDequeue(out var appIdAndSessionKey))
             {
-                if (_sessionKeyToClient.Remove(sessionKey, out var clientObject))
+                if (_lookupsByAppId.TryGetValue(appIdAndSessionKey.Item1, out var quickLookup))
                 {
-                    _accountIdToClient.Remove(clientObject.AccountId);
-                    _accessTokenToClient.Remove(clientObject.Token);
-                    _accountNameToClient.Remove(clientObject.AccountName.ToLower());
+                    if (quickLookup.SessionKeyToClient.Remove(appIdAndSessionKey.Item2, out var clientObject))
+                    {
+                        quickLookup.AccountIdToClient.Remove(clientObject.AccountId);
+                        quickLookup.AccessTokenToClient.Remove(clientObject.Token);
+                        quickLookup.AccountNameToClient.Remove(clientObject.AccountName.ToLower());
+                    }
                 }
             }
         }
 
         private void TickDme()
         {
-            Queue<string> dmeToRemove = new Queue<string>();
+            Queue<(int, string)> dmeToRemove = new Queue<(int, string)>();
 
-            foreach (var dmeKeyPair in _sessionKeyToDmeClient)
+            foreach (var quickLookup in _lookupsByAppId)
             {
-                if (!dmeKeyPair.Value.IsConnected)
+                foreach (var dmeKeyPair in quickLookup.Value.SessionKeyToDmeClient)
                 {
-                    Logger.Info($"Destroying DME Client {dmeKeyPair.Value}");
+                    if (!dmeKeyPair.Value.IsConnected)
+                    {
+                        Logger.Info($"Destroying DME Client {dmeKeyPair.Value}");
 
-                    // Logout and end session
-                    dmeKeyPair.Value?.Logout();
-                    dmeKeyPair.Value?.EndSession();
+                        // Logout and end session
+                        dmeKeyPair.Value?.Logout();
+                        dmeKeyPair.Value?.EndSession();
 
-                    dmeToRemove.Enqueue(dmeKeyPair.Key);
+                        dmeToRemove.Enqueue((quickLookup.Key, dmeKeyPair.Key));
+                    }
                 }
             }
 
             // Remove
-            while (dmeToRemove.TryDequeue(out var sessionKey))
+            while (dmeToRemove.TryDequeue(out var appIdAndSessionKey))
             {
-                if (_sessionKeyToDmeClient.Remove(sessionKey, out var clientObject))
+                if (_lookupsByAppId.TryGetValue(appIdAndSessionKey.Item1, out var quickLookup))
                 {
-                    _accessTokenToDmeClient.Remove(clientObject.Token);
+                    if (quickLookup.SessionKeyToDmeClient.Remove(appIdAndSessionKey.Item2, out var clientObject))
+                    {
+                        quickLookup.AccessTokenToDmeClient.Remove(clientObject.Token);
+                    }
                 }
             }
+        }
+
+        #endregion
+
+        #region App Ids
+
+        public async Task OnDatabaseAuthenticated()
+        {
+            // get supported app ids
+            var appids = await Program.Database.GetAppIds();
+
+            // build dictionary of app ids from response
+            _appIdGroups = appids.ToDictionary(x => x.Name, x => x.AppIds.ToArray());
+        }
+
+        public bool IsAppIdSupported(int appId)
+        {
+            return _appIdGroups.Any(x => x.Value.Contains(appId));
+        }
+
+        public int[] GetAppIdsInGroup(int appId)
+        {
+            return _appIdGroups.FirstOrDefault(x => x.Value.Contains(appId)).Value ?? new int[0];
         }
 
         #endregion

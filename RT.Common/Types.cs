@@ -1029,4 +1029,12 @@ namespace RT.Common
         MediusAccountToken = 4,
         MediusClanToken = 5,
     }
+
+    public enum MediusFileXferStatus : int
+    {
+       Error = 0,
+       Initial = 1,
+       Mid = 2,
+       End = 3
+    }
 }

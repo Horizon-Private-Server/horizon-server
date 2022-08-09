@@ -13,26 +13,34 @@ namespace RT.Models
         public override RT_MSG_TYPE Id => RT_MSG_TYPE.RT_MSG_SERVER_CONNECT_REQUIRE;
 
         public byte ReqServerPassword;
-        public byte[] Contents = new byte[] { 0x48, 0x02 };
+        public short MaxPacketSize = 584;
+        public short? MaxUdpPacketSize = null;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             ReqServerPassword = reader.ReadByte();
-            Contents = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+            MaxPacketSize = reader.ReadInt16();
+            if (reader.BaseStream.Length > reader.BaseStream.Position)
+                MaxUdpPacketSize = reader.ReadInt16();
+            else
+                MaxUdpPacketSize = null;
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(ReqServerPassword);
-            writer.Write(Contents);
+            writer.Write(MaxPacketSize);
+            if (MaxUdpPacketSize != null)
+                writer.Write(MaxUdpPacketSize.Value);
         }
 
         public override string ToString()
         {
             return base.ToString() + " " +
                 $"ServerPassword: {ReqServerPassword} " +
-                $"Contents: {BitConverter.ToString(Contents)}";
-
+                $"MaxPacketSize: {MaxPacketSize} " +
+                $"MaxUdpPacketSize: {MaxUdpPacketSize}"
+                ;
         }
     }
 }

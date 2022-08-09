@@ -14,6 +14,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Server.Plugins.Interface;
+using System.IO;
 
 namespace Server.Medius.Models
 {
@@ -124,13 +125,18 @@ namespace Server.Medius.Models
         /// </summary>
         public int[] CustomWideStats { get; set; } = new int[0];
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public UploadState Upload { get; set; }
+
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.Settings.ClientTimeoutSeconds;
+        public virtual bool Timedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
         public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !Timedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
-        public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.Settings.KeepAliveGracePeriod;
+        public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).KeepAliveGracePeriodSeconds;
 
         /// <summary>
         /// 
@@ -197,6 +203,17 @@ namespace Server.Medius.Models
             }
         }
 
+        public void OnRecvClientEcho(RT_MSG_CLIENT_ECHO echo)
+        {
+            // older medius doesn't use server echo
+            // so instead we'll increment our timeout dates by the client echo
+            if (MediusVersion <= 108)
+            {
+                UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
+            }
+        }
+
         #region Connection / Disconnection
 
         public void KeepAliveUntilNextConnection()
@@ -241,6 +258,7 @@ namespace Server.Medius.Models
         {
             _ = Program.Database.PostAccountStatus(new AccountStatusDTO()
             {
+                AppId = ApplicationId,
                 AccountId = AccountId,
                 LoggedIn = IsLoggedIn,
                 ChannelId = CurrentChannel?.Id,
@@ -493,5 +511,15 @@ namespace Server.Medius.Models
             return $"({AccountId}:{AccountName})";
         }
 
+    }
+
+    public class UploadState
+    {
+        public FileStream Stream { get; set; }
+        public uint FileId { get; set; }
+        public int PacketNumber { get; set; }
+        public uint TotalSize { get; set; }
+        public int BytesReceived { get; set; }
+        public DateTime TimeBegan { get; set; } = DateTime.UtcNow;
     }
 }

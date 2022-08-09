@@ -167,7 +167,7 @@ namespace RT.Cryptography
 
             // Check if empty hash
             // If hash is 0, the data is already in plaintext
-            if (hash[0] == 0 && hash[1] == 0 && hash[2] == 0 && (hash[3] & 0x1F) == 0)
+            if (!IsHashValid(hash))
             {
                 Array.Copy(data, 0, plain, 0, data.Length);
                 return true;
@@ -236,6 +236,14 @@ namespace RT.Cryptography
         public void Hash(byte[] input, out byte[] hash)
         {
             hash = SHA1.Hash(input, Context);
+        }
+
+        public virtual bool IsHashValid(byte[] hash)
+        {
+            if (hash == null || hash.Length != 4)
+                return false;
+
+            return !(hash[0] == 0 && hash[1] == 0 && hash[2] == 0 && (hash[3] & 0x1F) == 0);
         }
 
         #endregion

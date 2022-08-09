@@ -27,6 +27,7 @@ namespace Server.Database
         private int _simulatedClanMessageIdCounter = 1;
         private int _simulatedClanInvitationIdCounter = 1;
         private string _dbAccessToken = null;
+        private string _dbAccountName = null;
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
         private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
 
@@ -63,12 +64,28 @@ namespace Server.Database
                 return false;
 
             // 
+            _dbAccountName = response.AccountName;
             _dbAccessToken = response.Token;
 
             // 
             return !string.IsNullOrEmpty(_dbAccessToken);
         }
 
+        public async Task<bool> AmIAuthenticated()
+        {
+            if (_settings.SimulatedMode)
+                return true;
+
+            return !String.IsNullOrEmpty(_dbAccessToken);
+        }
+
+        public string GetUsername()
+        {
+            if (_settings.SimulatedMode)
+                return _settings.DatabaseUsername;
+
+            return _dbAccountName;
+        }
 
         #region Account
 
@@ -330,7 +347,8 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = null;
+                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    result = account?.Metadata;
                 }
                 else
                 {
@@ -359,7 +377,16 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = false;
+                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    if (account != null)
+                    {
+                        account.Metadata = metadata;
+                        result = true;
+                    }
+                    else
+                    {
+                        result = false;
+                    }
                 }
                 else
                 {
@@ -726,7 +753,7 @@ namespace Server.Database
         /// <param name="accountId">Account id of player.</param>
         /// <param name="statId">Index of stat. Starts at 1.</param>
         /// <returns>Leaderboard result for player.</returns>
-        public async Task<LeaderboardDTO> GetPlayerLeaderboardIndex(int accountId, int statId)
+        public async Task<LeaderboardDTO> GetPlayerLeaderboardIndex(int accountId, int statId, int appId)
         {
             LeaderboardDTO result = null;
 
@@ -750,7 +777,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<LeaderboardDTO>($"Stats/getPlayerLeaderboardIndex?AccountId={accountId}&StatId={statId}");
+                    result = await GetDbAsync<LeaderboardDTO>($"Stats/getPlayerLeaderboardIndex?AccountId={accountId}&StatId={statId}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -767,7 +794,7 @@ namespace Server.Database
         /// <param name="clanId">Clan id of clan.</param>
         /// <param name="statId">Index of stat. Starts at 1.</param>
         /// <returns>Leaderboard result for clan.</returns>
-        public async Task<ClanLeaderboardDTO> GetClanLeaderboardIndex(int clanId, int statId)
+        public async Task<ClanLeaderboardDTO> GetClanLeaderboardIndex(int clanId, int statId, int appId)
         {
             ClanLeaderboardDTO result = null;
 
@@ -792,7 +819,7 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId+1}");
+                    result = await GetDbAsync<ClanLeaderboardDTO>($"Stats/getClanLeaderboardIndex?ClanId={clanId}&StatId={statId+1}&AppId={appId}");
                 }
             }
             catch (Exception e)
@@ -1995,7 +2022,179 @@ namespace Server.Database
 
         #endregion
 
+        #region World
+
+        public async Task<ChannelDTO[]> GetChannels()
+        {
+            ChannelDTO[] results = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new ChannelDTO[]
+                    {
+                        new ChannelDTO()
+                        {
+                            AppId = 0,
+                            Id = 0,
+                            Name = "Channel 1",
+                            MaxPlayers = 256,
+                            GenericFieldFilter = 32
+                        }
+                    };
+                }
+                else
+                {
+                    results = await GetDbAsync<ChannelDTO[]>($"api/World/getChannels");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return results;
+        }
+
+        public async Task<LocationDTO[]> GetLocations()
+        {
+            LocationDTO[] results = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new LocationDTO[]
+                    {
+                        new LocationDTO()
+                        {
+                            AppId = 0,
+                            Id = 0,
+                            Name = "Location 1"
+                        }
+                    };
+                }
+                else
+                {
+                    results = await GetDbAsync<LocationDTO[]>($"api/World/getLocations");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return results;
+        }
+
+        public async Task<LocationDTO[]> GetLocations(int appId)
+        {
+            LocationDTO[] results = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new LocationDTO[]
+                    {
+                        new LocationDTO()
+                        {
+                            AppId = appId,
+                            Id = 0,
+                            Name = "Location 1"
+                        }
+                    };
+                }
+                else
+                {
+                    results = await GetDbAsync<LocationDTO[]>($"api/World/getLocations/{appId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return results;
+        }
+
+
+        #endregion
+
         #region Key
+
+        public async Task<AppIdDTO[]> GetAppIds()
+        {
+            AppIdDTO[] results = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new AppIdDTO[]
+                    {
+                        new AppIdDTO()
+                        {
+                            Name = "All",
+                            AppIds = Enumerable.Range(0, 100000).ToList()
+                        }
+                    };
+                }
+                else
+                {
+                    results = await GetDbAsync<AppIdDTO[]>($"api/Keys/getAppIds");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return results;
+        }
+
+        public async Task<Dictionary<string, string>> GetServerSettings(int appId)
+        {
+            Dictionary<string, string> result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    return new Dictionary<string, string>();
+                }
+                else
+                {
+                    result = await GetDbAsync<Dictionary<string, string>>($"api/Keys/getSettings?appId={appId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        public async Task SetServerSettings(int appId, Dictionary<string, string> settings)
+        {
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+
+                }
+                else
+                {
+                    await PostDbAsync($"api/Keys/setSettings?appId={appId}", settings);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+        }
 
         public async Task<ServerFlagsDTO> GetServerFlags()
         {
