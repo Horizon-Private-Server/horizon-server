@@ -24,7 +24,7 @@ namespace Server.Dme.Config
         /// <summary>
         /// Number of seconds before the server should send an echo to the client.
         /// </summary>
-        public int ServerEchoIntervalSeconds { get; private set; } = 15;
+        public int ServerEchoIntervalSeconds { get; private set; } = 5;
 
         /// <summary>
         /// Period of time when a client is moving between medius server components where the client object will be kept alive.
@@ -34,7 +34,7 @@ namespace Server.Dme.Config
         /// <summary>
         /// Time since last echo before timing the client out.
         /// </summary>
-        public int ClientTimeoutSeconds { get; private set; } = 15;
+        public int ClientTimeoutSeconds { get; private set; } = 25;
 
         /// <summary>
         /// Time since game created and host never connected to close the game world.

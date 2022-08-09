@@ -10,6 +10,7 @@ using Server.Common;
 using Server.Common.Logging;
 using Server.Database;
 using Server.Dme.Config;
+using Server.Dme.Models;
 using Server.Plugins;
 using System;
 using System.Collections.Generic;
@@ -351,6 +352,9 @@ namespace Server.Dme
         {
             try
             {
+                if (!await Database.AmIAuthenticated())
+                    return;
+
                 // get supported app ids
                 var appIdGroups = await Database.GetAppIds();
 
@@ -410,6 +414,11 @@ namespace Server.Dme
                 return manager;
 
             return null;
+        }
+
+        public static ClientObject GetClientByAccessToken(string accessToken)
+        {
+            return Managers.Select(x => x.Value.GetClientByAccessToken(accessToken)).FirstOrDefault(x => x != null);
         }
 
         public static string GenerateSessionKey()

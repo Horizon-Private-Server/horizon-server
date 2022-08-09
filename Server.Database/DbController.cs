@@ -27,6 +27,7 @@ namespace Server.Database
         private int _simulatedClanMessageIdCounter = 1;
         private int _simulatedClanInvitationIdCounter = 1;
         private string _dbAccessToken = null;
+        private string _dbAccountName = null;
         private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
         private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
 
@@ -63,6 +64,7 @@ namespace Server.Database
                 return false;
 
             // 
+            _dbAccountName = response.AccountName;
             _dbAccessToken = response.Token;
 
             // 
@@ -77,6 +79,13 @@ namespace Server.Database
             return !String.IsNullOrEmpty(_dbAccessToken);
         }
 
+        public string GetUsername()
+        {
+            if (_settings.SimulatedMode)
+                return _settings.DatabaseUsername;
+
+            return _dbAccountName;
+        }
 
         #region Account
 

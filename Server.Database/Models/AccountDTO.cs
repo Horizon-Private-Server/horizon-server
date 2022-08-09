@@ -122,6 +122,11 @@ namespace Server.Database.Models
         public int AccountId { get; set; }
 
         /// <summary>
+        /// App id of the account.
+        /// </summary>
+        public int AppId { get; set; }
+
+        /// <summary>
         /// Whether or not the user is logged in.
         /// </summary>
         public bool LoggedIn { get; set; }

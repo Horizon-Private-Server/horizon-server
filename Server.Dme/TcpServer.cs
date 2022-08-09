@@ -325,8 +325,7 @@ namespace Server.Dme
                 case RT_MSG_CLIENT_CONNECT_TCP_AUX_UDP clientConnectTcpAuxUdp:
                     {
                         data.ApplicationId = clientConnectTcpAuxUdp.AppId;
-                        var manager = Program.GetManager(data.ApplicationId, true);
-                        data.ClientObject = manager.GetClientByAccessToken(clientConnectTcpAuxUdp.AccessToken);
+                        data.ClientObject = Program.GetClientByAccessToken(clientConnectTcpAuxUdp.AccessToken);
                         if (data.ClientObject == null || data.ClientObject.DmeWorld == null || data.ClientObject.DmeWorld.WorldId != clientConnectTcpAuxUdp.ARG1)
                             throw new Exception($"Client connected with invalid world id!");
 
