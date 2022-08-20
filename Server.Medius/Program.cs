@@ -114,11 +114,11 @@ namespace Server.Medius
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
 
-                        // refresh app settings
-                        await RefreshAppSettings();
-
                         // pass to manager
                         await Manager.OnDatabaseAuthenticated();
+
+                        // refresh app settings
+                        await RefreshAppSettings();
 
 #if !DEBUG
                         if (!_hasPurgedAccountStatuses)

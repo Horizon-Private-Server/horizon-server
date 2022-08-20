@@ -26,21 +26,25 @@ namespace Server.Dme.Models
 
         private static ConcurrentDictionary<int, World> _idToWorld = new ConcurrentDictionary<int, World>();
         private ConcurrentDictionary<int, bool> _pIdIsUsed = new ConcurrentDictionary<int, bool>();
+        private static int _idCounter = 0;
 
         private void RegisterWorld()
         {
-            int i = 0;
-            while (i < MAX_WORLDS && _idToWorld.ContainsKey(i))
-                ++i;
+            int totalIdsCounted = 0;
+            while (totalIdsCounted < MAX_WORLDS && _idToWorld.ContainsKey(_idCounter))
+            {
+                _idCounter = (_idCounter + 1) % MAX_WORLDS;
+                ++totalIdsCounted;
+            }
 
             // 
-            if (i == MAX_WORLDS)
+            if (totalIdsCounted == MAX_WORLDS)
                 throw new InvalidOperationException("Max worlds reached!");
 
             // 
-            WorldId = i;
-            _idToWorld.TryAdd(i, this);
-            Logger.Info($"Registered world with id {i}");
+            WorldId = _idCounter++;
+            _idToWorld.TryAdd(WorldId, this);
+            Logger.Info($"Registered world with id {WorldId}");
         }
 
         private void FreeWorld()

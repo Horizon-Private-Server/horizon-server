@@ -46,6 +46,7 @@ namespace Server.UnivereInformation.Config
 
     public class UniverseInfo
     {
+        public bool Enabled { get; set; } = true;
         public string Name { get; set; }
         public string Description { get; set; }
         public string Endpoint { get; set; }

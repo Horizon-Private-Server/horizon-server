@@ -155,11 +155,7 @@ namespace Server.Common
 
         public static DateTime GetHighPrecisionUtcTime()
         {
-#if USE_DATETIME_NOW
-            return new DateTime(_swTicker.ElapsedTicks + _swTickerInitialTicks, DateTimeKind.Utc);
-#else
-            return MonoStampSource.UtcNow;
-#endif
+            return new DateTime(_swTicker.Elapsed.Ticks + _swTickerInitialTicks, DateTimeKind.Utc);
         }
 
         public static long GetMillisecondsSinceStartup()

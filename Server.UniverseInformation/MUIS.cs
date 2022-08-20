@@ -276,7 +276,6 @@ namespace Server.UnivereInformation
 
             return;
         }
-
         protected virtual void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
             if (message == null)
@@ -288,42 +287,58 @@ namespace Server.UnivereInformation
                     {
                         if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var infos))
                         {
-                            foreach (var info in infos)
+                            var availableInfos = infos.Where(x => x.Enabled);
+                            if (availableInfos.Count() == 0)
                             {
-                                var isLast = infos.LastOrDefault() == info;
-
-                                // 
-                                if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
-                                {
-                                    Queue(new RT_MSG_SERVER_APP()
-                                    {
-                                        Message = new MediusUniverseVariableSvoURLResponse()
-                                        {
-                                            MessageID = new MessageId(),
-                                            URL = info.SvoURL
-                                        }
-                                    }, clientChannel);
-                                }
-
                                 Queue(new RT_MSG_SERVER_APP()
                                 {
                                     Message = new MediusUniverseVariableInformationResponse()
                                     {
                                         MessageID = getUniverseInfo.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusSuccess,
+                                        StatusCode = MediusCallbackStatus.MediusNoResult,
                                         InfoFilter = getUniverseInfo.InfoType,
-                                        UniverseID = info.UniverseId,
-                                        ExtendedInfo = info.ExtendedInfo,
-                                        UniverseName = info.Name,
-                                        UniverseDescription = info.Description,
-                                        SvoURL = info.SvoURL,
-                                        DNS = info.Endpoint,
-                                        Port = info.Port,
-                                        EndOfList = isLast
+                                        EndOfList = true
                                     }
                                 }, clientChannel);
                             }
+                            else
+                            {
+                                foreach (var info in availableInfos)
+                                {
+                                    var isLast = availableInfos.LastOrDefault() == info;
 
+                                    // 
+                                    if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_SVO_URL))
+                                    {
+                                        Queue(new RT_MSG_SERVER_APP()
+                                        {
+                                            Message = new MediusUniverseVariableSvoURLResponse()
+                                            {
+                                                MessageID = new MessageId(),
+                                                URL = info.SvoURL
+                                            }
+                                        }, clientChannel);
+                                    }
+
+                                    Queue(new RT_MSG_SERVER_APP()
+                                    {
+                                        Message = new MediusUniverseVariableInformationResponse()
+                                        {
+                                            MessageID = getUniverseInfo.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusSuccess,
+                                            InfoFilter = getUniverseInfo.InfoType,
+                                            UniverseID = info.UniverseId,
+                                            ExtendedInfo = info.ExtendedInfo,
+                                            UniverseName = info.Name,
+                                            UniverseDescription = info.Description,
+                                            SvoURL = info.SvoURL,
+                                            DNS = info.Endpoint,
+                                            Port = info.Port,
+                                            EndOfList = isLast
+                                        }
+                                    }, clientChannel);
+                                }
+                            }
                             if (getUniverseInfo.InfoType.HasFlag(MediusUniverseVariableInformationInfoFilter.INFO_NEWS))
                             {
                                 Queue(new RT_MSG_SERVER_APP()

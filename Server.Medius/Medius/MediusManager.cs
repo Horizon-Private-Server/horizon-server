@@ -164,13 +164,13 @@ namespace Server.Medius
 
         #region Games
 
-        public Game GetGameByDmeWorldId(int dmeWorldId)
+        public Game GetGameByDmeWorldId(string dmeSessionKey, int dmeWorldId)
         {
             foreach (var lookupByAppId in _lookupsByAppId)
             {
                 lock (lookupByAppId.Value.GameIdToGame)
                 {
-                    var game = lookupByAppId.Value.GameIdToGame.FirstOrDefault(x => x.Value?.DMEWorldId == dmeWorldId).Value;
+                    var game = lookupByAppId.Value.GameIdToGame.FirstOrDefault(x => x.Value?.DMEServer?.SessionKey == dmeSessionKey && x.Value?.DMEWorldId == dmeWorldId).Value;
                     if (game != null)
                         return game;
                 }

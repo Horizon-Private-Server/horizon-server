@@ -3306,10 +3306,6 @@ namespace Server.Medius
                         if (data.ClientObject == null)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLocationsRequest} without a session.");
 
-                        // ERROR -- Need to be logged in
-                        if (!data.ClientObject.IsLoggedIn)
-                            throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getLocationsRequest} without a being logged in.");
-
                         var locations = await Program.Database.GetLocations(data.ClientObject.ApplicationId);
 
                         if (locations == null || locations.Length == 0)

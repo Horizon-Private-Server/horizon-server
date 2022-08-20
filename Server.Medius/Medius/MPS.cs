@@ -274,7 +274,7 @@ namespace Server.Medius
                     }
                 case MediusServerConnectNotification connectNotification:
                     {
-                        Program.Manager.GetGameByDmeWorldId((int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
+                        Program.Manager.GetGameByDmeWorldId((data.ClientObject as DMEObject).SessionKey, (int)connectNotification.MediusWorldUID)?.OnMediusServerConnectNotification(connectNotification);
 
 
                         break;
