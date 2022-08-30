@@ -222,12 +222,15 @@ namespace Server.Dme.Models
             LastAggTime = Utils.GetMillisecondsSinceStartup();
 
             // tcp
-            while (TcpSendMessageQueue.TryDequeue(out var message))
-                responses.Add(message);
+            if (Tcp != null)
+            {
+                while (TcpSendMessageQueue.TryDequeue(out var message))
+                    responses.Add(message);
 
-            // send
-            if (responses.Count > 0)
-                _ = Tcp.WriteAndFlushAsync(responses);
+                // send
+                if (responses.Count > 0)
+                    _ = Tcp.WriteAndFlushAsync(responses);
+            }
 
             // udp
             Udp?.HandleOutgoingMessages();
