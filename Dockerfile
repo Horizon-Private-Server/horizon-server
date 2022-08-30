@@ -9,16 +9,16 @@ RUN dotnet publish -c Release -o out
 
 #===== Build MAS/MLS/NAT
 WORKDIR /src/Server.Medius
-RUN dotnet publish -c Release -o out 
+RUN dotnet publish -c Release -o out
 
 #===== Build MUIS
 WORKDIR /src/Server.UniverseInformation
-RUN dotnet publish -c Release -o out 
+RUN dotnet publish -c Release -o out
 
 # Copy configs
-RUN cp /src/docker/dme.json /src/Server.Dme/out/config.json
-RUN cp /src/docker/medius.json /src/Server.Medius/out/config.json
-RUN cp /src/docker/muis.json /src/Server.UniverseInformation/out/config.json
+RUN cp /src/docker/dme.json /src/Server.Dme/out/dme.json
+RUN cp /src/docker/medius.json /src/Server.Medius/out/medius.json
+RUN cp /src/docker/muis.json /src/Server.UniverseInformation/out/muis.json
 
 # Run stage =========================================================================
 

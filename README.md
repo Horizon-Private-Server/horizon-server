@@ -1,15 +1,38 @@
-# horizon-server
+# Horizon Private Server
 This repository contains a Medius server emulator that works for a variety of games. Originally built to revive the Ratchet: Deadlocked PS2 online servers.
 
-## Running with Docker
-1. Set up the configs in the `docker/` container. You can change the ports, `PublicIpOverride` (if developing locally), or MUIS information if using MUIS
+## Docker Compose
+Docker Compose is needed because the following containers need to be run in order to run the server:
+1. Medius/DME/MUIS/NAT Servers run on the Dockerfile in this repo
+2. [The Database Middleware](https://github.com/Horizon-Private-Server/horizon-server-database-middleware), which sits between the DB and the main Servers
+3. SQL Server Database, which stores all the information
+
+### Set up the configs, path, and environment variables
+Docker Compose will expect a directory structure as follows (not all files/folders shown):
+```
+horizon/
+├─ horizon-server/
+│  ├─ docker/
+│  │  ├─ dme.json
+│  │  ├─ muis.json
+│  │  ├─ medius.json
+│  │  ├─ env.list
+├─ horizon-database-middleware/
+├─ horizon-database/
+│  ├─ data/
+│  ├─ log/
+│  ├─ secrets/
+```
+
+1. Set up the configs in the `horizon-server/docker/` folder. You can change the ports, `PublicIpOverride` (if developing locally), or MUIS information if using MUIS
 2. Execute `build.sh` to build the image
-3. Check the ports in `run.sh` to ensure you're exposing the same ports that are set in the config
-4. Run `run.sh` (change `-it` to `-d` to run it in the background)
+3. Check the ports in `docker-compose.yml` to ensure you're exposing the same ports that are set in the config
+4. Add your own password (MSSQL_SA_PASSWORD) to the env.list file (this will be the database password)
 
-Generally, for local development, change:
-- `dme.json`: `PublicIpOverride`, `ApplicationIds`
-- `medius.json`: `PublicIpOverride`, `ApplicationIds`, `NATIp`, ports if MUIS is not enabled and MAS default is not 10075
-- `muis.json`: `Universes`
+The data, logs, and secrets folders are to persist data so that data is not destroyed upon container destruction.
 
-The default configs in the `docker/` folder were last generated 13 Feb 2022.
+### Running
+Run the `horizon-server/docker/run.sh` script from inside the docker folder. This will set the `env.list` environment variables and turn on the containers.
+
+### Misc
+The default configs in the `horizon-server/docker/` folder were last generated 08/29/2022.
