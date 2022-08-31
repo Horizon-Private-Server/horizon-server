@@ -34,5 +34,9 @@ The data, logs, and secrets folders are to persist data so that data is not dest
 ### Running
 Run the `horizon-server/docker/run.sh` script from inside the docker folder. This will set the `env.list` environment variables and turn on the containers.
 
+### Debugging the db
+```
+sqlcmd -S ${SERVER_IP},1433 -U sa -P "${YOUR_PASSWORD}"
+
 ### Misc
 The default configs in the `horizon-server/docker/` folder were last generated 08/29/2022.

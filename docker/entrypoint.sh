@@ -16,7 +16,7 @@ cd /medius/
 
 echo "Sleeping before starting ..."
 # This is so that the DB can start in time before server starts
-sleep 3
+sleep 10
 echo "Starting ..."
 
 dotnet Server.Medius.dll

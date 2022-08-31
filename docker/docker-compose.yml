@@ -12,7 +12,7 @@ services:
       - "50000:50000/udp"
       - "10070:10070/udp"
     depends_on:
-      - "db"
+      - "db_middleware"
 
   db:
     image: "mcr.microsoft.com/mssql/server:2019-latest"
@@ -25,3 +25,17 @@ services:
       - ../../horizon-server-database/data:/var/opt/mssql/data
       - ../../horizon-server-database/log:/var/opt/mssql/log
       - ../../horizon-server-database/secrets:/var/opt/mssql/secrets
+
+  db_middleware:
+    build: ../../horizon-server-database-middleware
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    environment:      
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${MSSQL_SA_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SERVER=${DB_SERVER}
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+    depends_on:
+      - "db"
