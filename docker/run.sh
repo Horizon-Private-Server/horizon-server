@@ -1,3 +1,3 @@
-cd ..
+docker compose build
 
-docker compose --env-file=docker/env.list up
+docker compose --env-file=env.list up

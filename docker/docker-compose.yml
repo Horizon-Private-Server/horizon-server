@@ -2,7 +2,7 @@ version: "0.0.1"
 services:
 
   main_server:
-    build: .
+    build: ..
     ports:
       - "10071:10071"
       - "10075:10075"
@@ -20,7 +20,8 @@ services:
       - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
     volumes:
-      - ../horizon-server-database/data:/var/opt/mssql/data
-      - ../horizon-server-database/log:/var/opt/mssql/log
-      - ../horizon-server-database/secrets:/var/opt/mssql/secrets
+      - ../../horizon-server-database/data:/var/opt/mssql/data
+      - ../../horizon-server-database/log:/var/opt/mssql/log
+      - ../../horizon-server-database/secrets:/var/opt/mssql/secrets
