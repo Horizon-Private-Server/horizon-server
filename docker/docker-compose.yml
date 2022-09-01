@@ -11,6 +11,8 @@ services:
       - "10073:10073"
       - "50000:50000/udp"
       - "10070:10070/udp"
+    environment:
+      - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
     depends_on:
       - "db_middleware"
 
@@ -29,13 +31,15 @@ services:
   db_middleware:
     build: ../../horizon-server-database-middleware
     ports:
-      - "5000:5000"
-      - "5001:5001"
+      - "10000:10000"
+      - "10001:10001"
     environment:      
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - DB_NAME=${DB_NAME}
       - DB_SERVER=${DB_SERVER}
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - MIDDLEWARE_SERVER=${MIDDLEWARE_SERVER}
+      
     depends_on:
       - "db"
