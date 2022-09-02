@@ -29,5 +29,6 @@ RUN chmod a+x /docker/entrypoint.sh
 COPY --from=builder /src/Server.Dme/out /dme
 COPY --from=builder /src/Server.Medius/out /medius
 COPY --from=builder /src/Server.UniverseInformation/out /muis
+COPY --from=builder /src/docker /configs
 
 CMD "/docker/entrypoint.sh"
