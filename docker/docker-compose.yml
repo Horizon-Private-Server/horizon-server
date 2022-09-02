@@ -13,6 +13,9 @@ services:
       - "10070:10070/udp"
     environment:
       - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
+      - MIDDLEWARE_USER=${MIDDLEWARE_USER}
+      - MIDDLEWARE_PASSWORD=${MIDDLEWARE_PASSWORD}
+      - APP_ID=${APP_ID}
     depends_on:
       - "db_middleware"
 
@@ -33,13 +36,17 @@ services:
     ports:
       - "10000:10000"
       - "10001:10001"
-    environment:      
+    environment:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - DB_NAME=${DB_NAME}
       - DB_SERVER=${DB_SERVER}
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - MIDDLEWARE_SERVER=${MIDDLEWARE_SERVER}
-      
+      - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
+      - MIDDLEWARE_USER=${MIDDLEWARE_USER}
+      - MIDDLEWARE_PASSWORD=${MIDDLEWARE_PASSWORD}
+      - APP_ID=${APP_ID}
+      - APP_NAME=${APP_NAME}
     depends_on:
       - "db"

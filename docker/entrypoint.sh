@@ -4,9 +4,6 @@ echo "Sleeping before starting ..."
 sleep 30
 echo "Starting ..."
 
-echo "Setting admin username/pw ..."
-curl --insecure -X POST "${MIDDLEWARE_SERVER_IP}/Account/createAccount" -H  "accept: */*" -H  "Content-Type: application/json-patch+json" -d "{\"AccountName\":\"testAccountName2\",\"AccountPassword\":\"testAccountPW\",\"MachineId\":\"1\",\"MediusStats\":\"1\",\"AppId\":0,\"PasswordPreHashed\":false}"
-
 # Start DME
 echo "Starting DME ..."
 cd /dme/
@@ -21,4 +18,3 @@ dotnet Server.UniverseInformation.dll &
 echo "Starting Medius ..."
 cd /medius/
 dotnet Server.Medius.dll
-
