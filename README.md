@@ -24,10 +24,9 @@ horizon/
 │  ├─ secrets/
 ```
 
-1. Set up the configs in the `horizon-server/docker/` folder. You can change the ports, `PublicIpOverride` (if developing locally), or MUIS information if using MUIS
+1. Set up the configs in the `horizon-server/docker/` folder. You can change the ports, `PublicIpOverride` (if developing locally), or MUIS information if using MUIS. Don't forget to set the app ids in the `dme.config`!
 2. Check the ports in `docker-compose.yml` to ensure you're exposing the same ports that are set in the config
-3. Add your own password (MSSQL_SA_PASSWORD) to the env.list file (this will be the database password)
-4. Edit the other env variables which will go to the database middleware
+3. Edit the env variables which will go to the database middleware / database containers
 
 The data, logs, and secrets folders are to persist data so that data is not destroyed upon container destruction.
 

@@ -46,7 +46,5 @@ services:
       - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
       - MIDDLEWARE_USER=${MIDDLEWARE_USER}
       - MIDDLEWARE_PASSWORD=${MIDDLEWARE_PASSWORD}
-      - APP_ID=${APP_ID}
-      - APP_NAME=${APP_NAME}
     depends_on:
       - "db"
