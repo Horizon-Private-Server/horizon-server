@@ -10,8 +10,12 @@ sed -i "s|\"DatabaseUrl\": \"http://localhost:80\"|\"DatabaseUrl\": \"${MIDDLEWA
 sed -i "s|\"DatabaseUsername\": null|\"DatabaseUsername\": \"${MIDDLEWARE_USER}\"|g" /configs/db.config.json
 sed -i "s|\"DatabasePassword\": null|\"DatabasePassword\": \"${MIDDLEWARE_PASSWORD}\"|g" /configs/db.config.json
 
+sed -i "s|\"ApplicationIds\": \[\],|\"ApplicationIds\": \[${APP_ID}\],|g" /configs/dme.json
+
 cp /configs/db.config.json /dme/
 cp /configs/db.config.json /medius/
+
+cp /configs/dme.json /dme/
 
 # Start DME
 echo "Starting DME ..."
