@@ -9,13 +9,15 @@ services:
       - "10077:10077"
       - "10078:10078"
       - "10073:10073"
-      - "50000:50000/udp"
+      - "50000-50100:50000-50100/udp"
       - "10070:10070/udp"
     environment:
       - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
       - MIDDLEWARE_USER=${MIDDLEWARE_USER}
       - MIDDLEWARE_PASSWORD=${MIDDLEWARE_PASSWORD}
       - APP_ID=${APP_ID}
+    volumes:
+      - ../logs:/logs
     depends_on:
       - "db_middleware"
 

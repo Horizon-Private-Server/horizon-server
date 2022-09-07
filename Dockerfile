@@ -23,6 +23,7 @@ RUN cp /src/docker/muis.json /src/Server.UniverseInformation/out/muis.json
 # Run stage =========================================================================
 
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1
+RUN mkdir /logs
 COPY ./docker /docker
 RUN chmod a+x /docker/entrypoint.sh
 
