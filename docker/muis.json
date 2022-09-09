@@ -10,20 +10,24 @@
   },
   "EncryptMessages": true,
   "Universes": {
-    "0": {
-      "Name": "sample universe",
-      "Description": null,
-      "Endpoint": "url",
-      "SvoURL": null,
-      "ExtendedInfo": null,
-      "Port": 10075,
-      "UniverseId": 1
-    }
+    "0": [
+      {
+        "Enabled": true,
+        "Name": "sample universe",
+        "Description": null,
+        "Endpoint": "url",
+        "SvoURL": null,
+        "ExtendedInfo": null,
+        "Port": 10075,
+        "UniverseId": 1
+      }
+    ]
   },
   "Logging": {
     "RollingFileSize": 1048576,
     "RollingFileCount": 100,
     "LogPath": "logs/medius.log",
+    "LogMetrics": false,
     "LogToConsole": false,
     "LogLevel": 2,
     "RtLogFilter": [

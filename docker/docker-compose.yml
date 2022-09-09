@@ -1,0 +1,52 @@
+version: "0.0.1"
+services:
+
+  main_server:
+    build: ..
+    ports:
+      - "10071:10071"
+      - "10075:10075"
+      - "10077:10077"
+      - "10078:10078"
+      - "10073:10073"
+      - "50000-50100:50000-50100/udp"
+      - "10070:10070/udp"
+    environment:
+      - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
+      - MIDDLEWARE_USER=${MIDDLEWARE_USER}
+      - MIDDLEWARE_PASSWORD=${MIDDLEWARE_PASSWORD}
+      - APP_ID=${APP_ID}
+    volumes:
+      - ../logs:/logs
+    depends_on:
+      - "db_middleware"
+
+  db:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+    volumes:
+      - ../../horizon-server-database/data:/var/opt/mssql/data
+      - ../../horizon-server-database/log:/var/opt/mssql/log
+      - ../../horizon-server-database/secrets:/var/opt/mssql/secrets
+
+  db_middleware:
+    build: ../../horizon-server-database-middleware
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${MSSQL_SA_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SERVER=${DB_SERVER}
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - MIDDLEWARE_SERVER=${MIDDLEWARE_SERVER}
+      - MIDDLEWARE_SERVER_IP=${MIDDLEWARE_SERVER_IP}
+      - MIDDLEWARE_USER=${MIDDLEWARE_USER}
+      - MIDDLEWARE_PASSWORD=${MIDDLEWARE_PASSWORD}
+    depends_on:
+      - "db"

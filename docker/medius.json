@@ -1,27 +1,15 @@
 {
   "RefreshConfigInterval": 5000,
-  "Beta": {
-    "Enabled": false,
-    "AllowAccountCreation": false,
-    "RestrictSignin": false,
-    "PermittedAccounts": null
-  },
-  "ApplicationIds": null,
   "UsePublicIp": false,
   "PublicIpOverride": "",
-  "CreateAccountOnNotFound": false,
-  "ClientTimeoutSeconds": 30,
-  "GameTimeoutSeconds": 30,
-  "ServerEchoInterval": 10,
-  "KeepAliveGracePeriod": 8,
   "TickRate": 10,
   "MASPort": 10075,
   "MLSPort": 10078,
   "MPSPort": 10077,
   "NATIp": null,
   "NATPort": 10070,
-  "DmeTimeoutSeconds": 60,
-  "BanSystemMessageSeverity": 200,
+  "MediusFileServerRootPath": "files",
+  "PluginsPath": "plugins/",
   "MPSKey": {
     "n": "10315955513017997681600210131013411322695824559688299373570246338038100843097466504032586443986679280716603540690692615875074465586629501752500179100369237",
     "e": "17",
@@ -32,12 +20,11 @@
     "e": "17",
     "d": "4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513"
   },
-  "EncryptMessages": true,
-  "TextBlacklistFilters": {},
   "Logging": {
     "RollingFileSize": 1048576,
     "RollingFileCount": 100,
     "LogPath": "logs/medius.log",
+    "LogMetrics": false,
     "LogToConsole": false,
     "LogLevel": 2,
     "RtLogFilter": [
