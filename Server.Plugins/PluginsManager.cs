@@ -201,7 +201,7 @@ namespace Server.Plugins
             {
                 try
                 {
-                    Assembly pluginAssembly = Assembly.LoadFile(file.FullName);
+                    Assembly pluginAssembly = Assembly.LoadFrom(file.FullName);
                     Type pluginInterface = typeof(IPlugin);
                     var plugins = pluginAssembly.GetTypes()
                         .Where(type => pluginInterface.IsAssignableFrom(type));
