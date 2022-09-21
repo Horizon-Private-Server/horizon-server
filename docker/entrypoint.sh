@@ -1,9 +1,4 @@
 #! /bin/sh
-echo "Sleeping before starting ..."
-# This is so that the DB can start in time before server starts
-sleep 30
-echo "Starting ..."
-
 # Configure db.config.json
 sed -i "s|\"SimulatedMode\": true|\"SimulatedMode\": false|g" /configs/db.config.json
 sed -i "s|\"DatabaseUrl\": \"http://localhost:80\"|\"DatabaseUrl\": \"${MIDDLEWARE_SERVER_IP}\"|g" /configs/db.config.json

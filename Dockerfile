@@ -27,6 +27,8 @@ RUN mkdir -p /src/Server.Dme/out/plugins
 
 RUN find /src/docker/medius_plugins -name "*" -exec cp {} /src/Server.Medius/out/plugins/ \;
 RUN find /src/docker/dme_plugins -name "*" -exec cp {} /src/Server.Dme/out/plugins/ \;
+RUN find /src/docker/dme_plugins -name "*" -exec cp {} /src/Server.Dme/out/ \;
+RUN find /src/docker/dme_plugins -name "*" -exec cp {} /src/Server.Medius/out/ \;
 
 RUN find /src/docker/patch -name "*.bin" -exec cp {} /src/Server.Medius/out/plugins/bin/patch \;
 RUN find /src/docker/patch -maxdepth 1 -name "*.bin" -exec cp {} /src/Server.Medius/out/plugins/bin \;
