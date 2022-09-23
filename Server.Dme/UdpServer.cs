@@ -81,7 +81,7 @@ namespace Server.Dme
             _workerGroup = new MultithreadEventLoopGroup();
             _scertHandler = new ScertDatagramHandler();
 
-            // 
+            //
             _scertHandler.OnChannelActive = channel =>
             {
                 // get scert client
@@ -153,7 +153,7 @@ namespace Server.Dme
         {
             var message = packet.Message;
 
-            // 
+            //
             switch (message)
             {
                 case RT_MSG_CLIENT_CONNECT_AUX_UDP connectAuxUdp:
@@ -162,13 +162,13 @@ namespace Server.Dme
                         if (clientObject != ClientObject && ClientObject.DmeId != connectAuxUdp.PlayerId)
                             break;
 
-                        // 
+                        //
                         AuthenticatedEndPoint = packet.Source;
 
                         ClientObject.RemoteUdpEndpoint = AuthenticatedEndPoint as IPEndPoint;
                         ClientObject.OnUdpConnected();
 
-                        // 
+                        //
                         var msg = new RT_MSG_SERVER_CONNECT_ACCEPT_AUX_UDP()
                         {
                             PlayerId = (ushort)ClientObject.DmeId,
@@ -228,7 +228,7 @@ namespace Server.Dme
                 case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
-                        
+
                         break;
                     }
                 default:
@@ -329,7 +329,7 @@ namespace Server.Dme
             if (_boundChannel == null || !_boundChannel.Active)
                 return;
 
-            // 
+            //
             List<ScertDatagramPacket> responses = new List<ScertDatagramPacket>();
 
             try
