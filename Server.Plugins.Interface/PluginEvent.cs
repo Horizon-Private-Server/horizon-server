@@ -34,5 +34,6 @@ namespace Server.Plugins.Interface
         DME_PLAYER_ON_LEFT,
 
         DME_GAME_ON_RECV_UDP,
+        DME_GAME_ON_RECV_TCP,
     }
 }

@@ -18,6 +18,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DotNetty.Handlers.Timeout;
 using Server.Dme.PluginArgs;
+using Server.Plugins.Interface;
 
 namespace Server.Dme
 {
@@ -89,13 +90,23 @@ namespace Server.Dme
             };
 
             // Queue all incoming messages
-            _scertHandler.OnChannelMessage += (channel, message) =>
+            _scertHandler.OnChannelMessage += async (channel, message) =>
             {
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
                     if (!data.Ignore && (data.ClientObject == null || !data.ClientObject.IsDestroyed))
                     {
+
+                        var pluginArgs = new OnTcpMsg()
+                        {
+                            Player = data.ClientObject,
+                            Packet = message
+                        };
+
+                        // Plugin
+                        await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_TCP, pluginArgs);
+
                         data.RecvQueue.Enqueue(message);
 
                         if (message is RT_MSG_SERVER_ECHO serverEcho)
