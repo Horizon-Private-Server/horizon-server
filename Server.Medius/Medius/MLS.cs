@@ -2755,7 +2755,15 @@ namespace Server.Medius
                         if (!data.ClientObject.IsLoggedIn)
                             throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {worldReport0} without a being logged in.");
 
+
+                        Game currentGame = data.ClientObject.CurrentGame;
+                        if (currentGame != null)
+                        {
+                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_WORLD_REPORT0, new OnWorldReport0Args() { Request = worldReport0 });
+                        }
+
                         data.ClientObject.CurrentGame?.OnWorldReport(worldReport0);
+
 
                         break;
                     }

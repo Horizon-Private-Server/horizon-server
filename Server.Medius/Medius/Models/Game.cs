@@ -243,7 +243,7 @@ namespace Server.Medius.Models
             if (Clients.Any(x => x.Client == client))
                 return;
 
-            // 
+            //
             Logger.Info($"Game {Id}:{GameName}: {client} added.");
 
             Clients.Add(new GameClient()
@@ -258,10 +258,10 @@ namespace Server.Medius.Models
 
         protected virtual async Task OnPlayerLeft(GameClient player)
         {
-            // 
+            //
             Logger.Info($"Game {Id}:{GameName}: {player.Client} left.");
 
-            // 
+            //
             player.InGame = false;
 
             // Update player object
@@ -274,7 +274,7 @@ namespace Server.Medius.Models
 
         public virtual async Task RemovePlayer(ClientObject client)
         {
-            // 
+            //
             Logger.Info($"Game {Id}:{GameName}: {client} removed.");
 
             // Remove host
@@ -388,7 +388,7 @@ namespace Server.Medius.Models
             // destroy flag
             destroyed = true;
 
-            // 
+            //
             Logger.Info($"Game {Id}:{GameName}: EndGame() called.");
 
             // Send to plugins
