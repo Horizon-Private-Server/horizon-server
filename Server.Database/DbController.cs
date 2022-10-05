@@ -89,6 +89,31 @@ namespace Server.Database
 
         #region Account
 
+        public async Task<string> GetPlayerList()
+        {
+            string results = null;
+
+            try
+            {
+                if (_settings.SimulatedMode) // Deprecated
+                {
+                    return "[]";
+                }
+                else
+                {
+                    HttpResponseMessage Resp = await GetDbAsync($"Account/getOnlineAccounts");
+                    results = await Resp.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return results;
+        }
+
+
         /// <summary>
         /// Get account by name.
         /// </summary>
@@ -1882,6 +1907,35 @@ namespace Server.Database
         #endregion
 
         #region Game
+
+
+        public async Task<string> GetGameList()
+        {
+            string results = null;
+
+            HttpResponseMessage Resp = null;
+            try
+            {
+                if (_settings.SimulatedMode) // Deprecated
+                {
+                    return "[]";
+                }
+                else
+                {
+                    Resp = await GetDbAsync($"api/Game/list");
+                    results = await Resp.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return results;
+        }
+
+
+
 
         /// <summary>
         /// 
