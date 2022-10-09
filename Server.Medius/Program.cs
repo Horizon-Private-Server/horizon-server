@@ -102,12 +102,13 @@ namespace Server.Medius
 
                 // Attempt to authenticate with the db middleware
                 // We do this every 24 hours to get a fresh new token
-                if ((_lastSuccessfulDbAuth == null || (Utils.GetHighPrecisionUtcTime() - _lastSuccessfulDbAuth.Value).TotalHours > 24))
+                if (!await Database.AmIAuthenticated() || (_lastSuccessfulDbAuth == null || (Utils.GetHighPrecisionUtcTime() - _lastSuccessfulDbAuth.Value).TotalHours > 24))
                 {
                     if (!await Database.Authenticate())
                     {
                         // Log and exit when unable to authenticate
                         Logger.Error("Unable to authenticate with the db middleware server");
+                        await Task.Delay(1000); // delay loop to give time before next authentication request
                         return;
                     }
                     else

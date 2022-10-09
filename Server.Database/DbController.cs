@@ -57,6 +57,7 @@ namespace Server.Database
                 return true;
 
             //
+            ClearAuthToken();
             var response = await Authenticate(_settings.DatabaseUsername, _settings.DatabasePassword);
 
             // Validate
@@ -77,6 +78,11 @@ namespace Server.Database
                 return true;
 
             return !String.IsNullOrEmpty(_dbAccessToken);
+        }
+
+        public void ClearAuthToken()
+        {
+            _dbAccessToken = null;
         }
 
         public string GetUsername()
@@ -2338,6 +2344,12 @@ namespace Server.Database
                     {
                         result = await client.DeleteAsync($"{_settings.DatabaseUrl}/{route}");
                     }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = null;
+                    }
                     catch (Exception e)
                     {
                         Logger.Error(e);
@@ -2372,6 +2384,12 @@ namespace Server.Database
                     try
                     {
                         result = await client.GetAsync($"{_settings.DatabaseUrl}/{route}");
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = null;
                     }
                     catch (Exception e)
                     {
@@ -2412,6 +2430,12 @@ namespace Server.Database
                         if (response.IsSuccessStatusCode)
                             result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
                     }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = default(T);
+                    }
                     catch (Exception e)
                     {
                         Logger.Error(e);
@@ -2447,6 +2471,12 @@ namespace Server.Database
                     {
                         result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", String.IsNullOrEmpty(body) ? null : new StringContent(body, Encoding.UTF8, "application/json"));
                     }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = null;
+                    }
                     catch (Exception e)
                     {
                         Logger.Error(e);
@@ -2481,6 +2511,12 @@ namespace Server.Database
                     try
                     {
                         result = await client.PostAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = null;
                     }
                     catch (Exception e)
                     {
@@ -2521,6 +2557,12 @@ namespace Server.Database
                         if (response.IsSuccessStatusCode)
                             result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
                     }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = default(T);
+                    }
                     catch (Exception e)
                     {
                         Logger.Error(e);
@@ -2556,6 +2598,12 @@ namespace Server.Database
                     {
                         result = await client.PutAsync($"{_settings.DatabaseUrl}/{route}", String.IsNullOrEmpty(body) ? null : new StringContent(body, Encoding.UTF8, "application/json"));
                     }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = null;
+                    }
                     catch (Exception e)
                     {
                         Logger.Error(e);
@@ -2590,6 +2638,12 @@ namespace Server.Database
                     try
                     {
                         result = await client.PutAsync($"{_settings.DatabaseUrl}/{route}", new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = null;
                     }
                     catch (Exception e)
                     {
@@ -2629,6 +2683,12 @@ namespace Server.Database
                         // Deserialize on success
                         if (response.IsSuccessStatusCode)
                             result = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        Logger.Error(e);
+                        ClearAuthToken();
+                        result = default(T);
                     }
                     catch (Exception e)
                     {
