@@ -120,7 +120,7 @@ namespace Server.Dme
             // Add client on connect
             _scertHandler.OnChannelActive += (channel) =>
             {
-
+                Logger.Info($"Connected to MPS...");
             };
 
             // Remove client on disconnect
@@ -180,7 +180,7 @@ namespace Server.Dme
                 return;
 
             //
-            if (_mpsState == MPSConnectionState.FAILED || 
+            if (_mpsState == MPSConnectionState.FAILED ||
                 (_mpsState != MPSConnectionState.AUTHENTICATED && (Utils.GetHighPrecisionUtcTime() - _utcConnectionState).TotalSeconds > 30))
                 throw new Exception("Failed to authenticate with the MPS server.");
 
@@ -410,9 +410,20 @@ namespace Server.Dme
                             throw new Exception($"Unexpected MediusServerSetAttributesResponse from server. {setAttributesResponse}");
 
                         if (setAttributesResponse.Confirmation == MGCL_ERROR_CODE.MGCL_SUCCESS)
+                        {
                             _mpsState = MPSConnectionState.AUTHENTICATED;
+                            Logger.Info($"Successfully authenticated with MPS.");
+                        }
                         else
+                        {
                             _mpsState = MPSConnectionState.FAILED;
+                            TimeLostConnection = DateTime.UtcNow;
+                            if (_mpsChannel != null)
+                                _mpsChannel.CloseAsync().ContinueWith((t) => Stop());
+                            else
+                                _ = Stop();
+                            Logger.Info($"Failed to authenticate with MPS.");
+                        }
                         break;
                     }
 

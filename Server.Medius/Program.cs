@@ -114,6 +114,7 @@ namespace Server.Medius
                     else
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
+                        Logger.Info("Successfully authenticated with the db middleware server");
 
                         // pass to manager
                         await Manager.OnDatabaseAuthenticated();

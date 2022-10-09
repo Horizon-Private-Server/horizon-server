@@ -107,6 +107,7 @@ namespace Server.Dme
                     else
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
+                        Logger.Info("Successfully authenticated with the db middleware server");
 
                         // refresh app settings
                         await RefreshAppSettings();
