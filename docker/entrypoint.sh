@@ -1,7 +1,4 @@
 #! /bin/sh
-echo "Sleeping before starting ..."
-# This is so that the DB can start in time before server starts
-sleep 30
 echo "Starting ..."
 
 # Configure db.config.json
