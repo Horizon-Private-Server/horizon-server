@@ -338,6 +338,8 @@ namespace Server.Medius
 
                 // get supported app ids
                 var appIdGroups = await Database.GetAppIds();
+                if (appIdGroups == null)
+                    return;
 
                 // get settings
                 foreach (var appIdGroup in appIdGroups)

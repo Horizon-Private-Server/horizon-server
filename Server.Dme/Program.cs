@@ -101,7 +101,13 @@ namespace Server.Dme
                     {
                         // Log and exit when unable to authenticate
                         Logger.Error("Unable to authenticate with the db middleware server");
-                        await Task.Delay(1000); // delay loop to give time before next authentication request
+
+                        // disconnect from MPS
+                        foreach (var manager in Managers)
+                            if (manager.Value != null && manager.Value.IsConnected)
+                                await manager.Value.Stop();
+
+                        await Task.Delay(5000); // delay loop to give time before next authentication request
                         return;
                     }
                     else
@@ -111,6 +117,11 @@ namespace Server.Dme
 
                         // refresh app settings
                         await RefreshAppSettings();
+
+                        // reconnect to MPS
+                        foreach (var manager in Managers)
+                            if (manager.Value != null && !manager.Value.IsConnected)
+                                await manager.Value.Start();
                     }
                 }
 
@@ -201,9 +212,9 @@ namespace Server.Dme
             foreach (var applicationId in Settings.ApplicationIds)
             {
                 var manager = new MediusManager(applicationId);
-                Logger.Info($"Starting MPS for appid {applicationId}.");
-                await manager.Start();
-                Logger.Info($"MPS started.");
+                //Logger.Info($"Starting MPS for appid {applicationId}.");
+                //await manager.Start();
+                //Logger.Info($"MPS started.");
                 Managers.Add(applicationId, manager);
             }
 
@@ -359,6 +370,8 @@ namespace Server.Dme
 
                 // get supported app ids
                 var appIdGroups = await Database.GetAppIds();
+                if (appIdGroups == null)
+                    return;
 
                 // get settings
                 foreach (var appIdGroup in appIdGroups)

@@ -165,6 +165,7 @@ namespace Server.Dme
         public async Task Stop()
         {
             await Task.WhenAll(_worlds.Select(x => x.Stop()));
+            await _mpsChannel.DisconnectAsync();
             await _group.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
 
             // 
@@ -172,6 +173,7 @@ namespace Server.Dme
             _removeWorldQueue.Clear();
             _mpsRecvQueue.Clear();
             _mpsSendQueue.Clear();
+            _mpsState = MPSConnectionState.NO_CONNECTION;
         }
         
         public async Task HandleIncomingMessages()
