@@ -211,6 +211,8 @@ namespace Server.Medius.Models
             {
                 UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
                 UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
+                // Simulate the echo reply to be 1 second before the sent so that the disconnect condition occurs
+                UtcLastServerEchoReply = UtcLastServerEchoReply.Subtract(new TimeSpan(0,0,1));
             }
         }
 
