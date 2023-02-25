@@ -55,7 +55,7 @@ Start the database and middleware containers like normal.
 
 Build the patch by running `horizon-uya-patch/build.sh`. This will build the patch, and copy the binaries into the `horizon-server/docker/patch/` folder.
 
-Build the plugin by running `horizon-uya-patch/build.sh`. This will compile it and copy the binaries into `horizon-server/docker/medius_plugins` and `horizon-server/docker/dme_plugins`.
+Build the plugin by running `horizon-uya-plugin/build.sh`. This will compile it and copy the binaries into `horizon-server/docker/medius_plugins` and `horizon-server/docker/dme_plugins`.
 
 Now that the patch and plugins are in place, you can run the `horizon-server` container.
 
