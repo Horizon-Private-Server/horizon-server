@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -40,6 +40,19 @@ namespace RT.Models
             writer.Write(SessionKey, Constants.SESSIONKEY_MAXLEN);
         }
 
+
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusGetLocationsResponse()
+            {
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusNoResult,
+                EndOfList = true
+            };
+        }
 
         public override string ToString()
         {

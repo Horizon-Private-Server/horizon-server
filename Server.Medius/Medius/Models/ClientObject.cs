@@ -134,7 +134,7 @@ namespace Server.Medius.Models
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
         public virtual bool Timedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
-        public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !Timedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
+        public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
         public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).KeepAliveGracePeriodSeconds;
 
@@ -173,7 +173,10 @@ namespace Server.Medius.Models
         /// </summary>
         private DateTime _lastServerEchoValue = DateTime.UnixEpoch;
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        private DateTime? _lastForceDisconnect = null;
 
         public ClientObject()
         {
@@ -184,6 +187,9 @@ namespace Server.Medius.Models
             byte[] tokenBuf = new byte[12];
             RNG.NextBytes(tokenBuf);
             Token = Convert.ToBase64String(tokenBuf);
+
+            // default last echo to creation of client object
+            UtcLastServerEchoReply = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
         }
 
         public void QueueServerEcho()
@@ -210,8 +216,9 @@ namespace Server.Medius.Models
             if (MediusVersion <= 108)
             {
                 UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
-                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
             }
+
+            UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
         }
 
         #region Connection / Disconnection
@@ -230,6 +237,17 @@ namespace Server.Medius.Models
         public void OnDisconnected()
         {
             _hasSocket = false;
+        }
+
+        public void ForceDisconnect()
+        {
+            var now = Utils.GetHighPrecisionUtcTime();
+            if ((now - _lastForceDisconnect)?.TotalSeconds < 5)
+                return;
+
+            Logger.Warn($"Force disconnecting client {this}");
+            Queue(new RT_MSG_CLIENT_DISCONNECT_WITH_REASON() { Reason = 0 });
+            _lastForceDisconnect = now;
         }
 
         #endregion

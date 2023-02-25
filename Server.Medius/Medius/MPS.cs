@@ -236,6 +236,9 @@ namespace Server.Medius
                         }
                         else
                         {
+                            // Send to plugins
+                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_GAME_ON_PLAYER_JOIN_RESPONSE, new OnPlayerGameArgs() { Player = rClient, Game = game });
+
                             // Join game
                             await rClient?.JoinGame(game, joinGameResponse.DmeClientIndex);
 

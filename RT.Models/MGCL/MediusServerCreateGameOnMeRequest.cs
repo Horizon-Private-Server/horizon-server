@@ -101,6 +101,18 @@ namespace RT.Models
         }
 
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusServerCreateGameOnMeResponse()
+            {
+                MessageID = request.MessageID,
+                Confirmation = MGCL_ERROR_CODE.MGCL_UNSUCCESSFUL
+            };
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +

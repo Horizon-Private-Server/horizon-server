@@ -586,16 +586,17 @@ namespace Server.Medius
                 {
                     if (!clientKeyPair.Value.IsConnected)
                     {
-                        if (clientKeyPair.Value.Timedout)
-                            Logger.Warn($"Timing out client {clientKeyPair.Value}");
-                        else
-                            Logger.Info($"Destroying Client {clientKeyPair.Value}");
+                        Logger.Info($"Destroying Client {clientKeyPair.Value}");
 
                         // Logout and end session
                         await clientKeyPair.Value.Logout();
                         clientKeyPair.Value.EndSession();
 
                         clientsToRemove.Enqueue((quickLookup.Key, clientKeyPair.Key));
+                    }
+                    else if (clientKeyPair.Value.Timedout)
+                    {
+                        clientKeyPair.Value.ForceDisconnect();
                     }
                 }
             }

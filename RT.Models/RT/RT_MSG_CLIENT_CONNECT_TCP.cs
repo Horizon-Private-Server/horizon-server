@@ -54,7 +54,10 @@ namespace RT.Models
                 $"TargetWorldId:{TargetWorldId:X8} " +
                 $"UNK0:{UNK0:X2} " +
                 $"AppId:{AppId:X8} " +
-                $"Key:{Key}";
+                $"Key:{Key}" +
+                $"SessionKey:{SessionKey}" +
+                $"AccessToken:{AccessToken}"
+                ;
         }
     }
 }

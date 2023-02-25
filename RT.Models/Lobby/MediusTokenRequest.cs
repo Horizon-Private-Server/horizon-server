@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -34,7 +34,7 @@ namespace RT.Models
             EntityID = reader.ReadUInt32();
             TokenToReplace = reader.ReadBytes(Constants.MEDIUS_TOKEN_MAXSIZE);
             Token = reader.ReadBytes(Constants.MEDIUS_TOKEN_MAXSIZE);
-            reader.ReadBytes(3); // padding
+            //reader.ReadBytes(3); // padding
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -50,9 +50,24 @@ namespace RT.Models
             writer.Write(EntityID);
             writer.Write(TokenToReplace, Constants.MEDIUS_TOKEN_MAXSIZE);
             writer.Write(Token, Constants.MEDIUS_TOKEN_MAXSIZE);
-            writer.Write(new byte[3]);
+            //writer.Write(new byte[3]);
         }
 
+
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            var r = request as BaseMediusMessage;
+            if (r == null)
+                return null;
+
+            return new MediusStatusResponse()
+            {
+                Class = r.PacketClass,
+                Type = r.PacketType,
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusSuccess
+            };
+        }
 
         public override string ToString()
         {

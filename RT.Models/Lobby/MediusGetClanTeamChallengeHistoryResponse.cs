@@ -18,7 +18,7 @@ namespace RT.Models
         public MediusCallbackStatus StatusCode;
         public int AgainstClanID;
         public MediusClanChallengeStatus Status;
-        public char EndOfList;
+        public bool EndOfList;
 
         public override void Deserialize(Server.Common.Stream.MessageReader reader)
         {
@@ -31,7 +31,8 @@ namespace RT.Models
             StatusCode = reader.Read<MediusCallbackStatus>();
             AgainstClanID = reader.ReadInt32();
             Status = reader.Read<MediusClanChallengeStatus>();
-            EndOfList = reader.ReadChar();
+            EndOfList = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -46,6 +47,7 @@ namespace RT.Models
             writer.Write(AgainstClanID);
             writer.Write(Status);
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
         }
 
 

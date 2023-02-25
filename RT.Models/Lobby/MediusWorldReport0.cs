@@ -8,11 +8,9 @@ using System.Text;
 namespace RT.Models
 {
     [MediusMessage(NetMessageTypes.MessageClassLobby, MediusLobbyMessageIds.WorldReport0)]
-    public class MediusWorldReport0 : BaseLobbyMessage, IMediusRequest
+    public class MediusWorldReport0 : BaseLobbyMessage
     {
         public override byte PacketType => (byte)MediusLobbyMessageIds.WorldReport0;
-
-        MessageId IMediusRequest.MessageID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public string SessionKey;
         public int MediusWorldID;

@@ -348,7 +348,7 @@ namespace Server.Dme
                             throw new Exception($"Duplicate scert client id");
 
                         // start udp server
-                        data.ClientObject.BeginUdp();
+                        await data.ClientObject.BeginUdp();
 
 
                         if (scertClient.IsPS3Client)
@@ -553,13 +553,19 @@ namespace Server.Dme
             try
             {
                 // send force disconnect message
-                await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
+                //await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
+                //{
+                //    Reason = SERVER_FORCE_DISCONNECT_REASON.SERVER_FORCED_DISCONNECT_ERROR
+                //});
+
+                // send force disconnect message
+                await channel.WriteAndFlushAsync(new RT_MSG_CLIENT_DISCONNECT_WITH_REASON()
                 {
-                    Reason = SERVER_FORCE_DISCONNECT_REASON.SERVER_FORCED_DISCONNECT_ERROR
+                    Reason = 0
                 });
 
                 // close channel
-                await channel.CloseAsync();
+                //await channel.CloseAsync();
             }
             catch (Exception e)
             {

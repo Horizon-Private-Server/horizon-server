@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -45,6 +45,10 @@ namespace RT.Models
             writer.Write(Message, Constants.CLANMSG_MAXLEN);
         }
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            throw new NotImplementedException();
+        }
 
         public override string ToString()
         {

@@ -82,6 +82,7 @@ namespace RT.Models
             //    SvoURL = reader.ReadString(Constants.UNIVERSE_SVO_URL_MAXLEN);
 
             EndOfList = reader.ReadBoolean();
+            reader.ReadBytes(3);
         }
 
         public override void Serialize(Server.Common.Stream.MessageWriter writer)
@@ -132,6 +133,7 @@ namespace RT.Models
 
 
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
         }
 
 

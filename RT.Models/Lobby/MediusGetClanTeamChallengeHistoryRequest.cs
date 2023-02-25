@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -51,6 +51,19 @@ namespace RT.Models
             writer.Write(PageSize);
         }
 
+
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusGetClanTeamChallengeHistoryResponse()
+            {
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusNoResult,
+                EndOfList = true
+            };
+        }
 
         public override string ToString()
         {

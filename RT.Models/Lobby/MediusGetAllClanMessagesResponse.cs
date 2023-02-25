@@ -33,6 +33,7 @@ namespace RT.Models
             ClanMessageID = reader.ReadInt32();
             Message = reader.ReadString(Constants.CLANMSG_MAXLEN);
             Status = reader.Read<MediusClanMessageStatus>();
+            reader.ReadBytes(3);
             EndOfList = reader.ReadBoolean();
         }
 
@@ -49,6 +50,7 @@ namespace RT.Models
             writer.Write(Message, Constants.CLANMSG_MAXLEN);
             writer.Write(Status);
             writer.Write(EndOfList);
+            writer.Write(new byte[3]);
         }
 
 

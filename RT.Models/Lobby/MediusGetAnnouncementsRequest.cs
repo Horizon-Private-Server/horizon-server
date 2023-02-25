@@ -1,4 +1,4 @@
-﻿using RT.Common;
+using RT.Common;
 using Server.Common;
 using System;
 using System.Collections.Generic;
@@ -45,6 +45,18 @@ namespace RT.Models
             writer.Write(ApplicationID);
         }
 
+
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusGetAnnouncementsResponse()
+            {
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusFail
+            };
+        }
 
         public override string ToString()
         {

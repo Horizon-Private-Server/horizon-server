@@ -49,6 +49,18 @@ namespace RT.Models
         }
 
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusLadderPosition_ExtraInfoResponse()
+            {
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusNoResult
+            };
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +

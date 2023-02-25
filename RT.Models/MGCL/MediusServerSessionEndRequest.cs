@@ -32,6 +32,11 @@ namespace RT.Models
             writer.Write(MessageID ?? MessageId.Empty);
         }
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +

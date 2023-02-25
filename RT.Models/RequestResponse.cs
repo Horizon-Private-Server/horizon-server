@@ -7,6 +7,8 @@ namespace RT.Models
     public interface IMediusRequest
     {
         MessageId MessageID { get; set; }
+
+        IMediusResponse GetDefaultFailedResponse(IMediusRequest request);
     }
 
     public interface IMediusResponse

@@ -93,7 +93,7 @@ namespace Server.Medius.Config
         /// <summary>
         /// Time since last echo before timing the client out.
         /// </summary>
-        public int ClientTimeoutSeconds { get; private set; } = 25;
+        public int ClientTimeoutSeconds { get; private set; } = 30;
 
         /// <summary>
         /// Time since game created and host never connected to close the game world.

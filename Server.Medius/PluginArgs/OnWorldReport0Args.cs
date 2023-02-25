@@ -11,7 +11,7 @@ namespace Server.Medius.PluginArgs
         /// <summary>
         /// Player.
         /// </summary>
-        public IMediusRequest Request { get; set; }
+        public BaseMediusMessage Request { get; set; }
 
     }
 }

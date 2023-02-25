@@ -130,9 +130,9 @@ namespace Server.Dme
                     // handle incoming
                     {
                         var tasks = new List<Task>()
-                    {
-                        TcpServer.HandleIncomingMessages()
-                    };
+                        {
+                            TcpServer.HandleIncomingMessages()
+                        };
 
                         foreach (var manager in Managers)
                         {

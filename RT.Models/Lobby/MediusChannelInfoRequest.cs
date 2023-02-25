@@ -47,6 +47,18 @@ namespace RT.Models
         }
 
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusChannelInfoResponse()
+            {
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusNoResult
+            };
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +

@@ -28,6 +28,7 @@ namespace Server.Plugins.Interface
         MEDIUS_GAME_ON_STARTED,
         MEDIUS_GAME_ON_ENDED,
         MEDIUS_GAME_ON_HOST_LEFT,
+        MEDIUS_GAME_ON_PLAYER_JOIN_RESPONSE,
 
         MEDIUS_PLAYER_POST_WIDE_STATS,
 

@@ -28,6 +28,7 @@ namespace Server.Medius
     public abstract class BaseMediusComponent : IMediusComponent
     {
         public static Random RNG = new Random();
+        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(5000);
 
         public enum ClientState
         {
@@ -104,7 +105,7 @@ namespace Server.Medius
                 OnConnected(channel);
 
                 // Check if IP is banned
-                Program.Database.GetIsIpBanned((channel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString()).ContinueWith((r) =>
+                Program.Database.GetIsIpBanned((channel.RemoteAddress as IPEndPoint).Address.MapToIPv4().ToString()).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
                 {
                     data.IsBanned = r.IsCompletedSuccessfully && r.Result;
                     if (data.IsBanned == true)
@@ -114,7 +115,7 @@ namespace Server.Medius
                     else
                     {
                         // Check if in maintenance mode
-                        Program.Database.GetServerFlags().ContinueWith((r) =>
+                        Program.Database.GetServerFlags().TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
                         {
                             if (r.IsCompletedSuccessfully && r.Result != null && r.Result.MaintenanceMode != null)
                             {
@@ -307,7 +308,7 @@ namespace Server.Medius
                             Logger.Error(e);
                             Logger.Error($"FORCE DISCONNECTING CLIENT 1 {data} || {data.ClientObject}");
                             _ = ForceDisconnectClient(clientChannel);
-                            data.Ignore = true;
+                            //data.Ignore = true;
                         }
                     }
 
@@ -379,13 +380,19 @@ namespace Server.Medius
             try
             {
                 // send force disconnect message
-                await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
+                //await channel.WriteAndFlushAsync(new RT_MSG_SERVER_FORCED_DISCONNECT()
+                //{
+                //    Reason = SERVER_FORCE_DISCONNECT_REASON.SERVER_FORCED_DISCONNECT_ERROR
+                //});
+
+                // send force disconnect message
+                await channel.WriteAndFlushAsync(new RT_MSG_CLIENT_DISCONNECT_WITH_REASON()
                 {
-                    Reason = SERVER_FORCE_DISCONNECT_REASON.SERVER_FORCED_DISCONNECT_ERROR
+                    Reason = 0
                 });
 
                 // close channel
-                await channel.CloseAsync();
+                //await channel.CloseAsync();
             }
             catch (Exception e)
             {

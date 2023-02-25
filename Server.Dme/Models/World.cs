@@ -150,6 +150,10 @@ namespace Server.Dme.Models
                         _ = client.Stop();
                         Clients.TryRemove(i, out _);
                     }
+                    else if (client.Timedout)
+                    {
+                        client.ForceDisconnect();
+                    }
                     else if (client.IsAggTime)
                     {
                         client.HandleOutgoingMessages();
@@ -388,6 +392,7 @@ namespace Server.Dme.Models
             }
 
             // Add client to manager
+            //newClient.BeginUdp();
             Manager.AddClient(newClient);
 
             return new MediusServerJoinGameResponse()

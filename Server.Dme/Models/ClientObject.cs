@@ -135,8 +135,8 @@ namespace Server.Dme.Models
         long? LastAggTime { get; set; } = null;
 
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
-        public virtual bool IsConnected => !Disconnected && !Timedout && Tcp != null && Tcp.Active;
+        public virtual bool Timedout => !IsConnectingGracePeriod && UtcLastServerEchoReply < UtcLastServerEchoSent && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
+        public virtual bool IsConnected => !Disconnected && Tcp != null && Tcp.Active;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
         public virtual bool IsDestroyed { get; protected set; } = false;
@@ -146,6 +146,7 @@ namespace Server.Dme.Models
 
 
         private DateTime _lastServerEchoValue = DateTime.UnixEpoch;
+        private DateTime? _lastForceDisconnect = null;
 
         public ClientObject(string sessionKey, World dmeWorld, int dmeId)
         {
@@ -161,15 +162,18 @@ namespace Server.Dme.Models
             byte[] tokenBuf = new byte[12];
             RNG.NextBytes(tokenBuf);
             Token = Convert.ToBase64String(tokenBuf);
+
+            // default last echo to creation of client object
+            UtcLastServerEchoReply = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
         }
 
-        public void BeginUdp()
+        public Task BeginUdp()
         {
             if (Udp != null)
-                return;
+                return Task.CompletedTask;
 
             Udp = new UdpServer(this);
-            _ = Udp.Start();
+            return Udp.Start();
         }
 
         public void QueueServerEcho()
@@ -195,9 +199,10 @@ namespace Server.Dme.Models
             // so instead we'll increment our timeout dates by the client echo
             if (MediusVersion <= 108)
             {
-                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
                 UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
             }
+
+            UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
         }
 
         public Task HandleIncomingMessages()
@@ -220,6 +225,10 @@ namespace Server.Dme.Models
             //    LastAggTime += AggTimeMs * ((Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) / AggTimeMs);
             //else
             LastAggTime = Utils.GetMillisecondsSinceStartup();
+
+            // Echo
+            if (MediusVersion > 108 && (Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoSent).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ServerEchoIntervalSeconds)
+                QueueServerEcho();
 
             // tcp
             if (Tcp != null)
@@ -285,6 +294,18 @@ namespace Server.Dme.Models
             TimeAuthenticated = Utils.GetHighPrecisionUtcTime();
         }
 
+        public void ForceDisconnect()
+        {
+            var now = Utils.GetHighPrecisionUtcTime();
+            if ((now - _lastForceDisconnect)?.TotalSeconds < 5)
+                return;
+
+            Logger.Warn($"Force disconnecting client {this}");
+            TcpSendMessageQueue.Enqueue(new RT_MSG_CLIENT_DISCONNECT_WITH_REASON() { Reason = 0 });
+            _lastForceDisconnect = now;
+        }
+
+
         #endregion
 
         #region Send Queue
@@ -335,7 +356,7 @@ namespace Server.Dme.Models
 
         public bool HasRecvFlag(RT_RECV_FLAG flag)
         {
-            return RecvFlag.HasFlag(flag);
+            return true; // RecvFlag.HasFlag(flag);
         }
 
         public override string ToString()

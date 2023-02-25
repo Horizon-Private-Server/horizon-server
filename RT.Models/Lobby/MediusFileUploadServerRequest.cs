@@ -53,6 +53,11 @@ namespace RT.Models
         }
 
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +

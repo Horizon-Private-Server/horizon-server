@@ -43,6 +43,19 @@ namespace RT.Models
         }
 
 
+        public IMediusResponse GetDefaultFailedResponse(IMediusRequest request)
+        {
+            if (request == null)
+                return null;
+
+            return new MediusGetGameListFilterResponse()
+            {
+                MessageID = request.MessageID,
+                StatusCode = MediusCallbackStatus.MediusNoResult,
+                EndOfList = true
+            };
+        }
+
         public override string ToString()
         {
             return base.ToString() + " " +
