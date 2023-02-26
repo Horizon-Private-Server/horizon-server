@@ -134,7 +134,8 @@ namespace Server.Medius.Models
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
         public virtual bool Timedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
-        public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession);  //(KeepAlive || _hasActiveSession) && !Timedout;
+        public virtual bool LongTimedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
+        public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !LongTimedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
         public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).KeepAliveGracePeriodSeconds;
 
