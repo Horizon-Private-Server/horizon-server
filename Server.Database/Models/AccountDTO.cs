@@ -71,6 +71,11 @@ namespace Server.Database.Models
         /// 
         /// </summary>
         public string Metadata { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool ResetPasswordOnNextLogin { get; set; }
     }
 
     public class CreateAccountDTO
@@ -150,6 +155,14 @@ namespace Server.Database.Models
         /// If set, which world the user is in.
         /// </summary>
         public int? WorldId { get; set; }
+    }
+
+    public class AccountPasswordRequest
+    {
+        public int AccountId { get; set; }
+        public string OldPassword { get; set; }
+        public string NewPassword { get; set; }
+        public string ConfirmNewPassword { get; set; }
     }
 
 }

@@ -230,6 +230,55 @@ namespace Server.Database
         }
 
         /// <summary>
+        /// Changes the given accounts password.
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <param name="oldPassword"></param>
+        /// <param name="newPassword"></param>
+        /// <returns></returns>
+        public async Task<bool> ChangeAccountPassword(int accountId, string oldPassword, string newPassword)
+        {
+            bool result = false;
+            AccountPasswordRequest request = new AccountPasswordRequest()
+            {
+                AccountId = accountId,
+                OldPassword = oldPassword,
+                NewPassword = newPassword,
+                ConfirmNewPassword = newPassword
+            };
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var checkExisting = await GetAccountById(accountId);
+                    if (checkExisting != null)
+                    {
+                        checkExisting.AccountPassword = Utils.ComputeSHA256(newPassword);
+                    }
+                    else
+                    {
+                        throw new Exception($"Account creation failed account name already exists!");
+                    }
+                }
+                else
+                {
+                    var response = await PostDbAsync($"Account/changeAccountPassword", JsonConvert.SerializeObject(request));
+
+                    // Deserialize on success
+                    if (response.IsSuccessStatusCode)
+                        result = true;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Delete account by name.
         /// </summary>
         /// <param name="accountName">Case insensitive name of account.</param>

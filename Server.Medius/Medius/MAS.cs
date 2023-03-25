@@ -578,6 +578,11 @@ namespace Server.Medius
                                                 StatusCode = MediusCallbackStatus.MediusAccountLoggedIn
                                             });
                                         }
+                                        else if (r.Result.ResetPasswordOnNextLogin)
+                                        {
+                                            await Program.Database.ChangeAccountPassword(r.Result.AccountId, null, accountLoginRequest.Password);
+                                            await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
+                                        }
                                         else if (Utils.ComputeSHA256(accountLoginRequest.Password) == r.Result.AccountPassword)
                                         {
                                             await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
@@ -753,12 +758,12 @@ namespace Server.Medius
                                     {
                                         if (r.Result.IsBanned)
                                         {
-                                        // Send ban message
-                                        QueueBanMessage(data);
+                                            // Send ban message
+                                            QueueBanMessage(data);
 
-                                        // Account is banned
-                                        // Temporary solution is to tell the client the login failed
-                                        data?.ClientObject?.Queue(new MediusTicketLoginResponse()
+                                            // Account is banned
+                                            // Temporary solution is to tell the client the login failed
+                                            data?.ClientObject?.Queue(new MediusTicketLoginResponse()
                                             {
                                                 MessageID = ticketLoginRequest.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusAccountBanned
@@ -767,8 +772,8 @@ namespace Server.Medius
                                         }
                                         else if (appSettings.EnableAccountWhitelist && !appSettings.AccountIdWhitelist.Contains(r.Result.AccountId))
                                         {
-                                        // Account not allowed to sign in
-                                        data?.ClientObject?.Queue(new MediusTicketLoginResponse()
+                                            // Account not allowed to sign in
+                                            data?.ClientObject?.Queue(new MediusTicketLoginResponse()
                                             {
                                                 MessageID = ticketLoginRequest.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusFail
@@ -781,12 +786,12 @@ namespace Server.Medius
                                     }
                                     else
                                     {
-                                    // Account not found, create new and login
-                                    // Check that account creation is enabled
-                                    if (appSettings.DisableAccountCreation)
+                                        // Account not found, create new and login
+                                        // Check that account creation is enabled
+                                        if (appSettings.DisableAccountCreation)
                                         {
-                                        // Reply error
-                                        data.ClientObject.Queue(new MediusTicketLoginResponse()
+                                            // Reply error
+                                            data.ClientObject.Queue(new MediusTicketLoginResponse()
                                             {
                                                 MessageID = ticketLoginRequest.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusFail,
@@ -809,8 +814,8 @@ namespace Server.Medius
                                             }
                                             else
                                             {
-                                            // Reply error
-                                            data.ClientObject.Queue(new MediusTicketLoginResponse()
+                                                // Reply error
+                                                data.ClientObject.Queue(new MediusTicketLoginResponse()
                                                 {
                                                     MessageID = ticketLoginRequest.MessageID,
                                                     StatusCode = MediusCallbackStatus.MediusInvalidPassword
