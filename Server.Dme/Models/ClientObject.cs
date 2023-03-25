@@ -136,7 +136,8 @@ namespace Server.Dme.Models
 
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
         public virtual bool Timedout => !IsConnectingGracePeriod && UtcLastServerEchoReply < UtcLastServerEchoSent && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
-        public virtual bool IsConnected => !Disconnected && Tcp != null && Tcp.Active;
+        public virtual bool LongTimedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
+        public virtual bool IsConnected => !Disconnected && Tcp != null && Tcp.Active && !LongTimedout;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
         public virtual bool IsDestroyed { get; protected set; } = false;

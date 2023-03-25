@@ -37,6 +37,11 @@ namespace Server.Dme.Config
         public int ClientTimeoutSeconds { get; private set; } = 25;
 
         /// <summary>
+        /// Time since last echo before timing the client out.
+        /// </summary>
+        public int ClientLongTimeoutSeconds { get; private set; } = 60 * 5;
+
+        /// <summary>
         /// Time since game created and host never connected to close the game world.
         /// </summary>
         public int GameTimeoutSeconds { get; private set; } = 15;
@@ -65,6 +70,9 @@ namespace Server.Dme.Config
             // ClientTimeoutSeconds
             if (settings.TryGetValue("ClientTimeoutSeconds", out value) && int.TryParse(value, out var clientTimeoutSeconds))
                 ClientTimeoutSeconds = clientTimeoutSeconds;
+            // ClientLongTimeoutSeconds
+            if (settings.TryGetValue("ClientLongTimeoutSeconds", out value) && int.TryParse(value, out var clientLongTimeoutSeconds))
+                ClientLongTimeoutSeconds = clientLongTimeoutSeconds;
             // GameTimeoutSeconds
             if (settings.TryGetValue("GameTimeoutSeconds", out value) && int.TryParse(value, out var gameTimeoutSeconds))
                 GameTimeoutSeconds = gameTimeoutSeconds;
@@ -79,6 +87,7 @@ namespace Server.Dme.Config
                 { "ServerEchoIntervalSeconds", ServerEchoIntervalSeconds.ToString() },
                 { "KeepAliveGracePeriodSeconds", KeepAliveGracePeriodSeconds.ToString() },
                 { "ClientTimeoutSeconds", ClientTimeoutSeconds.ToString() },
+                { "ClientLongTimeoutSeconds", ClientLongTimeoutSeconds.ToString() },
                 { "GameTimeoutSeconds", GameTimeoutSeconds.ToString() },
             };
         }
