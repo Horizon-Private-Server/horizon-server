@@ -11,6 +11,7 @@ using Server.Medius.PluginArgs;
 using Server.Plugins;
 using Server.Plugins.Interface;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace Server.Medius
     public class MLS : BaseMediusComponent
     {
         static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<MLS>();
-        static readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(2000);
+        static readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(3000);
 
         protected override IInternalLogger Logger => _logger;
         public override int Port => Program.Settings.MLSPort;
@@ -189,12 +190,32 @@ namespace Server.Medius
             return;
         }
 
+
+        ConcurrentDictionary<Guid, IMediusRequest> _pendingRequests = new ConcurrentDictionary<Guid, IMediusRequest>();
         protected virtual async Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel, ChannelData data)
         {
+            IMediusRequest mediusRequest = message as IMediusRequest;
             if (message == null)
                 return;
-            
+
+            var key = Guid.NewGuid();
             var appSettings = Program.GetAppSettingsOrDefault(data.ApplicationId);
+
+            if (mediusRequest != null)
+            {
+                if (message is MediusGetLadderStatsWideRequest && _pendingRequests.Any())
+                {
+
+                }
+
+                if (_pendingRequests.Any(x => x.Value.MessageID.Value == mediusRequest.MessageID.Value && x.Value.GetType() == mediusRequest.GetType()))
+                {
+                    Logger.Warn($"Skipping {message}");
+                    return;
+                }
+
+                _pendingRequests.TryAdd(key, mediusRequest);
+            }
 
             try
             {
@@ -983,20 +1004,20 @@ namespace Server.Medius
                             {
                                 case MediusLadderType.MediusLadderTypePlayer:
                                     {
-                                        _ = Program.Database.GetAccountById(getLadderStatsWideRequest.AccountID_or_ClanID).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
+                                        _ = Program.Database.GetPlayerWideStats(getLadderStatsWideRequest.AccountID_or_ClanID).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
                                         {
                                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                                 return;
 
                                             if (r.IsCompletedSuccessfully && r.Result != null)
                                             {
-                                                data.ClientObject.WideStats = r.Result.AccountWideStats;
+                                                data.ClientObject.WideStats = r.Result.Stats;
                                                 data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
                                                 {
                                                     MessageID = getLadderStatsWideRequest.MessageID,
                                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                                     AccountID_or_ClanID = r.Result.AccountId,
-                                                    Stats = r.Result.AccountWideStats
+                                                    Stats = r.Result.Stats
                                                 });
                                             }
                                             else
@@ -1004,7 +1025,7 @@ namespace Server.Medius
                                                 data.ClientObject.Queue(new MediusGetLadderStatsWideResponse()
                                                 {
                                                     MessageID = getLadderStatsWideRequest.MessageID,
-                                                    StatusCode = MediusCallbackStatus.MediusDBError
+                                                    StatusCode = MediusCallbackStatus.MediusNoResult
                                                 });
                                             }
                                         });
@@ -1012,7 +1033,7 @@ namespace Server.Medius
                                     }
                                 case MediusLadderType.MediusLadderTypeClan:
                                     {
-                                        _ = Program.Database.GetClanById(getLadderStatsWideRequest.AccountID_or_ClanID).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
+                                        _ = Program.Database.GetClanWideStats(getLadderStatsWideRequest.AccountID_or_ClanID).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
                                         {
                                             if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                                 return;
@@ -1024,7 +1045,7 @@ namespace Server.Medius
                                                     MessageID = getLadderStatsWideRequest.MessageID,
                                                     StatusCode = MediusCallbackStatus.MediusSuccess,
                                                     AccountID_or_ClanID = r.Result.ClanId,
-                                                    Stats = r.Result.ClanWideStats
+                                                    Stats = r.Result.Stats
                                                 });
                                             }
                                             else
@@ -1387,7 +1408,7 @@ namespace Server.Medius
                                     data?.ClientObject?.Queue(new MediusPlayerInfoResponse()
                                     {
                                         MessageID = playerInfoRequest.MessageID,
-                                        StatusCode = MediusCallbackStatus.MediusSuccess
+                                        StatusCode = MediusCallbackStatus.MediusNoResult
                                     });
                                 }
                             });
@@ -3921,11 +3942,17 @@ namespace Server.Medius
                 Logger.Error(ex);
 
                 // send back default response
-                if (message is IMediusRequest request)
+                if (mediusRequest != null)
                 {
-                    SendDefaultFailedResponse(data.ClientObject, request);
+                    SendDefaultFailedResponse(data.ClientObject, mediusRequest);
                 }
             }
+
+            if (mediusRequest != null)
+            {
+                _pendingRequests.Remove(key, out _);
+            }
+
         }
 
         private void SendDefaultFailedResponse(ClientObject client, IMediusRequest request)

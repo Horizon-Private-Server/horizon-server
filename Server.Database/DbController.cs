@@ -828,6 +828,78 @@ namespace Server.Database
         #region Stats
 
         /// <summary>
+        /// Get player wide stats.
+        /// </summary>
+        /// <param name="accountId">Account id of player.</param>
+        /// <returns></returns>
+        public async Task<StatPostDTO> GetPlayerWideStats(int accountId)
+        {
+            StatPostDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var stats = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId)?.AccountWideStats;
+                    if (stats != null)
+                    {
+                        result = new StatPostDTO()
+                        {
+                            AccountId = accountId,
+                            Stats = stats
+                        };
+                    }
+                }
+                else
+                {
+                    result = await GetDbAsync<StatPostDTO>($"Stats/getStats?AccountId={accountId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get player wide stats.
+        /// </summary>
+        /// <param name="accountId">Account id of player.</param>
+        /// <returns></returns>
+        public async Task<ClanStatPostDTO> GetClanWideStats(int clanId)
+        {
+            ClanStatPostDTO result = null;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    var stats = _simulatedClans.FirstOrDefault(x => x.ClanId == clanId)?.ClanWideStats;
+                    if (stats != null)
+                    {
+                        result = new ClanStatPostDTO()
+                        {
+                            ClanId = clanId,
+                            Stats = stats
+                        };
+                    }
+                }
+                else
+                {
+                    result = await GetDbAsync<ClanStatPostDTO>($"Stats/getClanStats?ClanId={clanId}");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Get player ranking in a given leaderboard.
         /// </summary>
         /// <param name="accountId">Account id of player.</param>

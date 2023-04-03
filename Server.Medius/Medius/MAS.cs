@@ -23,7 +23,7 @@ namespace Server.Medius
     public class MAS : BaseMediusComponent
     {
         static readonly IInternalLogger _logger = InternalLoggerFactory.GetInstance<MAS>();
-        static readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(2000);
+        static readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(3000);
 
         protected override IInternalLogger Logger => _logger;
         public override int Port => Program.Settings.MASPort;
