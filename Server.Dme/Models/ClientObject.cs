@@ -356,7 +356,10 @@ namespace Server.Dme.Models
 
         public bool HasRecvFlag(RT_RECV_FLAG flag)
         {
-            return true; // RecvFlag.HasFlag(flag);
+            if (MediusVersion <= 108)
+                return true;
+
+            return RecvFlag.HasFlag(flag);
         }
 
         public override string ToString()
