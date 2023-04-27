@@ -21,16 +21,16 @@ RUN cp /src/docker/medius.json /src/Server.Medius/out/medius.json
 RUN cp /src/docker/muis.json /src/Server.UniverseInformation/out/muis.json
 
 # Copy patch and plugins into right folders
-RUN mkdir -p /src/Server.Medius/out/plugins/bin/patch
+RUN mkdir -p /src/Server.Medius/out/plugins/medius_plugins/bin/patch
 RUN mkdir -p /src/Server.Dme/out/plugins
 
+#/medius/plugins/medius_plugins/bin/patch/patch-10684.bin
 
-RUN find /src/docker/medius_plugins -name "*" -exec cp {} /src/Server.Medius/out/plugins/ \;
-RUN find /src/docker/dme_plugins -name "*" -exec cp {} /src/Server.Dme/out/plugins/ \;
+RUN find /src/docker/medius_plugins -name "*" -exec cp -r {} /src/Server.Medius/out/plugins/ \;
+RUN find /src/docker/dme_plugins -name "*" -exec cp -r {} /src/Server.Dme/out/plugins/ \;
 
-RUN find /src/docker/patch -name "*.bin" -exec cp {} /src/Server.Medius/out/plugins/bin/patch \;
-RUN find /src/docker/patch -maxdepth 1 -name "*.bin" -exec cp {} /src/Server.Medius/out/plugins/bin \;
-
+RUN find /src/docker/patch -name "*.bin" -exec cp {} /src/Server.Medius/out/plugins/medius_plugins/bin/patch \;
+RUN find /src/docker/patch -name "*.bin" -exec cp {} /src/Server.Medius/out/plugins/medius_plugins/bin \;
 
 # RUN mv /src/docker/medius_plugins/ /src/Server.Medius/out
 # RUN mv /src/docker/dme_plugins/ /src/Server.Dme/out
