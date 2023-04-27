@@ -1,4 +1,17 @@
+#!/bin/bash
+
+docker container kill horizon-server
+
+set -e
+
+#cd ../../horizon-uya-patch
+#bash build.sh;
+
+cd ../../horizon-uya-plugin
+bash build.sh;
+
 cd ..
+cd horizon-server
 
 docker build . -t horizon-server
 
@@ -15,8 +28,11 @@ docker run \
   -p 10077:10077 \
   -p 10078:10078 \
   -p 10073:10073 \
+  -p 8281:8281 \
+  -p 8765:8765 \
   -p 50000-50100:50000-50100/udp \
   -p 10070:10070/udp \
   -v "${PWD}/logs":/logs \
+  -v "${PWD}/database":/database \
   --name horizon-server \
   horizon-server
