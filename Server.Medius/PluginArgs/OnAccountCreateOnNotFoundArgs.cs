@@ -14,7 +14,7 @@ namespace Server.Medius.PluginArgs
         public ClientObject Player { get; set; }
 
         /// <summary>
-        /// Create game request.
+        /// AccountLogin request.
         /// </summary>
         public IMediusRequest Request { get; set; }
 
