@@ -623,6 +623,12 @@ namespace Server.Medius
                                             return;
                                         }
 
+                                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PRE_ACCOUNT_CREATE_ON_NOT_FOUND, new OnAccountCreateOnNotFoundArgs()
+                                        {
+                                            Player = data.ClientObject,
+                                            Request = accountLoginRequest
+                                        });
+
                                         _ = Program.Database.CreateAccount(new Database.Models.CreateAccountDTO()
                                         {
                                             AccountName = accountLoginRequest.Username,
@@ -633,7 +639,12 @@ namespace Server.Medius
                                         }).TimeoutAfter(_defaultTimeout).ContinueWith(async (r) =>
                                         {
                                             if (r.IsCompletedSuccessfully && r.Result != null)
-                                            {
+                                            {   
+                                                await Program.Plugins.OnEvent(PluginEvent.MEDIUS_POST_ACCOUNT_CREATE_ON_NOT_FOUND, new OnAccountCreateOnNotFoundArgs()
+                                                {
+                                                    Player = data.ClientObject,
+                                                    Request = accountLoginRequest
+                                                });
                                                 await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
                                             }
                                             else

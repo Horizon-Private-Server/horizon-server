@@ -200,6 +200,24 @@ namespace Server.Common
             }
         }
 
+        public static string ComputeSHA512(string input)
+        {
+            // Convert input string to a byte array
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+
+            // Compute hash value
+            SHA512 sha512 = SHA512.Create();
+            byte[] hashBytes = sha512.ComputeHash(inputBytes);
+
+            // Convert hash bytes to a string
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in hashBytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+            return sb.ToString();
+        }
+
 #endregion
 
 #region Ip
