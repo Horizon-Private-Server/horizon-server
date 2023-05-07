@@ -15,10 +15,9 @@
     "d": "4854567300243763614870687120476899445974505675147434999327174747312047455575182761195687859800492317495944895566174677168271650454805328075020357360662513"
   },
   "PluginsPath": "plugins/",
-  "ApplicationIds": [10684],
+  "ApplicationIds": [],
   "UsePublicIp": true,
   "PublicIpOverride": "",
-  "EnableEncryption": false,
   "MPSReconnectInterval": 15,
   "MainLoopSleepMs": 5,
   "PluginTickIntervalMs": 50,
