@@ -1,6 +1,6 @@
 {
   "RefreshConfigInterval": 5000,
-  "UsePublicIp": false,
+  "UsePublicIp": true,
   "PublicIpOverride": "",
   "TickRate": 10,
   "MASPort": 10075,
@@ -25,7 +25,7 @@
     "RollingFileCount": 100,
     "LogPath": "logs/medius.log",
     "LogMetrics": false,
-    "LogToConsole": false,
+    "LogToConsole": true,
     "LogLevel": 2,
     "RtLogFilter": [
       "RT_MSG_CLIENT_CONNECT_TCP",

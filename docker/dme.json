@@ -16,7 +16,7 @@
   },
   "PluginsPath": "plugins/",
   "ApplicationIds": [],
-  "UsePublicIp": false,
+  "UsePublicIp": true,
   "PublicIpOverride": "",
   "MPSReconnectInterval": 15,
   "MainLoopSleepMs": 5,
@@ -28,7 +28,7 @@
     "RollingFileCount": 100,
     "LogPath": "logs/medius.log",
     "LogMetrics": false,
-    "LogToConsole": false,
+    "LogToConsole": true,
     "LogLevel": 2,
     "RtLogFilter": [
       "RT_MSG_CLIENT_CONNECT_TCP",

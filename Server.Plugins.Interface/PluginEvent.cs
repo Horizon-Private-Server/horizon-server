@@ -32,7 +32,9 @@ namespace Server.Plugins.Interface
 
         MEDIUS_PLAYER_POST_WIDE_STATS,
 
-
+        MEDIUS_PRE_ACCOUNT_CREATE_ON_NOT_FOUND,
+        MEDIUS_POST_ACCOUNT_CREATE_ON_NOT_FOUND,
+        
         DME_PLAYER_ON_JOINED,
         DME_PLAYER_ON_LEFT,
 
