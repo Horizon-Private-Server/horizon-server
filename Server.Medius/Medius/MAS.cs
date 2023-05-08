@@ -529,6 +529,13 @@ namespace Server.Medius
                             if (data.ClientObject == null)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLoginRequest} without a session.");
 
+
+                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_ACCOUNT_LOGIN_REQUEST, new OnAccountLoginRequestArgs()
+                            {
+                                Player = data.ClientObject,
+                                Request = accountLoginRequest
+                            });
+
                             // Check the client isn't already logged in
                             if (Program.Manager.GetClientByAccountName(accountLoginRequest.Username, data.ClientObject.ApplicationId)?.IsLoggedIn ?? false)
                             {
@@ -623,7 +630,7 @@ namespace Server.Medius
                                             return;
                                         }
 
-                                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PRE_ACCOUNT_CREATE_ON_NOT_FOUND, new OnAccountCreateOnNotFoundArgs()
+                                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PRE_ACCOUNT_CREATE_ON_NOT_FOUND, new OnAccountLoginRequestArgs()
                                         {
                                             Player = data.ClientObject,
                                             Request = accountLoginRequest
@@ -640,7 +647,7 @@ namespace Server.Medius
                                         {
                                             if (r.IsCompletedSuccessfully && r.Result != null)
                                             {   
-                                                await Program.Plugins.OnEvent(PluginEvent.MEDIUS_POST_ACCOUNT_CREATE_ON_NOT_FOUND, new OnAccountCreateOnNotFoundArgs()
+                                                await Program.Plugins.OnEvent(PluginEvent.MEDIUS_POST_ACCOUNT_CREATE_ON_NOT_FOUND, new OnAccountLoginRequestArgs()
                                                 {
                                                     Player = data.ClientObject,
                                                     Request = accountLoginRequest
