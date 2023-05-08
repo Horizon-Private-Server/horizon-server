@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Server.Medius.PluginArgs
 {
-    public class OnAccountCreateOnNotFoundArgs
+    public class OnAccountLoginRequestArgs
     {
         /// <summary>
         /// Player making request.

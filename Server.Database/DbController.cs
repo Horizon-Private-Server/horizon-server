@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Server.Database
 {
@@ -137,7 +138,9 @@ namespace Server.Database
                 }
                 else
                 {
-                    result = await GetDbAsync<AccountDTO>($"Account/searchAccountByName?AccountName={name}&AppId={appId}");
+                    name = HttpUtility.UrlEncode(name);
+                    string route = $"Account/searchAccountByName?AccountName={name}&AppId={appId}";
+                    result = await GetDbAsync<AccountDTO>(route);
                 }
             }
             catch (Exception e)
