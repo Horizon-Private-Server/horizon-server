@@ -190,7 +190,13 @@ namespace Server.Medius.Models
             Token = Convert.ToBase64String(tokenBuf);
 
             // default last echo to creation of client object
-            UtcLastServerEchoReply = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+            if (MediusVersion <= 108) {
+                UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime().AddSeconds(1);
+                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
+            }
+            else {
+                UtcLastServerEchoReply = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+            }        
         }
 
         public void QueueServerEcho()
