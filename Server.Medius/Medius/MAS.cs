@@ -588,11 +588,11 @@ namespace Server.Medius
                                         else if (r.Result.ResetPasswordOnNextLogin)
                                         {
                                             await Program.Database.ChangeAccountPassword(r.Result.AccountId, null, accountLoginRequest.Password);
-                                            await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
+                                            await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, accountLoginRequest.Username, false);
                                         }
                                         else if (Utils.ComputeSHA256(accountLoginRequest.Password) == r.Result.AccountPassword)
                                         {
-                                            await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
+                                            await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, accountLoginRequest.Username, false);
                                         }
                                         else
                                         {
@@ -652,7 +652,7 @@ namespace Server.Medius
                                                     Player = data.ClientObject,
                                                     Request = accountLoginRequest
                                                 });
-                                                await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, false);
+                                                await Login(accountLoginRequest.MessageID, clientChannel, data, r.Result, accountLoginRequest.Username, false);
                                             }
                                             else
                                             {
@@ -799,7 +799,7 @@ namespace Server.Medius
                                         }
                                         else
                                         {
-                                            await Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
+                                            await Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, ticketLoginRequest.Username, true);
                                         }
                                     }
                                     else
@@ -828,7 +828,7 @@ namespace Server.Medius
                                         {
                                             if (r.IsCompletedSuccessfully && r.Result != null)
                                             {
-                                                await Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, true);
+                                                await Login(ticketLoginRequest.MessageID, clientChannel, data, r.Result, ticketLoginRequest.Username, true);
                                             }
                                             else
                                             {
@@ -1075,12 +1075,13 @@ namespace Server.Medius
             }
         }
 
-        private async Task Login(MessageId messageId, IChannel clientChannel, ChannelData data, Database.Models.AccountDTO accountDto, bool ticket)
+        private async Task Login(MessageId messageId, IChannel clientChannel, ChannelData data, Database.Models.AccountDTO accountDto, string requestedName, bool ticket)
         {
             var fac = new PS2CipherFactory();
             var rsa = fac.CreateNew(CipherContext.RSA_AUTH) as PS2_RSA;
 
             //
+            accountDto.AccountName = requestedName;
             await data.ClientObject.Login(accountDto);
 
             // Update db ip
