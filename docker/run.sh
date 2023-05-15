@@ -4,14 +4,8 @@ docker container kill horizon-server
 
 set -e
 
-#cd ../../horizon-uya-patch
-#bash build.sh;
-
-cd ../../horizon-uya-plugin
-bash build.sh;
-
+####### Build the server
 cd ..
-cd horizon-server
 
 docker build . -t horizon-server
 

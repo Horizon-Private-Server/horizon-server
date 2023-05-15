@@ -23,10 +23,10 @@
   "Logging": {
     "RollingFileSize": 1048576,
     "RollingFileCount": 100,
-    "LogPath": "logs/medius.log",
+    "LogPath": "/logs/medius.log",
     "LogMetrics": false,
     "LogToConsole": true,
-    "LogLevel": 2,
+    "LogLevel": 1,
     "RtLogFilter": [
       "RT_MSG_CLIENT_CONNECT_TCP",
       "RT_MSG_CLIENT_DISCONNECT",
