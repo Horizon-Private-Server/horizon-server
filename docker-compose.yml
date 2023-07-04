@@ -1,8 +1,39 @@
 version: "3.8"
 
 services:
+  horizon-database:
+    image:  mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - 1433:1433
+    volumes:
+      - "${PWD}/data/":/var/opt/mssql
+    environment:
+      ACCEPT_EULA: "True"
+      MSSQL_SA_PASSWORD: admin
+      
+  horizon-middleware:
+    build: ../horizon-middleware
+    depends_on:
+      - horizon-database
+    ports:
+      - 10000:10000
+      - 10001:10001
+    environment:
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: Medius_Database
+      DB_SERVER: horizon-database:1433
+      ASPNETCORE_ENVIRONMENT: Production
+      MIDDLEWARE_SERVER: http://0.0.0.0:10000
+      MIDDLEWARE_SERVER_IP: http://0.0.0.0:10000
+      MIDDLEWARE_USER: admin
+      MIDDLEWARE_PASSWORD: admin
+
   horizon-server:
     build: .
+    depends_on:
+      - horizon-database
+      - horizon-middleware
     ports:
       - 10071:10071
       - 10075:10075
@@ -23,30 +54,4 @@ services:
       MIDDLEWARE_PASSWORD: admin
       ASPNETCORE_ENVIRONMENT: Production
       ROBO_SALT: randomSalt
-
-  horizon-database:
-    image:  mcr.microsoft.com/mssql/server:2019-latest
-    ports:
-      - 1433:1433
-    volumes:
-      - "${PWD}/data/":/var/opt/mssql
-    environment:
-      ACCEPT_EULA: "True"
-      MSSQL_SA_PASSWORD: admin
-      
-  horizon-middleware:
-    build: ../horizon-middleware
-    ports:
-      - 10000:10000
-      - 10001:10001
-    environment:
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: Medius_Database
-      DB_SERVER: horizon-database:1433
-      ASPNETCORE_ENVIRONMENT: Production
-      MIDDLEWARE_SERVER: http://0.0.0.0:10000
-      MIDDLEWARE_SERVER_IP: http://0.0.0.0:10000
-      MIDDLEWARE_USER: admin
-      MIDDLEWARE_PASSWORD: admin
     
