@@ -40,9 +40,12 @@ namespace Server.Pipeline.Udp
             if (!message.Content.IsReadable())
                 return;
 
-            object decoded = Decode(context, message);
-            if (decoded != null)
-                output.Add(decoded);
+            while (message.Content.IsReadable())
+            {
+                object decoded = Decode(context, message);
+                if (decoded != null)
+                    output.Add(decoded);
+            }
         }
 
         /// <summary>
