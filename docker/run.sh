@@ -1,6 +1,7 @@
 #!/bin/bash
 
 docker container kill horizon-server
+sleep 1
 
 set -e
 
