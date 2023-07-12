@@ -1343,6 +1343,9 @@ namespace Server.Medius
                             }
                             else if (findPlayerRequest.SearchType == MediusPlayerSearchType.PlayerAccountName)
                             {
+                                // Send to plugins
+                                await Program.Plugins.OnEvent(PluginEvent.MEDIUS_FIND_PLAYER_ACCOUNT_NAME, new OnFindPlayerRequestArgs() { Player = data.ClientObject, Request = findPlayerRequest });
+
                                 foundPlayer = Program.Manager.GetClientByAccountName(findPlayerRequest.Name, data.ClientObject.ApplicationId);
                             }
 
