@@ -2298,6 +2298,46 @@ namespace Server.Medius
 
                     #region Game
 
+                    case MediusGetWorldSecurityLevelRequest getWorldSecurityLevelRequest:
+                        {
+                            // ERROR - Need a session
+                            if (data.ClientObject == null)
+                                throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getWorldSecurityLevelRequest} without a session.");
+
+                            // ERROR -- Need to be logged in
+                            if (!data.ClientObject.IsLoggedIn)
+                                throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getWorldSecurityLevelRequest} without a being logged in.");
+
+                            Game game = Program.Manager.GetGameByGameId(getWorldSecurityLevelRequest.MediusWorldID);
+
+                            if (game == null) {
+                                data.ClientObject.Queue(new MediusGetWorldSecurityLevelResponse()
+                                {
+                                    MessageID = getWorldSecurityLevelRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusGameNotFound,
+                                    MediusWorldID = getWorldSecurityLevelRequest.MediusWorldID,
+                                    AppType = getWorldSecurityLevelRequest.AppType,
+                                    SecurityLevel = MediusWorldSecurityLevelType.WORLD_SECURITY_NONE,
+                                });
+                                break;
+                            }
+
+                            MediusWorldSecurityLevelType securityLevel = MediusWorldSecurityLevelType.WORLD_SECURITY_NONE;
+                            if (game.GamePassword != null && game.GamePassword != string.Empty) {
+                                securityLevel = MediusWorldSecurityLevelType.WORLD_SECURITY_PLAYER_PASSWORD;
+                            }
+
+                            data.ClientObject.Queue(new MediusGetWorldSecurityLevelResponse()
+                            {
+                                MessageID = getWorldSecurityLevelRequest.MessageID,
+                                StatusCode = MediusCallbackStatus.MediusSuccess,
+                                MediusWorldID = getWorldSecurityLevelRequest.MediusWorldID,
+                                AppType = getWorldSecurityLevelRequest.AppType,
+                                SecurityLevel = securityLevel,
+                            });
+                            break;
+                        }
+
                     case MediusGetGameListFilterRequest getGameListFilterRequest:
                         {
                             // ERROR - Need a session
