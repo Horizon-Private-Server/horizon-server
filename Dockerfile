@@ -34,6 +34,7 @@ RUN mkdir /logs
 COPY ./docker /docker
 RUN chmod a+x /docker/entrypoint.sh
 
+COPY --from=builder /src/docker/restart_dme.py /
 COPY --from=builder /src/Server.Dme/out /dme
 COPY --from=builder /src/Server.Medius/out /medius
 COPY --from=builder /src/Server.UniverseInformation/out /muis
