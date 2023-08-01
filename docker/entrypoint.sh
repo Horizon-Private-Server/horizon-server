@@ -14,6 +14,9 @@ cp /configs/db.config.json /medius/
 
 cp /configs/dme.json /dme/
 
+cd /
+python restart_dme.py > restart_dme.log 2>&1 &
+
 # Start DME
 echo "Starting DME ..."
 cd /dme/
