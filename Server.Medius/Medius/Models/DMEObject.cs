@@ -28,6 +28,7 @@ namespace Server.Medius.Models
         {
             Port = (int)request.ListenServerAddress.Port;
             SetIp(request.ListenServerAddress.Address);
+            Location = request.Attributes;
 
             // Generate new session key
             SessionKey = Program.GenerateSessionKey();
@@ -42,6 +43,7 @@ namespace Server.Medius.Models
         {
             ApplicationId = request.ApplicationID;
             Port = request.Port;
+            Location = request.LocationID;
 
             // Generate new session key
             SessionKey = Program.GenerateSessionKey();

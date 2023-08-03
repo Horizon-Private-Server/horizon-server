@@ -351,6 +351,7 @@ namespace Server.Dme
                             Message = new MediusServerSetAttributesRequest()
                             {
                                 MessageID = new MessageId(),
+                                Attributes = Program.Settings.Location,
                                 ListenServerAddress = new NetAddress()
                                 {
                                     Address = Program.SERVER_IP.ToString(),

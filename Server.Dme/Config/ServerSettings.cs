@@ -56,6 +56,11 @@ namespace Server.Dme.Config
         public string PublicIpOverride { get; set; } = string.Empty;
 
         /// <summary>
+        /// Id of the location of this dme server.
+        /// </summary>
+        public int Location { get; set; } = 0;
+
+        /// <summary>
         /// Seconds between disconnects before the client attempts to reconnect to the proxy server.
         /// </summary>
         public int MPSReconnectInterval { get; set; } = 15;
