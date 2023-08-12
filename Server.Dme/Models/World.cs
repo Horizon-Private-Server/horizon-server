@@ -27,6 +27,7 @@ namespace Server.Dme.Models
         private static ConcurrentDictionary<int, World> _idToWorld = new ConcurrentDictionary<int, World>();
         private ConcurrentDictionary<int, bool> _pIdIsUsed = new ConcurrentDictionary<int, bool>();
         private static int _idCounter = 0;
+        private static object _lock = new object();
 
         private void RegisterWorld()
         {
@@ -55,12 +56,15 @@ namespace Server.Dme.Models
 
         private bool TryRegisterNewClientIndex(out int index)
         {
-            for (index = 0; index < _pIdIsUsed.Count; ++index)
+            lock (_lock)
             {
-                if (_pIdIsUsed.TryGetValue(index, out var isUsed) && !isUsed)
+                for (index = 0; index < _pIdIsUsed.Count; ++index)
                 {
-                    _pIdIsUsed[index] = true;
-                    return true;
+                    if (_pIdIsUsed.TryGetValue(index, out var isUsed) && !isUsed)
+                    {
+                        _pIdIsUsed[index] = true;
+                        return true;
+                    }
                 }
             }
 
@@ -287,6 +291,8 @@ namespace Server.Dme.Models
 
         public async Task OnPlayerJoined(ClientObject player)
         {
+            player.HasJoined = true;
+
             // Plugin
             await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_JOINED, new OnPlayerArgs()
             {
@@ -297,7 +303,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
+                if (!client.Value.HasJoined || client.Value == player || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_CONNECT_NOTIFY()
@@ -319,6 +325,8 @@ namespace Server.Dme.Models
 
         public async Task OnPlayerLeft(ClientObject player)
         {
+            player.HasJoined = false;
+
             // Plugin
             await Program.Plugins.OnEvent(PluginEvent.DME_PLAYER_ON_LEFT, new OnPlayerArgs()
             {
@@ -329,7 +337,7 @@ namespace Server.Dme.Models
             // Tell other clients
             foreach (var client in Clients)
             {
-                if (client.Value == player || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
+                if (!client.Value.HasJoined || client.Value == player || !client.Value.HasRecvFlag(RT_RECV_FLAG.RECV_NOTIFICATION))
                     continue;
 
                 client.Value.EnqueueTcp(new RT_MSG_SERVER_DISCONNECT_NOTIFY()
@@ -349,9 +357,23 @@ namespace Server.Dme.Models
             });
         }
 
-        public MediusServerJoinGameResponse OnJoinGameRequest(MediusServerJoinGameRequest request)
+        public async Task<MediusServerJoinGameResponse> OnJoinGameRequest(MediusServerJoinGameRequest request)
         {
             ClientObject newClient;
+
+            // find existing client and reuse
+            var existingClient = Clients.FirstOrDefault(x => x.Value.SessionKey == request.ConnectInfo.SessionKey);
+            if (existingClient.Value != null)
+            {
+                // found existing
+                return new MediusServerJoinGameResponse()
+                {
+                    MessageID = request.MessageID,
+                    DmeClientIndex = existingClient.Value.DmeId,
+                    AccessKey = existingClient.Value.Token,
+                    Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS
+                };
+            }
 
             // If world is full then fail
             if (Clients.Count >= MAX_CLIENTS_PER_WORLD)
@@ -364,7 +386,6 @@ namespace Server.Dme.Models
                 };
             }
 
-            // Client already added
             if (TryRegisterNewClientIndex(out var newClientIndex))
             {
                 if (!Clients.TryAdd(newClientIndex, newClient = new ClientObject(request.ConnectInfo.SessionKey, this, newClientIndex)))

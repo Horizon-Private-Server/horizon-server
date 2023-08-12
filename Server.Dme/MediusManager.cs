@@ -377,7 +377,7 @@ namespace Server.Dme
                     }
                 case RT_MSG_SERVER_APP serverApp:
                     {
-                        ProcessMediusMessage(serverApp.Message, serverChannel);
+                        await ProcessMediusMessage(serverApp.Message, serverChannel);
                         break;
                     }
 
@@ -399,7 +399,7 @@ namespace Server.Dme
             return;
         }
 
-        private void ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel)
+        private async Task ProcessMediusMessage(BaseMediusMessage message, IChannel clientChannel)
         {
             if (message == null)
                 return;
@@ -457,7 +457,7 @@ namespace Server.Dme
                         }
                         else
                         {
-                            Enqueue(world.OnJoinGameRequest(joinGameRequest));
+                            Enqueue(await world.OnJoinGameRequest(joinGameRequest));
                         }
                         break;
                     }

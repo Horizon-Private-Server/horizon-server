@@ -77,7 +77,7 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_SINGLE;
+        public RT_RECV_FLAG RecvFlag { get; set; } = RT_RECV_FLAG.RECV_SINGLE | RT_RECV_FLAG.RECV_LIST;
 
         /// <summary>
         /// 
@@ -133,6 +133,11 @@ namespace Server.Dme.Models
         /// 
         /// </summary>
         long? LastAggTime { get; set; } = null;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool HasJoined { get; set; } = false;
 
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
         public virtual bool Timedout => !IsConnectingGracePeriod && UtcLastServerEchoReply < UtcLastServerEchoSent && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
