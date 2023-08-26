@@ -353,11 +353,11 @@ namespace Server.Dme
 
                         if (scertClient.IsPS3Client)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { MaxPacketSize = 584, MaxUdpPacketSize = 584 }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { MaxPacketSize = Constants.MEDIUS_MESSAGE_MAXLEN, MaxUdpPacketSize = Constants.MEDIUS_UDP_MESSAGE_MAXLEN }, clientChannel);
                         }
                         else if (scertClient.MediusVersion > 108)
                         {
-                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { MaxPacketSize = 584, MaxUdpPacketSize = 584 }, clientChannel);
+                            Queue(new RT_MSG_SERVER_CONNECT_REQUIRE() { MaxPacketSize = Constants.MEDIUS_MESSAGE_MAXLEN, MaxUdpPacketSize = Constants.MEDIUS_UDP_MESSAGE_MAXLEN }, clientChannel);
                         }
                         else
                         {
@@ -519,7 +519,7 @@ namespace Server.Dme
                 case RT_MSG_CLIENT_DISCONNECT _:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON _:
                     {
-                        //_ = clientChannel.CloseAsync();
+                        _ = clientChannel.CloseAsync();
                         break;
                     }
                 default:

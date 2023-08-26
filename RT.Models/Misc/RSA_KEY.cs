@@ -26,14 +26,14 @@ namespace RT.Models
             }
         }
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             key = new uint[Constants.RSA_SIZE_DWORD];
             for (int i = 0; i < Constants.RSA_SIZE_DWORD; ++i)
                 key[i] = reader.ReadUInt32();
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             for (int i = 0; i < Constants.RSA_SIZE_DWORD; ++i)
                 writer.Write(i >= key.Length ? 0 : key[i]);

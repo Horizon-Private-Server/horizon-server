@@ -25,12 +25,12 @@ namespace RT.Models
 
         #region Serialization
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Value = reader.ReadString(Constants.MESSAGEID_MAXLEN);
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Value, Constants.MESSAGEID_MAXLEN);
         }

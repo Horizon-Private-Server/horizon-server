@@ -16,7 +16,7 @@ namespace RT.Models
         public string SessionKey;
         public string AccessKey;
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             Type = reader.Read<NetConnectionType>();
             AddressList = reader.Read<NetAddressList>();
@@ -24,10 +24,14 @@ namespace RT.Models
             ServerKey = reader.Read<RSA_KEY>();
             SessionKey = reader.ReadString(Constants.NET_SESSION_KEY_LEN);
             AccessKey = reader.ReadString(Constants.NET_ACCESS_KEY_LEN);
-            reader.ReadBytes(2);
+
+            if (reader.MediusVersion > 108)
+            {
+                reader.ReadBytes(2);
+            }
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(Type);
             writer.Write(AddressList);
@@ -35,7 +39,11 @@ namespace RT.Models
             writer.Write(ServerKey);
             writer.Write(SessionKey, Constants.NET_SESSION_KEY_LEN);
             writer.Write(AccessKey, Constants.NET_ACCESS_KEY_LEN);
-            writer.Write(new byte[2]);
+
+            if (writer.MediusVersion > 108)
+            {
+                writer.Write(new byte[2]);
+            }
         }
 
         public override string ToString()

@@ -16,7 +16,7 @@ namespace RT.Models
         public uint StreamableFlag;
         public uint StreamingDataRate;
 
-        public virtual void Deserialize(BinaryReader reader)
+        public virtual void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             Description = reader.ReadBytes(Constants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);
@@ -27,7 +27,7 @@ namespace RT.Models
             StreamingDataRate = reader.ReadUInt32();
         }
 
-        public virtual void Serialize(BinaryWriter writer)
+        public virtual void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             writer.Write(Description, Constants.MEDIUS_FILE_MAX_DESCRIPTION_LENGTH);

@@ -9,19 +9,19 @@ namespace Server.Common
     public static class BinaryReaderExt
     {
 
-        public static T Read<T>(this BinaryReader reader)
+        public static T Read<T>(this Stream.MessageReader reader)
         {
             var result = reader.ReadObject(typeof(T));
 
             return result == null ? default(T) : (T)result;
         }
 
-        public static IPAddress ReadIPAddress(this BinaryReader reader)
+        public static IPAddress ReadIPAddress(this Stream.MessageReader reader)
         {
             return IPAddress.Parse(reader.ReadString(16));
         }
 
-        public static string ReadString(this BinaryReader reader, int length)
+        public static string ReadString(this Stream.MessageReader reader, int length)
         {
             byte[] buffer = reader.ReadBytes(length);
             int i = 0;
@@ -35,7 +35,7 @@ namespace Server.Common
                 return string.Empty;
         }
 
-        public static object ReadObject(this BinaryReader reader, Type type)
+        public static object ReadObject(this Stream.MessageReader reader, Type type)
         {
             if (type.GetInterface("IStreamSerializer") != null)
             {
@@ -75,12 +75,12 @@ namespace Server.Common
             return null;
         }
 
-        public static byte[] ReadRest(this BinaryReader reader)
+        public static byte[] ReadRest(this Stream.MessageReader reader)
         {
             return reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
         }
 
-        public static string ReadRestAsString(this BinaryReader reader)
+        public static string ReadRestAsString(this Stream.MessageReader reader)
         {
             return reader.ReadString((int)(reader.BaseStream.Length - reader.BaseStream.Position));
         }

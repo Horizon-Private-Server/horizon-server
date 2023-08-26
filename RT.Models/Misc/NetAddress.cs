@@ -15,14 +15,14 @@ namespace RT.Models
         public string Address;
         public uint Port;
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             AddressType = reader.Read<NetAddressType>();
             Address = reader.ReadString(Constants.NET_MAX_NETADDRESS_LENGTH);
             Port = reader.ReadUInt32();
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(AddressType);
             writer.Write(Address, Constants.NET_MAX_NETADDRESS_LENGTH);

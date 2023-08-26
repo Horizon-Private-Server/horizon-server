@@ -21,7 +21,7 @@ namespace RT.Models
         public ushort GlobalPermissionRWX;
         public ushort ServerOperationID;
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             // 
             Filename = reader.ReadString(Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH);
@@ -37,7 +37,7 @@ namespace RT.Models
             ServerOperationID = reader.ReadUInt16();
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             // 
             writer.Write(Filename, Constants.MEDIUS_FILE_MAX_FILENAME_LENGTH);

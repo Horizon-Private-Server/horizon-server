@@ -3124,7 +3124,7 @@ namespace Server.Medius
                                             AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                             {
                                             new NetAddress() { Address = Program.LobbyServer.IPAddress.ToString(), Port = (uint)Program.LobbyServer.Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                            new NetAddress() { AddressType = NetAddressType.NetAddressNone},
+                                            new NetAddress() {Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                             }
                                         },
                                         Type = NetConnectionType.NetConnectionTypeClientServerTCP

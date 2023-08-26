@@ -8,7 +8,7 @@ namespace Server.Common
 {
     public static class BinaryWriterExt
     {
-        public static void Write(this BinaryWriter writer, IPAddress ip)
+        public static void Write(this Stream.MessageWriter writer, IPAddress ip)
         {
             if (ip == null)
                 writer.Write(new byte[16]);
@@ -16,7 +16,7 @@ namespace Server.Common
                 writer.Write(Encoding.UTF8.GetBytes(ip.MapToIPv4().ToString().PadRight(16, '\0')));
         }
 
-        public static void Write(this BinaryWriter writer, string str, int length)
+        public static void Write(this Stream.MessageWriter writer, string str, int length)
         {
             if (str == null)
                 writer.Write(new byte[length]);
@@ -26,7 +26,7 @@ namespace Server.Common
                 writer.Write(Encoding.UTF8.GetBytes(str.PadRight(length, '\0')));
         }
 
-        public static void WriteStr(this BinaryWriter writer, string str, int length)
+        public static void WriteStr(this Stream.MessageWriter writer, string str, int length)
         {
             if (str == null)
                 writer.Write(new byte[length]);
@@ -36,7 +36,7 @@ namespace Server.Common
                 writer.Write(Encoding.UTF8.GetBytes(str.PadRight(length, '\0')));
         }
 
-        public static void Write(this BinaryWriter writer, byte[] value, int fixedLength)
+        public static void Write(this Stream.MessageWriter writer, byte[] value, int fixedLength)
         {
             if (value == null)
             {
@@ -61,12 +61,12 @@ namespace Server.Common
             }
         }
 
-        public static void Write<T>(this BinaryWriter writer, T value)
+        public static void Write<T>(this Stream.MessageWriter writer, T value)
         {
             writer.WriteObject(value, typeof(T));
         }
 
-        public static void WriteObject(this BinaryWriter writer, object value, Type type)
+        public static void WriteObject(this Stream.MessageWriter writer, object value, Type type)
         {
             if (value == null || type == null)
                 return;

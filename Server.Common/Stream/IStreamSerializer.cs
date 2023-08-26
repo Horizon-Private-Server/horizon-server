@@ -7,8 +7,8 @@ namespace Server.Common
 {
     public interface IStreamSerializer
     {
-        void Serialize(BinaryWriter writer);
-        void Deserialize(BinaryReader reader);
+        void Serialize(Stream.MessageWriter writer);
+        void Deserialize(Stream.MessageReader reader);
 
     }
 }

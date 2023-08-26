@@ -18,7 +18,7 @@ namespace RT.Models
         public string LobbyName;
         public string GameName;
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             ConnectStatus = reader.Read<MediusPlayerStatus>();
             MediusLobbyWorldID = reader.ReadInt32();
@@ -27,7 +27,7 @@ namespace RT.Models
             GameName = reader.ReadString(Constants.WORLDNAME_MAXLEN);
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             writer.Write(ConnectStatus);
             writer.Write(MediusLobbyWorldID);

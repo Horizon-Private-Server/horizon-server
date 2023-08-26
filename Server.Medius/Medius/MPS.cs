@@ -258,8 +258,8 @@ namespace Server.Medius
                                     {
                                         AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT]
                                         {
-                                        new NetAddress() { Address = (data.ClientObject as DMEObject).IP.MapToIPv4().ToString(), Port = (uint)(data.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
-                                        new NetAddress() { AddressType = NetAddressType.NetAddressNone},
+                                            new NetAddress() { Address = (data.ClientObject as DMEObject).IP.MapToIPv4().ToString(), Port = (uint)(data.ClientObject as DMEObject).Port, AddressType = NetAddressType.NetAddressTypeExternal},
+                                            new NetAddress() {Address = Program.Settings.NATIp, Port = (uint)Program.Settings.NATPort, AddressType = NetAddressType.NetAddressTypeNATService},
                                         }
                                     },
                                     Type = NetConnectionType.NetConnectionTypeClientServerTCPAuxUDP

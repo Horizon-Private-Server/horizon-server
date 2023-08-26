@@ -19,7 +19,7 @@ namespace RT.Models
                 AddressList[i] = new NetAddress();
         }
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(Server.Common.Stream.MessageReader reader)
         {
             AddressList = new NetAddress[Constants.NET_ADDRESS_LIST_COUNT];
             for (int i = 0; i < Constants.NET_ADDRESS_LIST_COUNT; ++i)
@@ -28,7 +28,7 @@ namespace RT.Models
             }
         }
 
-        public void Serialize(BinaryWriter writer)
+        public void Serialize(Server.Common.Stream.MessageWriter writer)
         {
             for (int i = 0; i < Constants.NET_ADDRESS_LIST_COUNT; ++i)
             {
