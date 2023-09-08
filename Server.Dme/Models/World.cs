@@ -361,6 +361,9 @@ namespace Server.Dme.Models
         {
             ClientObject newClient;
 
+            //
+            await Task.Delay(100);
+
             // find existing client and reuse
             var existingClient = Clients.FirstOrDefault(x => x.Value.SessionKey == request.ConnectInfo.SessionKey);
             if (existingClient.Value != null)

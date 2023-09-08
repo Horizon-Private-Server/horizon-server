@@ -1601,7 +1601,7 @@ namespace Server.Medius
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getMyClansRequest} without a being logged in.");
 
                             //
-                            _ = data.ClientObject.RefreshAccount().TimeoutAfter(_defaultTimeout).TimeoutAfter(_defaultTimeout).ContinueWith(t1 =>
+                            _ = data.ClientObject.RefreshAccount().TimeoutAfter(_defaultTimeout).ContinueWith(t1 =>
                             {
                                 if (!data.ClientObject.ClanId.HasValue)
                                 {
@@ -1614,7 +1614,7 @@ namespace Server.Medius
                                 }
                                 else
                                 {
-                                    _ = Program.Database.GetClanById(data.ClientObject.ClanId.Value).TimeoutAfter(_defaultTimeout).TimeoutAfter(_defaultTimeout).ContinueWith(r =>
+                                    _ = Program.Database.GetClanById(data.ClientObject.ClanId.Value).ContinueWith(r =>
                                     {
                                         if (r.IsCompletedSuccessfully && r.Result != null)
                                         {
@@ -1660,7 +1660,7 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanMemberList_ExtraInfoRequest} without a being logged in.");
 
-                            _ = Program.Database.GetClanById(getClanMemberList_ExtraInfoRequest.ClanID).TimeoutAfter(_defaultTimeout).ContinueWith(r =>
+                            _ = Program.Database.GetClanById(getClanMemberList_ExtraInfoRequest.ClanID).ContinueWith(r =>
                             {
                                 List<MediusGetClanMemberList_ExtraInfoResponse> responses = new List<MediusGetClanMemberList_ExtraInfoResponse>();
                                 if (r.IsCompletedSuccessfully && r.Result != null)
@@ -1718,7 +1718,7 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanInvitiationsSentRequest} without a being logged in.");
 
-                            _ = Program.Database.GetClanById(data.ClientObject.ClanId.Value).TimeoutAfter(_defaultTimeout).ContinueWith(r =>
+                            _ = Program.Database.GetClanById(data.ClientObject.ClanId.Value).ContinueWith(r =>
                             {
                                 List<MediusGetClanInvitationsSentResponse> responses = new List<MediusGetClanInvitationsSentResponse>();
                                 if (r.IsCompletedSuccessfully && r.Result != null)
@@ -1765,7 +1765,7 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {getClanByIdRequest} without a being logged in.");
 
-                            _ = Program.Database.GetClanById(getClanByIdRequest.ClanID).TimeoutAfter(_defaultTimeout).ContinueWith(r =>
+                            _ = Program.Database.GetClanById(getClanByIdRequest.ClanID).ContinueWith(r =>
                             {
                                 if (r.IsCompletedSuccessfully && r.Result != null)
                                 {
