@@ -2306,6 +2306,46 @@ namespace Server.Database
 
         #endregion
 
+        #region Logs
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="game"></param>
+        /// <returns></returns>
+        public async Task<bool> Log(int? accountId, string methodName, string logTitle, string logMsg, string logStacktrace, string payload)
+        {
+            bool result = false;
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = (await PostDbAsync($"api/Logs/submitLog", JsonConvert.SerializeObject(new LogDTO()
+                    {
+                        AccountId = accountId,
+                        MethodName = methodName,
+                        LogTitle = logTitle,
+                        LogMsg = logMsg,
+                        LogStacktrace = logStacktrace,
+                        Payload = payload
+                    }))).IsSuccessStatusCode;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region Key
 
         public async Task<AppIdDTO[]> GetAppIds()
