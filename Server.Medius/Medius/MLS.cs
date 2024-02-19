@@ -2805,10 +2805,34 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
 
-                            // Send to plugins
-                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOIN_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = joinGameRequest });
+                            // Check if user is banned
+                            _ = Program.Database.GetAccountByName(data.ClientObject.AccountName, data.ClientObject.ApplicationId).TimeoutAfter(_defaultTimeout).ContinueWith(async (r) =>
+                            {
+                                if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                    return;
 
-                            Program.Manager.JoinGame(data.ClientObject, joinGameRequest);
+                                if (r.IsCompletedSuccessfully && r.Result != null && data != null && data.ClientObject != null && data.ClientObject.IsConnected)
+                                {
+                                    if (r.Result.IsBanned)
+                                    {
+                                        // Send ban message
+                                        QueueBanMessage(data);
+                                        data.ClientObject.Queue(new MediusJoinGameResponse()
+                                        {
+                                            MessageID = joinGameRequest.MessageID,
+                                            StatusCode = MediusCallbackStatus.MediusFail
+                                        });
+                                    }
+                                    else
+                                    {
+                                        // Send to plugins
+                                        await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOIN_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = joinGameRequest });
+
+                                        Program.Manager.JoinGame(data.ClientObject, joinGameRequest);
+                                    }
+                                }
+                            });
+                            
                             break;
                         }
 
