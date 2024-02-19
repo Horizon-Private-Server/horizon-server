@@ -628,6 +628,49 @@ namespace Server.Database
         }
 
         /// <summary>
+        /// Gets whether the mac address for an account is banned.
+        /// </summary>
+        /// <param name="accountName">Account name string.</param>
+        /// <param name="appId">App Id.</param>
+        public async Task<bool> GetIsAccountNameMacBanned(string accountName, int appId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    var checkExisting = await GetAccountByName(accountName, appId);
+                    if (checkExisting == null)
+                    {
+                       result = false;
+                    }
+                    else
+                    {
+                        // Check if the MAC exists 
+                        Task<bool> res = GetIsMacBanned(checkExisting.MachineId);
+                        if (res.Result == null) {
+                            result = false;
+                        }
+                        else {
+                            result = res.Result;
+                        }
+                   }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Posts the given machine id to the database account with the given account id.
         /// </summary>
         /// <param name="accountId">Account id.</param>

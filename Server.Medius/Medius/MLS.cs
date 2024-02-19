@@ -2805,6 +2805,13 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
 
+                            // Check if MAC is banned
+                            bool is_mac_banned = await Program.Database.GetIsAccountNameMacBanned(data.ClientObject.AccountName, data.ClientObject.ApplicationId);
+                            if (is_mac_banned) {
+                                Logger.Info($" MAC BAN JOIN GAME DENIED FOR: {data.ClientObject.AccountName} with APP ID {data.ClientObject.ApplicationId}");
+                                break;
+                            }
+
                             // Send to plugins
                             await Program.Plugins.OnEvent(PluginEvent.MEDIUS_PLAYER_ON_JOIN_GAME, new OnPlayerRequestArgs() { Player = data.ClientObject, Request = joinGameRequest });
 

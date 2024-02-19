@@ -1080,6 +1080,13 @@ namespace Server.Medius
             var fac = new PS2CipherFactory();
             var rsa = fac.CreateNew(CipherContext.RSA_AUTH) as PS2_RSA;
 
+            // Check MAC Address in Banned
+            bool is_mac_banned = await Program.Database.GetIsAccountNameMacBanned(requestedName, data.ClientObject.ApplicationId);
+            if (is_mac_banned) {
+                Logger.Info($" MAC BAN LOGIN DENIED FOR: {requestedName} with APP ID {data.ClientObject.ApplicationId}");
+                return;
+            }
+
             //
             accountDto.AccountName = requestedName;
             await data.ClientObject.Login(accountDto);
