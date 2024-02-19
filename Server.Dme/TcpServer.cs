@@ -125,7 +125,7 @@ namespace Server.Dme
             bootstrap
                 .Group(_bossGroup, _workerGroup)
                 .Channel<TcpServerSocketChannel>()
-                .Option(ChannelOption.SoBacklog, 100)
+                .Option(ChannelOption.TcpNodelay, true)
                 .Handler(new LoggingHandler(LogLevel.INFO))
                 .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
