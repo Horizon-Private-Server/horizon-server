@@ -628,6 +628,37 @@ namespace Server.Database
         }
 
         /// <summary>
+        /// Gets whether the Account Name is Mac Banned
+        /// </summary>
+        /// <param name="accountName">Account name to query.</param>
+        public async Task<bool> GetIsAccountNameMacBanned(string accountName, int appId)
+        {
+            bool result = false;
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                    result = false;
+                }
+                else
+                {
+                    accountName = HttpUtility.UrlEncode(accountName);
+                    string route = $"Account/getAccountNameMacIsBanned?AccountName={accountName}&AppId={appId}";
+                    result = await GetDbAsync<bool>(route);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+
+
+        /// <summary>
         /// Posts the given machine id to the database account with the given account id.
         /// </summary>
         /// <param name="accountId">Account id.</param>

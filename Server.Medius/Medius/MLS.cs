@@ -2806,14 +2806,14 @@ namespace Server.Medius
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {joinGameRequest} without a being logged in.");
 
                             // Check if user is banned
-                            _ = Program.Database.GetAccountByName(data.ClientObject.AccountName, data.ClientObject.ApplicationId).TimeoutAfter(_defaultTimeout).ContinueWith(async (r) =>
+                            _ = Program.Database.GetIsAccountNameMacBanned(data.ClientObject.AccountName, data.ClientObject.ApplicationId).TimeoutAfter(_defaultTimeout).ContinueWith(async (r) =>
                             {
                                 if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
                                     return;
 
                                 if (r.IsCompletedSuccessfully && r.Result != null && data != null && data.ClientObject != null && data.ClientObject.IsConnected)
                                 {
-                                    if (r.Result.IsBanned)
+                                    if (r.Result)
                                     {
                                         // Send ban message
                                         QueueBanMessage(data);
