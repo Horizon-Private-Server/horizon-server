@@ -38,7 +38,7 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        public string AccountName { get; protected set; } = null;
+        public string AccountName { get; set; } = null;
 
         /// <summary>
         /// Current access token required to access the account.

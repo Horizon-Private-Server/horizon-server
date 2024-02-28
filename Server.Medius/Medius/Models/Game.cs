@@ -93,9 +93,10 @@ namespace Server.Medius.Models
             ChatChannel = chatChannel;
             ChatChannel?.RegisterGame(this);
             Host = client;
-            SetWorldStatus(MediusWorldStatus.WorldPendingCreation).Wait();
+            _worldStatus = MediusWorldStatus.WorldPendingCreation;
 
             Logger.Info($"Game {Id}:{GameName}: Created by {client}");
+            _ = Program.Database.UpdateGame(this.ToGameDTO());
         }
 
         public GameDTO ToGameDTO()
