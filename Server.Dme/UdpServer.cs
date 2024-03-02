@@ -107,6 +107,8 @@ namespace Server.Dme
 
                 if (!pluginArgs.Ignore)
                     _recvQueue.Enqueue(message);
+
+                ClientObject?.OnRecv(message);
             };
 
             var bootstrap = new Bootstrap();

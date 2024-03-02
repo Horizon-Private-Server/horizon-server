@@ -168,6 +168,8 @@ namespace Server.Medius
                                 data.ClientObject?.OnRecvServerEcho(serverEcho);
                             else if (message is RT_MSG_CLIENT_ECHO clientEcho)
                                 data.ClientObject?.OnRecvClientEcho(clientEcho);
+
+                            data.ClientObject?.OnRecv(message);
                         }
                     }
                 }

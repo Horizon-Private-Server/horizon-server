@@ -103,7 +103,7 @@ namespace Server.Medius.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoReply { get; protected set; } = Common.Utils.GetHighPrecisionUtcTime();
+        public DateTime UtcLastMessageReceived { get; protected set; } = Common.Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// 
@@ -138,8 +138,8 @@ namespace Server.Medius.Models
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
-        public virtual bool LongTimedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
+        public virtual bool Timedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
+        public virtual bool LongTimedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
         public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !LongTimedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
         public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).KeepAliveGracePeriodSeconds;
@@ -195,13 +195,15 @@ namespace Server.Medius.Models
             Token = Convert.ToBase64String(tokenBuf);
 
             // default last echo to creation of client object
-            if (MediusVersion <= 108) {
+            if (MediusVersion <= 108)
+            {
                 UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime().AddSeconds(1);
-                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
+                UtcLastMessageReceived = Utils.GetHighPrecisionUtcTime();
             }
-            else {
-                UtcLastServerEchoReply = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
-            }        
+            else
+            {
+                UtcLastMessageReceived = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+            }
         }
 
         public void QueueServerEcho()
@@ -216,8 +218,7 @@ namespace Server.Medius.Models
             if (echoTime > _lastServerEchoValue)
             {
                 _lastServerEchoValue = echoTime;
-                UtcLastServerEchoReply = Common.Utils.GetHighPrecisionUtcTime();
-                LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
+                LatencyMs = (uint)(Utils.GetHighPrecisionUtcTime() - echoTime).TotalMilliseconds;
             }
         }
 
@@ -229,8 +230,12 @@ namespace Server.Medius.Models
             {
                 // reply must be before sent for the timeout to work
                 UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime().AddSeconds(1);
-                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
             }
+        }
+
+        public virtual void OnRecv(BaseScertMessage msg)
+        {
+            UtcLastMessageReceived = Utils.GetHighPrecisionUtcTime();
         }
 
         #region Connection / Disconnection

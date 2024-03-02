@@ -97,18 +97,16 @@ namespace Server.Dme
                 {
                     if (!data.Ignore && (data.ClientObject == null || !data.ClientObject.IsDestroyed))
                     {
-
+                        // Plugin
                         var pluginArgs = new OnTcpMsg()
                         {
                             Player = data.ClientObject,
                             Packet = message
                         };
-
-                        // Plugin
                         await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_TCP, pluginArgs);
 
                         data.RecvQueue.Enqueue(message);
-
+                        data.ClientObject?.OnRecv(message);
                         if (message is RT_MSG_SERVER_ECHO serverEcho)
                             data.ClientObject?.OnRecvServerEcho(serverEcho);
                         else if (message is RT_MSG_CLIENT_ECHO clientEcho)

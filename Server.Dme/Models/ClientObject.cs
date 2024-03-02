@@ -97,7 +97,7 @@ namespace Server.Dme.Models
         /// <summary>
         /// 
         /// </summary>
-        public DateTime UtcLastServerEchoReply { get; protected set; } = Utils.GetHighPrecisionUtcTime();
+        public DateTime UtcLastMessageReceived { get; protected set; } = Utils.GetHighPrecisionUtcTime();
 
         /// <summary>
         /// RTT (ms)
@@ -140,8 +140,8 @@ namespace Server.Dme.Models
         public bool HasJoined { get; set; } = false;
 
         public virtual bool IsConnectingGracePeriod => !TimeAuthenticated.HasValue && (Utils.GetHighPrecisionUtcTime() - TimeCreated).TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
-        public virtual bool Timedout => !IsConnectingGracePeriod && UtcLastServerEchoReply < UtcLastServerEchoSent && ((Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
-        public virtual bool LongTimedout => UtcLastServerEchoReply < UtcLastServerEchoSent && (Common.Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoReply).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
+        public virtual bool Timedout => !IsConnectingGracePeriod && ((Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds);
+        public virtual bool LongTimedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
         public virtual bool IsConnected => !Disconnected && Tcp != null && Tcp.Active && !LongTimedout;
         public virtual bool IsAuthenticated => TimeAuthenticated.HasValue;
         public virtual bool Destroy => Disconnected || (!IsConnected && !IsConnectingGracePeriod);
@@ -170,7 +170,7 @@ namespace Server.Dme.Models
             Token = Convert.ToBase64String(tokenBuf);
 
             // default last echo to creation of client object
-            UtcLastServerEchoReply = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
+            UtcLastMessageReceived = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
         }
 
         public Task BeginUdp()
@@ -194,8 +194,7 @@ namespace Server.Dme.Models
             if (echoTime > _lastServerEchoValue)
             {
                 _lastServerEchoValue = echoTime;
-                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
-                LatencyMs = (uint)(UtcLastServerEchoReply - echoTime).TotalMilliseconds;
+                LatencyMs = (uint)(Utils.GetHighPrecisionUtcTime() - echoTime).TotalMilliseconds;
             }
         }
 
@@ -207,8 +206,17 @@ namespace Server.Dme.Models
             {
                 // reply must be before sent for the timeout to work
                 UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime().AddSeconds(1);
-                UtcLastServerEchoReply = Utils.GetHighPrecisionUtcTime();
             }
+        }
+
+        public virtual void OnRecv(BaseScertMessage msg)
+        {
+            UtcLastMessageReceived = Utils.GetHighPrecisionUtcTime();
+        }
+
+        public virtual void OnRecv(ScertDatagramPacket msg)
+        {
+            UtcLastMessageReceived = Utils.GetHighPrecisionUtcTime();
         }
 
         public Task HandleIncomingMessages()
