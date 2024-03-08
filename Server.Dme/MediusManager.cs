@@ -146,7 +146,6 @@ namespace Server.Dme
             _bootstrap
                 .Group(_group)
                 .Channel<TcpSocketChannel>()
-                .Option(ChannelOption.TcpNodelay, true)
                 .Handler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
                     IChannelPipeline pipeline = channel.Pipeline;

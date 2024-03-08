@@ -69,7 +69,7 @@ namespace Server.Dme
             _scertHandler = new ScertServerHandler();
 
             // Add client on connect
-            _scertHandler.OnChannelActive += (channel) =>
+            _scertHandler.OnChannelActive += (IChannel channel) =>
             {
                 string key = channel.Id.AsLongText();
                 _channelDatas.TryAdd(key, new ChannelData());
@@ -123,20 +123,21 @@ namespace Server.Dme
             bootstrap
                 .Group(_bossGroup, _workerGroup)
                 .Channel<TcpServerSocketChannel>()
-                .Option(ChannelOption.TcpNodelay, true)
                 .Handler(new LoggingHandler(LogLevel.INFO))
                 .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                 {
                     IChannelPipeline pipeline = channel.Pipeline;
                     
-                    pipeline.AddLast(new WriteTimeoutHandler(30));
+                    //pipeline.AddLast(new WriteTimeoutHandler(120));
                     pipeline.AddLast(new ScertEncoder());
                     pipeline.AddLast(new ScertIEnumerableEncoder());
                     pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
                     pipeline.AddLast(new ScertDecoder());
                     pipeline.AddLast(new ScertMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
-                }));
+                }))
+                .ChildOption(ChannelOption.TcpNodelay, true)
+                .ChildOption(ChannelOption.SoTimeout, 1000 * 60 * 15);
 
             _boundChannel = await bootstrap.BindAsync(Port);
         }
