@@ -190,7 +190,7 @@ namespace Server.Medius
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
 
-                        pipeline.AddLast(new WriteTimeoutHandler(120));
+                        pipeline.AddLast(new WriteTimeoutHandler(60 * 15));
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
                         pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
