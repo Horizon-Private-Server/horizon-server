@@ -135,11 +135,21 @@ namespace Server.Medius.Models
         /// </summary>
         public UploadState Upload { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public int TimeoutSeconds { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int LongTimeoutSeconds { get; set; }
+
         public virtual bool IsLoggedIn => !_logoutTime.HasValue && _loginTime.HasValue && IsConnected;
         public bool IsInGame => CurrentGame != null && CurrentChannel != null && CurrentChannel.Type == ChannelType.Game;
 
-        public virtual bool Timedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
-        public virtual bool LongTimedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
+        public virtual bool Timedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > TimeoutSeconds;
+        public virtual bool LongTimedout => (Common.Utils.GetHighPrecisionUtcTime() - UtcLastMessageReceived).TotalSeconds > LongTimeoutSeconds;
         public virtual bool IsConnected => KeepAlive || (_hasSocket && _hasActiveSession && !LongTimedout);  //(KeepAlive || _hasActiveSession) && !Timedout;
 
         public bool KeepAlive => _keepAliveTime.HasValue && (Common.Utils.GetHighPrecisionUtcTime() - _keepAliveTime).Value.TotalSeconds < Program.GetAppSettingsOrDefault(ApplicationId).KeepAliveGracePeriodSeconds;
@@ -204,6 +214,9 @@ namespace Server.Medius.Models
             {
                 UtcLastMessageReceived = UtcLastServerEchoSent = Utils.GetHighPrecisionUtcTime();
             }
+
+            TimeoutSeconds = Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
+            LongTimeoutSeconds = Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
         }
 
         public void QueueServerEcho()
