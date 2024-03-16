@@ -370,6 +370,10 @@ namespace Server.Medius.Models
             // Login
             _loginTime = Common.Utils.GetHighPrecisionUtcTime();
 
+            // update timeout times
+            TimeoutSeconds = Program.GetAppSettingsOrDefault(ApplicationId).ClientTimeoutSeconds;
+            LongTimeoutSeconds = Program.GetAppSettingsOrDefault(ApplicationId).ClientLongTimeoutSeconds;
+
             // Update last sign in date
             _ = Program.Database.PostAccountSignInDate(AccountId, Common.Utils.GetHighPrecisionUtcTime());
 
