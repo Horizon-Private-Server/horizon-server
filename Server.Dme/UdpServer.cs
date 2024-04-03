@@ -233,6 +233,11 @@ namespace Server.Dme
 
                         break;
                     }
+                case RT_MSG_CLIENT_FLUSH_SINGLE clientFlushSingle:
+                    {
+                        
+                        break;
+                    }
                 default:
                     {
                         Logger.Warn($"UNHANDLED MESSAGE: {message}");
