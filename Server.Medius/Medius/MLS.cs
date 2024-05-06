@@ -1877,6 +1877,9 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {updateClanStatsRequest} without a being logged in.");
 
+                            // Send to Plugins
+                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_CLAN_ON_UPDATE_STATS, new OnUpdateClanStatsRequestArgs() { Player = data.ClientObject, Request = updateClanStatsRequest });
+
                             _ = Program.Database.PostClanMediusStats(updateClanStatsRequest.ClanID, Convert.ToBase64String(updateClanStatsRequest.Stats)).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
                             {
                                 if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
