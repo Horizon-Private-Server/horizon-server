@@ -492,6 +492,9 @@ namespace Server.Medius
                             if (!data.ClientObject.IsLoggedIn)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountUpdateStatsRequest} without a being logged in.");
 
+                            // Send to plugins
+                            await Program.Plugins.OnEvent(PluginEvent.MEDIUS_ON_ACCOUNT_UPDATE_STATS, new OnAccountUpdateStatsArgs() { Player = data.ClientObject, Request = accountUpdateStatsRequest });
+
                             // Post
                             _ = Program.Database.PostMediusStats(data.ClientObject.AccountId, Convert.ToBase64String(accountUpdateStatsRequest.Stats)).TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
                             {
