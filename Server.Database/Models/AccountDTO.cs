@@ -165,4 +165,10 @@ namespace Server.Database.Models
         public string ConfirmNewPassword { get; set; }
     }
 
+    public class AccountPasswordResetRequest
+    {
+        public string AccountName { get; set; }
+        public int AppId { get; set; }
+    }
+
 }
