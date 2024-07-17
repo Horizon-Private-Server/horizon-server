@@ -281,6 +281,46 @@ namespace Server.Database
             return result;
         }
 
+
+        /// <summary>
+        /// Reset account password for an account.
+        /// </summary>
+        /// <param name="accountName"></param>
+        /// <param name="appId">App Id.</param>
+        /// <returns></returns>
+        public async Task<bool> ResetAccountPassword(string accountName, int appId)
+        {
+            bool result = false;
+            AccountPasswordResetRequest request = new AccountPasswordResetRequest()
+            {
+                AccountName = accountName,
+                AppId = appId
+            };
+
+            try
+            {
+                if (_settings.SimulatedMode)
+                {
+                }
+                else
+                {
+                    var response = await PostDbAsync($"Account/resetAccountPassword", JsonConvert.SerializeObject(request));
+
+                    // Deserialize on success
+                    if (response.IsSuccessStatusCode)
+                        result = true;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
+
+            return result;
+        }
+
+
+
         /// <summary>
         /// Delete account by name.
         /// </summary>
