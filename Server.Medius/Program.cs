@@ -451,7 +451,7 @@ namespace Server.Medius
                 return true;
 
             Regex r = new Regex(rExp, RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            return !r.IsMatch(text);
+            return r.IsMatch(text);
         }
 
         public static string FilterTextFilter(int appId, TextFilterContext context, string text)

@@ -529,6 +529,16 @@ namespace Server.Medius
                             if (data.ClientObject == null)
                                 throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLoginRequest} without a session.");
 
+                            // validate name
+                            if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, accountLoginRequest.Username))
+                            {
+                                data.ClientObject.Queue(new MediusAccountLoginResponse()
+                                {
+                                    MessageID = accountLoginRequest.MessageID,
+                                    StatusCode = MediusCallbackStatus.MediusFail,
+                                });
+                                return;
+                            }
 
                             await Program.Plugins.OnEvent(PluginEvent.MEDIUS_ACCOUNT_LOGIN_REQUEST, new OnAccountLoginRequestArgs()
                             {
@@ -612,17 +622,6 @@ namespace Server.Medius
                                         {
                                         // Reply error
                                         data.ClientObject.Queue(new MediusAccountLoginResponse()
-                                            {
-                                                MessageID = accountLoginRequest.MessageID,
-                                                StatusCode = MediusCallbackStatus.MediusFail,
-                                            });
-                                            return;
-                                        }
-
-                                    // validate name
-                                    if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, accountLoginRequest.Username))
-                                        {
-                                            data.ClientObject.Queue(new MediusAccountLoginResponse()
                                             {
                                                 MessageID = accountLoginRequest.MessageID,
                                                 StatusCode = MediusCallbackStatus.MediusFail,
