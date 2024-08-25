@@ -7,12 +7,8 @@ COPY . /src
 WORKDIR /src/Server.Dme
 RUN dotnet publish -c Release -o out
 
-#===== Build MAS/MLS
+#===== Build MAS/MLS/NAT
 WORKDIR /src/Server.Medius
-RUN dotnet publish -c Release -o out
-
-#===== Build NAT
-WORKDIR /src/Server.NAT
 RUN dotnet publish -c Release -o out
 
 #===== Build MUIS
@@ -41,7 +37,6 @@ RUN chmod a+x /docker/entrypoint.sh
 COPY --from=builder /src/docker/restart_dme.py /
 COPY --from=builder /src/Server.Dme/out /dme
 COPY --from=builder /src/Server.Medius/out /medius
-COPY --from=builder /src/Server.NAT/out /nat
 COPY --from=builder /src/Server.UniverseInformation/out /muis
 COPY --from=builder /src/docker /configs
 

@@ -27,11 +27,6 @@ echo "Starting MUIS ..."
 cd /muis/
 dotnet Server.UniverseInformation.dll &
 
-# Start NAT
-echo "Starting NAT ..."
-cd /nat/
-dotnet Server.NAT.dll &
-
 # Start MAS/MLS/NAT
 echo "Starting Medius ..."
 cd /medius/

@@ -19,7 +19,7 @@
   "UsePublicIp": true,
   "PublicIpOverride": "",
   "MPSReconnectInterval": 15,
-  "MainLoopSleepMs": 1,
+  "MainLoopSleepMs": 5,
   "PluginTickIntervalMs": 50,
   "TCPPort": 10073,
   "UDPPort": 50000,
