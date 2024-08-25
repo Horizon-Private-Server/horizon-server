@@ -2,7 +2,7 @@
   "RefreshConfigInterval": 5000,
   "UsePublicIp": true,
   "PublicIpOverride": "",
-  "TickRate": 10,
+  "TickRate": 30,
   "MASPort": 10075,
   "MLSPort": 10078,
   "MPSPort": 10077,
@@ -26,7 +26,7 @@
     "LogPath": "/logs/medius.log",
     "LogMetrics": false,
     "LogToConsole": true,
-    "LogLevel": 1,
+    "LogLevel": 2,
     "RtLogFilter": [
       "RT_MSG_CLIENT_CONNECT_TCP",
       "RT_MSG_CLIENT_DISCONNECT",
