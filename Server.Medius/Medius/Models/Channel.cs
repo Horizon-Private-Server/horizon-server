@@ -154,7 +154,7 @@ namespace Server.Medius.Models
             {
                 client.Queue(new MediusGenericChatFwdMessage1()
                 {
-                    OriginatorAccountID = 0,
+                    OriginatorAccountID = 95481,
                     OriginatorAccountName = "SYSTEM",
                     Message = message,
                     MessageType = MediusChatMessageType.Broadcast,
@@ -165,7 +165,7 @@ namespace Server.Medius.Models
             {
                 client.Queue(new MediusGenericChatFwdMessage()
                 {
-                    OriginatorAccountID = 0,
+                    OriginatorAccountID = 95481,
                     OriginatorAccountName = "SYSTEM",
                     Message = message,
                     MessageType = MediusChatMessageType.Broadcast,
@@ -182,7 +182,7 @@ namespace Server.Medius.Models
                 {
                     target?.Queue(new MediusGenericChatFwdMessage1()
                     {
-                        OriginatorAccountID = 0,
+                        OriginatorAccountID = 95481,
                         OriginatorAccountName = "SYSTEM",
                         Message = message,
                         MessageType = MediusChatMessageType.Broadcast,
@@ -193,7 +193,7 @@ namespace Server.Medius.Models
                 {
                     target?.Queue(new MediusGenericChatFwdMessage()
                     {
-                        OriginatorAccountID = 0,
+                        OriginatorAccountID = 95481,
                         OriginatorAccountName = "SYSTEM",
                         Message = message,
                         MessageType = MediusChatMessageType.Broadcast,
