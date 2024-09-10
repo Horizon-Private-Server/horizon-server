@@ -2,62 +2,12 @@
 This repository contains a Medius server emulator that works for a variety of games. Originally built to revive the Ratchet: Deadlocked PS2 online servers.
 
 ## Docker
-The following scripts are meant for Linux or Windows WSL. You will need the following repositories to run the server:
-1. This repo
-2. The [horizon-server-database repo](https://github.com/Horizon-Private-Server/horizon-server-database)
-3. The [horizon-server-database-middleware repo](https://github.com/Horizon-Private-Server/horizon-server-database-middleware)
-
-The first thing to do is clone these repositories. Place the repos into a parent "horizon" directory. Your directory structure should look like the following:
-```
-├── horizon/
-│   └── horizon-server/
-│   └── horizon-server-database/
-│   └── horizon-server-database-middleware/
-```
-
-Now, add the following environment variables. I like to edit `~/.bashrc` so they are always loaded on a new terminal.
-| Environment Variable   | Description                                                                                                         |
-|------------------------|---------------------------------------------------------------------------------------------------------------------|
-| HORIZON_DB_USER                | The admin user to login to the database as (will create if it doesn't exist)                                        |
-| HORIZON_MSSQL_SA_PASSWORD      | The user's password to login to the database                                                                        |
-| HORIZON_DB_NAME                | The name of the database to connect to                                                                              |
-| HORIZON_DB_SERVER              | The local or external DB port, e.g. 192.168.1.2,1433                                                                |
-| HORIZON_ASPNETCORE_ENVIRONMENT | The build ASP.NET core environment                                                                                  |
-| HORIZON_MIDDLEWARE_SERVER      | The IP to bind to, generally looks like http://0.0.0.0:10000                                                        |
-| HORIZON_MIDDLEWARE_SERVER_IP   | The external or local IP that will be hosting this. Can also be a docker internal IP. E.g. http://192.168.1.2:10000 |
-| HORIZON_MIDDLEWARE_USER        | The name of the 'admin' middleware user. This will get stored as a medius account                                   |
-| HORIZON_MIDDLEWARE_PASSWORD    | The password for the middleware admin user                                                                          |
-| HORIZON_APP_ID                 | The APP id to host. Can be a comma separated list                                                                   |
-
-Set up the configs in the `horizon-server/docker/` folder. You can change the ports, `PublicIpOverride` (if developing locally), or MUIS information if using MUIS. Don't forget to set the app ids in the `dme.config`!
-
-Start running the docker containers in the right order. First start the `horizon-server-database` docker container by running `horizon-server-database/run.sh`. By default this will start running it in the background, and save the db info into the `horizon-server-database` folder.
-
-Next, start the middleware. Start the container by running `horizon-server-database-middleware/run.sh`. Again this will by default run in the background.
-
-Now you can start running the server. Run the horizon-server container by running `horizon-server/docker/run.sh`.
+Run the docker compose file [here](https://github.com/Horizon-Private-Server/horizon-docker/tree/master). Set the environment variables and modify the configs in that repository before running.
 
 ### Using plugins and patches
 The following shows an example of how to use the patch and plugin for UYA. Download two more repositories:
 - [UYA Patch](https://github.com/Horizon-Private-Server/horizon-uya-patch)
 - [UYA Plugin](https://github.com/Horizon-Private-Server/horizon-uya-plugin)
-
-Set your directory structure like so:
-```
-├── horizon/
-│   └── horizon-server/
-│   └── horizon-server-database/
-│   └── horizon-server-database-middleware/
-│   └── horizon-uya-plugin/
-│   └── horizon-uya-patch/
-```
-Start the database and middleware containers like normal.
-
-Build the patch by running `horizon-uya-patch/build.sh`. This will build the patch, and copy the binaries into the `horizon-server/docker/patch/` folder.
-
-Build the plugin by running `horizon-uya-plugin/build.sh`. This will compile it and copy the binaries into `horizon-server/docker/medius_plugins` and `horizon-server/docker/dme_plugins`.
-
-Now that the patch and plugins are in place, you can run the `horizon-server` container.
 
 ### Debugging the db
 ```
@@ -68,7 +18,7 @@ sqlcmd -S ${SERVER_IP},1433 -U sa -P "${YOUR_PASSWORD}"
 The default configs in the `horizon-server/docker/` folder were last generated 08/29/2022.
 
 
-### Instructions from Dan on Setup
+### [LEGACY] Instructions from Dan on Setup
 You'll want to setup an instance of sql server. I recommend using docker for this. I use docker for windows and then inside it run the db server. Alternatively you can run it on windows as a service. There are tutorials for that online as well. Here's one for running it in docker:
 https://docs.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver16&pivots=cs1-bash
 Note that the tutorial is for linux but the same docker commands will work inside of powershell on windows 10 (just remove the sudo from each command)
