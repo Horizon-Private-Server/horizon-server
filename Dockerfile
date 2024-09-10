@@ -15,17 +15,12 @@ RUN dotnet publish -c Release -o out
 WORKDIR /src/Server.UniverseInformation
 RUN dotnet publish -c Release -o out
 
-# Copy configs
-RUN cp /src/docker/dme.json /src/Server.Dme/out/dme.json
-RUN cp /src/docker/medius.json /src/Server.Medius/out/medius.json
-RUN cp /src/docker/muis.json /src/Server.UniverseInformation/out/muis.json
-
 # Copy patch and plugins into right folders
-RUN mkdir -p /src/Server.Medius/out/plugins/
-RUN mkdir -p /src/Server.Dme/out/plugins/
+# RUN mkdir -p /src/Server.Medius/out/plugins/
+# RUN mkdir -p /src/Server.Dme/out/plugins/
 
-RUN cp -r /src/docker/medius_plugins/* /src/Server.Medius/out/plugins/
-RUN cp -r /src/docker/dme_plugins/* /src/Server.Dme/out/plugins/
+# RUN cp -r /src/docker/medius_plugins/* /src/Server.Medius/out/plugins/
+# RUN cp -r /src/docker/dme_plugins/* /src/Server.Dme/out/plugins/
 
 # Run stage =========================================================================
 
