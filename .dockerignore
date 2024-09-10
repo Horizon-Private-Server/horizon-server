@@ -1,2 +1,8 @@
 logs/
 database/
+
+# Docker configs
+db.config.json
+dme.json
+medius.json
+muis.json
