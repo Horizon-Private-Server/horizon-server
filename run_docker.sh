@@ -8,7 +8,7 @@ set -e
 docker build . -t horizon-server
 
 docker run \
-  -it \
+  -d \
   --rm \
   -e MIDDLEWARE_SERVER_IP=${HORIZON_MIDDLEWARE_SERVER_IP} \
   -e APP_ID=${HORIZON_APP_ID} \
