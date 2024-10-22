@@ -22,6 +22,11 @@ namespace Server.Dme.Config
         public int DefaultClientWorldAggTime { get; private set; } = 20;
 
         /// <summary>
+        /// If true, ignore client attemps to set agg time. Always use the default agg time from the app settings.
+        /// </summary>
+        public bool IgnoreClientSetAggTime { get; private set; } = false;
+
+        /// <summary>
         /// Number of seconds before the server should send an echo to the client.
         /// </summary>
         public int ServerEchoIntervalSeconds { get; private set; } = 5;
@@ -61,6 +66,9 @@ namespace Server.Dme.Config
             // DefaultClientWorldAggTime
             if (settings.TryGetValue("DefaultClientWorldAggTime", out value) && int.TryParse(value, out var defaultClientWorldAggTime))
                 DefaultClientWorldAggTime = defaultClientWorldAggTime;
+            // IgnoreClientSetAggTime
+            if (settings.TryGetValue("IgnoreClientSetAggTime", out value) && bool.TryParse(value, out var ignoreClientSetAggTime))
+                IgnoreClientSetAggTime = ignoreClientSetAggTime;
             // ServerEchoIntervalSeconds
             if (settings.TryGetValue("ServerEchoIntervalSeconds", out value) && int.TryParse(value, out var serverEchoIntervalSeconds))
                 ServerEchoIntervalSeconds = serverEchoIntervalSeconds;
@@ -84,6 +92,7 @@ namespace Server.Dme.Config
             {
                 { "EnableDmeEncryption", EnableDmeEncryption.ToString() },
                 { "DefaultClientWorldAggTime", DefaultClientWorldAggTime.ToString() },
+                { "IgnoreClientSetAggTime", IgnoreClientSetAggTime.ToString() },
                 { "ServerEchoIntervalSeconds", ServerEchoIntervalSeconds.ToString() },
                 { "KeepAliveGracePeriodSeconds", KeepAliveGracePeriodSeconds.ToString() },
                 { "ClientTimeoutSeconds", ClientTimeoutSeconds.ToString() },
