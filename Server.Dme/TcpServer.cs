@@ -340,6 +340,8 @@ namespace Server.Dme
                             throw new Exception($"Client connected with invalid world id!");
 
                         data.ClientObject.ApplicationId = clientConnectTcpAuxUdp.AppId;
+                        data.ClientObject.AggTimeMs = Program.GetAppSettingsOrDefault(clientConnectTcpAuxUdp.AppId).DefaultClientWorldAggTime;
+
                         data.ClientObject.OnTcpConnected(clientChannel);
                         data.ClientObject.ScertId = GenerateNewScertClientId();
                         data.ClientObject.MediusVersion = scertClient.MediusVersion;
@@ -456,7 +458,8 @@ namespace Server.Dme
                     }
                 case RT_MSG_CLIENT_SET_AGG_TIME setAggTime:
                     {
-                        data.ClientObject.AggTimeMs = setAggTime.AggTime;
+                       if (!(Program.GetAppSettingsOrDefault(data.ClientObject.ApplicationId).IgnoreClientSetAggTime))
+                            data.ClientObject.AggTimeMs = setAggTime.AggTime;
                         break;
                     }
                 case RT_MSG_CLIENT_TIMEBASE_QUERY timebaseQuery:
