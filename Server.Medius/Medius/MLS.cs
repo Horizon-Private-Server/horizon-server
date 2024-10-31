@@ -164,20 +164,12 @@ namespace Server.Medius
 
                         Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
 
-                        // Check if user is Account banned
-                        Program.Database.GetAccountByName(data.ClientObject.AccountName, data.ClientObject.ApplicationId).TimeoutAfter(_defaultTimeout).ContinueWith(async (r) =>
-                        {
-                            if (r.IsCompletedSuccessfully && r.Result != null && data != null && data.ClientObject != null && data.ClientObject.IsConnected)
-                            {
-                                if (r.Result.IsBanned)
-                                {
-                                    // Send ban message
-                                    QueueBanMessage(data);
-                                    data.ClientObject.ForceDisconnect();
-                                }
-                            }
-                        });
-
+                        // Check if player is banned.
+                        bool banned = await data.ClientObject.CheckBan();
+                        if (banned) {
+                            QueueBanMessage(data);
+                            data.ClientObject.ForceDisconnect();
+                        }
                         break;
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:
