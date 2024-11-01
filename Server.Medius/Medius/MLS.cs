@@ -164,12 +164,18 @@ namespace Server.Medius
 
                         Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
 
-                        // Check if player is banned.
-                        bool banned = await data.ClientObject.CheckBan();
-                        if (banned) {
-                            QueueBanMessage(data);
-                            data.ClientObject.ForceDisconnect();
-                        }
+                        _ = data.ClientObject.CheckBan().TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null && r.Result)
+                            {
+                                // Banned
+                                QueueBanMessage(data);
+                                data.ClientObject.ForceDisconnect();
+                            }
+                        });
                         break;
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:

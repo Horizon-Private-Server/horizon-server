@@ -447,23 +447,7 @@ namespace Server.Medius.Models
             LastAccountBanCheckTime = Common.Utils.GetHighPrecisionUtcTime();
 
             // Check if user is Account banned
-            var account = await Program.Database.GetAccountByName(AccountName, ApplicationId);
-            if (account == null)
-                return false;
-
-            if (account.IsBanned)
-                return true;
-
-            // Check if user is MAC banned
-            if (account.MachineId != null) {
-                bool isMacBanned = await Program.Database.GetIsMacBanned(account.MachineId);
-                if (isMacBanned != null && isMacBanned)
-                    return true;
-            }
-
-            // TODO: Add IP ban check
-
-            return false;
+            return await Program.Database.GetAccountIsBanned(AccountName, ApplicationId);
         }
 
         #endregion
