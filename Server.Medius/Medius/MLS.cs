@@ -174,6 +174,7 @@ namespace Server.Medius
                                 // Banned
                                 QueueBanMessage(data);
                                 data.ClientObject.ForceDisconnect();
+                                data.ClientObject.Logout().GetAwaiter().GetResult();
                             }
                         });
                         break;
