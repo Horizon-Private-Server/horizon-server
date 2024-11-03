@@ -155,7 +155,6 @@ namespace Server.Medius
                     }
                 case RT_MSG_SERVER_ECHO serverEchoReply:
                     {
-
                         break;
                     }
                 case RT_MSG_CLIENT_ECHO clientEcho:
@@ -164,6 +163,20 @@ namespace Server.Medius
                             break;
 
                         Queue(new RT_MSG_CLIENT_ECHO() { Value = clientEcho.Value }, clientChannel);
+
+                        _ = data.ClientObject.CheckBan().TimeoutAfter(_defaultTimeout).ContinueWith((r) =>
+                        {
+                            if (data == null || data.ClientObject == null || !data.ClientObject.IsConnected)
+                                return;
+
+                            if (r.IsCompletedSuccessfully && r.Result != null && r.Result)
+                            {
+                                // Banned
+                                QueueBanMessage(data);
+                                data.ClientObject.ForceDisconnect();
+                                _ = data.ClientObject.Logout();
+                            }
+                        });
                         break;
                     }
                 case RT_MSG_CLIENT_APP_TOSERVER clientAppToServer:

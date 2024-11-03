@@ -110,6 +110,11 @@ namespace Server.Medius.Config
         /// </summary>
         public int DmeTimeoutSeconds { get; private set; } = 30;
 
+        /// <summary>
+        /// Time, in seconds, between ban checks with the database on echo packets.
+        /// </summary>
+        public int BanEchoCheckCadenceSeconds {get; private set; } = 60;
+
         public AppSettings(int appId)
         {
             AppId = appId;
@@ -178,6 +183,9 @@ namespace Server.Medius.Config
             // DmeTimeoutSeconds
             if (settings.TryGetValue("DmeTimeoutSeconds", out value) && int.TryParse(value, out var dmeTimeoutSeconds))
                 DmeTimeoutSeconds = dmeTimeoutSeconds;
+            // BanEchoCheckCadenceSeconds
+            if (settings.TryGetValue("BanEchoCheckCadenceSeconds", out value) && int.TryParse(value, out var banEchoCheckCadenceSeconds))
+                BanEchoCheckCadenceSeconds = banEchoCheckCadenceSeconds;
         }
 
         public Dictionary<string, string> GetSettings()
@@ -205,6 +213,7 @@ namespace Server.Medius.Config
                 { "ClientLongTimeoutSeconds", ClientLongTimeoutSeconds.ToString() },
                 { "GameTimeoutSeconds", GameTimeoutSeconds.ToString() },
                 { "DmeTimeoutSeconds", DmeTimeoutSeconds.ToString() },
+                { "BanEchoCheckCadenceSeconds", BanEchoCheckCadenceSeconds.ToString() },
             };
         }
     }

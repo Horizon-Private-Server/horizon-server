@@ -165,6 +165,16 @@ namespace Server.Medius.Models
         protected DateTime? _logoutTime = null;
 
         /// <summary>
+        /// The latest time a ban check occured from an echo
+        /// </summary>
+        private DateTime LastAccountBanCheckTime { get; set; } = Common.Utils.GetHighPrecisionUtcTime();
+
+        /// <summary>
+        /// If we need to check if they are banned from the database when an echo comes in from the client.
+        /// </summary>
+        private bool NeedToCheckBan => (Common.Utils.GetHighPrecisionUtcTime() - LastAccountBanCheckTime).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).BanEchoCheckCadenceSeconds;
+
+        /// <summary>
         /// 
         /// </summary>
         protected bool _hasActiveSession = true;
@@ -427,6 +437,17 @@ namespace Server.Medius.Models
                 CurrentGame = null;
             }
             DmeClientId = null;
+        }
+
+        public async Task<bool> CheckBan()
+        {
+            if (!NeedToCheckBan)
+                return false;
+
+            LastAccountBanCheckTime = Common.Utils.GetHighPrecisionUtcTime();
+
+            // Check if user is Account banned
+            return await Program.Database.GetAccountIsBanned(AccountName, ApplicationId);
         }
 
         #endregion
