@@ -286,7 +286,11 @@ namespace Server.UnivereInformation
             {
                 case MediusGetUniverseInformationRequest getUniverseInfo:
                     {
-                        if (Program.Settings.Universes.TryGetValue(data.ApplicationId, out var infos))
+                        var appId = data.ApplicationId;
+                        if (!Program.Settings.Universes.ContainsKey(appId))
+                            appId = 0; // default to 0 if we don't have the app id
+
+                        if (Program.Settings.Universes.TryGetValue(appId, out var infos))
                         {
                             var availableInfos = infos.Where(x => x.Enabled);
                             if (availableInfos.Count() == 0)

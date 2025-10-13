@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Server.Dme\Server.Dme.csproj" />
+    <ProjectReference Include="..\Server.Medius\Server.Medius.csproj" />
+    <ProjectReference Include="..\Server.NAT\Server.NAT.csproj" />
+    <ProjectReference Include="..\Server.UniverseInformation\Server.UniverseInformation.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -213,7 +213,7 @@ namespace Server.Medius
             }
         }
 
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             // get path to config directory from first argument
             if (args.Length > 0)
@@ -281,28 +281,16 @@ namespace Server.Medius
             }
             else
             {
+                // set default nat ip
+                if (string.IsNullOrEmpty(Settings.NATIp))
+                    Settings.NATIp = GetIpAddress()?.ToString() ?? "localhost";
+
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }
 
             // Set LogSettings singleton
             LogSettings.Singleton = Settings.Logging;
-
-            // Determine server ip
-            if (usePublicIp != Settings.UsePublicIp)
-            {
-                if (!Settings.UsePublicIp)
-                {
-                    SERVER_IP = Utils.GetLocalIPAddress();
-                }
-                else
-                {
-                    if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
-                        SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
-                    else
-                        SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
-                }
-            }
 
             // Determine server ip
             if (usePublicIp != Settings.UsePublicIp)
@@ -327,6 +315,21 @@ namespace Server.Medius
 
             // Load tick time into sleep ms for main loop
             sleepMS = TickMS;
+        }
+
+        static IPAddress GetIpAddress()
+        {
+            if (!Settings.UsePublicIp)
+            {
+                return Utils.GetLocalIPAddress();
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
+                    return IPAddress.Parse(Utils.GetPublicIPAddress());
+                else
+                    return IPAddress.Parse(Settings.PublicIpOverride);
+            }
         }
 
         static async Task RefreshAppSettings()
@@ -402,17 +405,7 @@ namespace Server.Medius
 
         static void RefreshServerIp()
         {
-            if (!Settings.UsePublicIp)
-            {
-                SERVER_IP = Utils.GetLocalIPAddress();
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(Settings.PublicIpOverride))
-                    SERVER_IP = IPAddress.Parse(Utils.GetPublicIPAddress());
-                else
-                    SERVER_IP = IPAddress.Parse(Settings.PublicIpOverride);
-            }
+            SERVER_IP = GetIpAddress();
         }
 
         public static string GenerateSessionKey()

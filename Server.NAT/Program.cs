@@ -8,9 +8,10 @@ using System.Threading.Tasks;
 
 namespace Server.NAT
 {
-    class Program
+    public class Program
     {
-        public const string CONFIG_FILE = "config.json";
+        private static string CONFIG_DIRECTIORY = "./";
+        public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "nat.json");
 
         public static ServerSettings Settings = new ServerSettings();
         public static NAT NATServer = new NAT();
@@ -18,17 +19,20 @@ namespace Server.NAT
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
 
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
+            // get path to config directory from first argument
+            if (args.Length > 0)
+                CONFIG_DIRECTIORY = args[0];
+
             // 
             Initialize();
 
             Logger.Info($"Starting NAT on port {NATServer.Port}.");
-            Task.WaitAll(NATServer.Start());
+            var task = NATServer.Start();
             Logger.Info($"NAT started.");
 
-            while (NATServer.IsRunning)
-                Thread.Sleep(500);
+            await task;
         }
 
         static void Initialize()

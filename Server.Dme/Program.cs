@@ -27,7 +27,7 @@ using System.Timers;
 namespace Server.Dme
 {
 
-    class Program
+    public class Program
     {
         private static string CONFIG_DIRECTIORY = "./";
         public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "dme.json");
@@ -272,7 +272,7 @@ namespace Server.Dme
             }
         }
 
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             // get path to config directory from first argument
             if (args.Length > 0)
@@ -339,6 +339,9 @@ namespace Server.Dme
             }
             else
             {
+                if (Settings.ApplicationIds.Count == 0)
+                    Settings.ApplicationIds.Add(0); // default app id
+
                 // Save defaults
                 File.WriteAllText(CONFIG_FILE, JsonConvert.SerializeObject(Settings, Formatting.Indented));
             }

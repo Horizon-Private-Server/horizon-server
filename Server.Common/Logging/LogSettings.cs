@@ -27,7 +27,7 @@ namespace Server.Common.Logging
         /// <summary>
         /// Whether to also log to the console.
         /// </summary>
-        public bool LogToConsole { get; set; } = false;
+        public bool LogToConsole { get; set; } = true;
 
         /// <summary>
         /// Size in bytes for each log file.

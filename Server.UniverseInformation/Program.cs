@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Server.UnivereInformation
 {
-    class Program
+    public class Program
     {
         private static string CONFIG_DIRECTIORY = "./";
         public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "muis.json");
@@ -69,7 +69,7 @@ namespace Server.UnivereInformation
             }
         }
 
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             // get path to config directory from first argument
             if (args.Length > 0)
@@ -132,7 +132,7 @@ namespace Server.UnivereInformation
                     new UniverseInfo()
                     {
                         Name = "sample universe",
-                        Endpoint = "url",
+                        Endpoint = "localhost",
                         Port = 10075,
                         UniverseId = 1
                     }
