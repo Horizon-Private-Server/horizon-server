@@ -32,6 +32,7 @@ namespace Server.Dme
         private static string CONFIG_DIRECTIORY = "./";
         public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "dme.json");
         public static string DB_CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "db.config.json");
+        public static string DB_SIM_FILE => Path.Combine(CONFIG_DIRECTIORY, "simulated.db");
 
         public static readonly Stopwatch Stopwatch = Stopwatch.StartNew();
         public static DbController Database = null;
@@ -279,7 +280,7 @@ namespace Server.Dme
                 CONFIG_DIRECTIORY = args[0];
 
             // 
-            Database = new DbController(DB_CONFIG_FILE);
+            Database ??= new DbController(DB_CONFIG_FILE, DB_SIM_FILE);
 
             // 
             Initialize();

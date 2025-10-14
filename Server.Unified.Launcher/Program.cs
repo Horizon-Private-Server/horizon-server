@@ -23,7 +23,19 @@ namespace Server.Unified.Launcher
                 throw new DirectoryNotFoundException($"Config directory '{configDirectory}' does not exist.");
 
             // init database
-            _ = new Database.DbController(Path.Combine(configDirectory, Server.Medius.Program.DB_CONFIG_FILE));
+            var dbConfigPath = Path.Combine(configDirectory, Server.Medius.Program.DB_CONFIG_FILE);
+            if (!File.Exists(dbConfigPath))
+            {
+                var config = new Database.Config.DbSettings();
+                config.SimulatedMode = true;
+                config.SimulatedEncryptionKey = Guid.NewGuid().ToString(); // generate random key
+                File.WriteAllText(dbConfigPath, Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented));
+            }
+
+            // init db controller
+            var dbController = new Database.DbController(dbConfigPath, Path.Combine(configDirectory, "simulated.db"));
+            Medius.Program.Database = dbController;
+            Dme.Program.Database = dbController;
 
             // init medius config
             var mediusConfigPath = Path.Combine(configDirectory, Path.GetFileName(Server.Medius.Program.CONFIG_FILE));
@@ -45,6 +57,8 @@ namespace Server.Unified.Launcher
             {
                 var config = new Server.Dme.Config.ServerSettings();
                 config.PluginsPath = "dme-plugins/";
+                config.ApplicationIds.Clear();
+                config.ApplicationIds.Add(0);
                 File.WriteAllText(dmeConfigPath, Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented));
 
                 // force create plugins directory
@@ -57,7 +71,7 @@ namespace Server.Unified.Launcher
             var natTask = Task.Run(async () => await Server.NAT.Program.Main(new string[] { configDirectory }));
             var muisTask = Task.Run(async () => await Server.UnivereInformation.Program.Main(new string[] { configDirectory }));
             var mediusTask = Task.Run(async () => await Server.Medius.Program.Main(new string[] { configDirectory }));
-            await Task.Delay(1000);
+            await Task.Delay(5000);
             var dmeTask = Task.Run(async () => await Server.Dme.Program.Main(new string[] { configDirectory }));
 
             // wait for all servers to complete (they won't, unless there's an error)

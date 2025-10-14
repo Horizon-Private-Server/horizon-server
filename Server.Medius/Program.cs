@@ -36,6 +36,7 @@ namespace Server.Medius
         private static string CONFIG_DIRECTIORY = "./";
         public static string CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "medius.json");
         public static string DB_CONFIG_FILE => Path.Combine(CONFIG_DIRECTIORY, "db.config.json");
+        public static string DB_SIM_FILE => Path.Combine(CONFIG_DIRECTIORY, "simulated.db");
 
         public static RSA_KEY GlobalAuthPublic = null;
 
@@ -133,7 +134,7 @@ namespace Server.Medius
                 }
 
                 // Tick
-                await Task.WhenAll(AuthenticationServer.Tick(), LobbyServer.Tick(), ProxyServer.Tick());
+                await Task.WhenAll(Database.Tick(), AuthenticationServer.Tick(), LobbyServer.Tick(), ProxyServer.Tick());
 
                 // Tick manager
                 await Manager.Tick();
@@ -220,7 +221,7 @@ namespace Server.Medius
                 CONFIG_DIRECTIORY = args[0];
 
             // 
-            Database = new DbController(DB_CONFIG_FILE);
+            Database ??= new DbController(DB_CONFIG_FILE, DB_SIM_FILE);
 
             // 
             Initialize();

@@ -12,9 +12,14 @@ namespace Server.Database.Config
     {
         /// <summary>
         /// When true, the controller will simulate a database.
-        /// Data is not persistent in simulated mode.
+        /// Data is not persistent in simulated mode unless SimulatedEncryptionKey is set.
         /// </summary>
         public bool SimulatedMode { get; set; } = true;
+
+        /// <summary>
+        /// If set, will be used to encrypt/decrypt persistent data in simulated mode.
+        /// </summary>
+        public string SimulatedEncryptionKey { get; set; } = null;
 
         /// <summary>
         /// Database url.

@@ -21,18 +21,16 @@ namespace Server.Database
     {
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<DbController>();
 
-        private DbSettings _settings = new DbSettings();
+        string _simulatedDbFilepath;
+        bool _saveSimulated = false;
+        bool _loadSimulated = true;
+        DbSimulated _simulatedDb = new DbSimulated();
 
-        private int _simulatedAccountIdCounter = 1;
-        private int _simulatedClanIdCounter = 1;
-        private int _simulatedClanMessageIdCounter = 1;
-        private int _simulatedClanInvitationIdCounter = 1;
+        private DbSettings _settings = new DbSettings();
         private string _dbAccessToken = null;
         private string _dbAccountName = null;
-        private List<AccountDTO> _simulatedAccounts = new List<AccountDTO>();
-        private List<ClanDTO> _simulatedClans = new List<ClanDTO>();
 
-        public DbController(string configPath)
+        public DbController(string configPath, string simulatedDbPath)
         {
             // Load db settings
             if (File.Exists(configPath))
@@ -46,6 +44,27 @@ namespace Server.Database
                 // Save default db config
                 File.WriteAllText(configPath, JsonConvert.SerializeObject(_settings, Formatting.Indented));
             }
+
+            _simulatedDbFilepath = simulatedDbPath;
+        }
+
+        public Task Tick()
+        {
+            if (_loadSimulated)
+            {
+                _loadSimulated = false;
+                if (_settings.SimulatedMode && !string.IsNullOrEmpty(_settings.SimulatedEncryptionKey))
+                    _simulatedDb.Load(_simulatedDbFilepath, _settings.SimulatedEncryptionKey);
+            }
+
+            if (_saveSimulated)
+            {
+                _saveSimulated = false;
+                if (!_simulatedDb.Save(_simulatedDbFilepath, _settings.SimulatedEncryptionKey))
+                    _saveSimulated = true; // try again next tick
+            }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -94,6 +113,15 @@ namespace Server.Database
             return _dbAccountName;
         }
 
+        private void SaveSimulated()
+        {
+            if (string.IsNullOrEmpty(_simulatedDbFilepath) || string.IsNullOrEmpty(_settings.SimulatedEncryptionKey))
+                return;
+
+            _saveSimulated = true;
+            //_simulatedDb.Save(_simulatedDbFilepath, _settings.SimulatedEncryptionKey);
+        }
+
         #region Account
 
         public async Task<string> GetPlayerList()
@@ -134,7 +162,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedAccounts.FirstOrDefault(x => x.AppId == appId && x.AccountName.ToLower() == name.ToLower());
+                    result = _simulatedDb.Accounts.FirstOrDefault(x => x.AppId == appId && x.AccountName.ToLower() == name.ToLower());
                 }
                 else
                 {
@@ -164,7 +192,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedAccounts.FirstOrDefault(x => x.AccountId == id);
+                    result = _simulatedDb.Accounts.FirstOrDefault(x => x.AccountId == id);
                 }
                 else
                 {
@@ -195,9 +223,9 @@ namespace Server.Database
                     var checkExisting = await GetAccountByName(createAccount.AccountName, createAccount.AppId);
                     if (checkExisting == null)
                     {
-                        _simulatedAccounts.Add(result = new AccountDTO()
+                        _simulatedDb.Accounts.Add(result = new AccountDTO()
                         {
-                            AccountId = _simulatedAccountIdCounter++,
+                            AccountId = _simulatedDb.AccountIdCounter++,
                             AccountName = createAccount.AccountName,
                             AccountPassword = createAccount.AccountPassword,
                             AccountWideStats = new int[Constants.LADDERSTATSWIDE_MAXLEN],
@@ -209,6 +237,8 @@ namespace Server.Database
                             Ignored = new AccountRelationDTO[0],
                             IsBanned = false
                         });
+
+                        SaveSimulated();
                     }
                     else
                     {
@@ -258,6 +288,8 @@ namespace Server.Database
                     if (checkExisting != null)
                     {
                         checkExisting.AccountPassword = Utils.ComputeSHA256(newPassword);
+
+                        SaveSimulated();
                     }
                     else
                     {
@@ -334,7 +366,9 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedAccounts.RemoveAll(x => x.AccountName.ToLower() == accountName.ToLower() && x.AppId == appId) > 0;
+                    result = _simulatedDb.Accounts.RemoveAll(x => x.AccountName.ToLower() == accountName.ToLower() && x.AppId == appId) > 0;
+
+                    if (result) SaveSimulated();
                 }
                 else
                 {
@@ -470,7 +504,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    var account = _simulatedDb.Accounts.FirstOrDefault(x => x.AccountId == accountId);
                     result = account?.Metadata;
                 }
                 else
@@ -500,11 +534,13 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    var account = _simulatedDb.Accounts.FirstOrDefault(x => x.AccountId == accountId);
                     if (account != null)
                     {
                         account.Metadata = metadata;
                         result = true;
+
+                        SaveSimulated();
                     }
                     else
                     {
@@ -563,7 +599,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedAccounts.Count;
+                    result = _simulatedDb.Accounts.Count;
                 }
                 else
                 {
@@ -595,7 +631,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedClans.Count(x=>!x.IsDisbanded);
+                    result = _simulatedDb.Clans.Count(x=>!x.IsDisbanded);
                 }
                 else
                 {
@@ -787,6 +823,8 @@ namespace Server.Database
                         };
                         account.Friends = friends;
                         result = true;
+
+                        SaveSimulated();
                     }
                 }
                 else
@@ -829,6 +867,8 @@ namespace Server.Database
                         }
                         account.Friends = newFriends.ToArray();
                         result = true;
+
+                        SaveSimulated();
                     }
                 }
                 else
@@ -870,6 +910,8 @@ namespace Server.Database
                         };
                         account.Ignored = ignored;
                         result = true;
+
+                        SaveSimulated();
                     }
                 }
                 else
@@ -912,6 +954,8 @@ namespace Server.Database
                         }
                         account.Ignored = newIgnored.ToArray();
                         result = true;
+
+                        SaveSimulated();
                     }
                 }
                 else
@@ -945,7 +989,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var stats = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId)?.AccountWideStats;
+                    var stats = _simulatedDb.Accounts.FirstOrDefault(x => x.AccountId == accountId)?.AccountWideStats;
                     if (stats != null)
                     {
                         result = new StatPostDTO()
@@ -981,7 +1025,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var stats = _simulatedClans.FirstOrDefault(x => x.ClanId == clanId)?.ClanWideStats;
+                    var stats = _simulatedDb.Clans.FirstOrDefault(x => x.ClanId == clanId)?.ClanWideStats;
                     if (stats != null)
                     {
                         result = new ClanStatPostDTO()
@@ -1063,7 +1107,7 @@ namespace Server.Database
                     if (clan == null)
                         return null;
 
-                    var ordered = _simulatedClans.Where(x => !x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).ToList();
+                    var ordered = _simulatedDb.Clans.Where(x => !x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).ToList();
                     return new ClanLeaderboardDTO()
                     {
                         ClanId = clan.ClanId,
@@ -1071,7 +1115,7 @@ namespace Server.Database
                         Index = ordered.FindIndex(0, ordered.Count, x => x.ClanId == clanId),
                         MediusStats = clan.ClanMediusStats,
                         StatValue = clan.ClanWideStats[statId],
-                        TotalRankedClans = _simulatedClans.Count(x => !x.IsDisbanded)
+                        TotalRankedClans = _simulatedDb.Clans.Count(x => !x.IsDisbanded)
                     };
                 }
                 else
@@ -1102,14 +1146,14 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedClans.Where(x => x.AppId == appId).Where(x=>!x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedDb.Clans.Where(x => x.AppId == appId).Where(x=>!x.IsDisbanded).OrderByDescending(x => x.ClanWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new ClanLeaderboardDTO()
                     {
                         ClanId = x.ClanId,
                         ClanName = x.ClanName,
                         MediusStats = x.ClanMediusStats,
                         StatValue = x.ClanWideStats[statId],
-                        TotalRankedClans = _simulatedClans.Count(y => !y.IsDisbanded),
+                        TotalRankedClans = _simulatedDb.Clans.Count(y => !y.IsDisbanded),
                         Index = startIndex + ordered.IndexOf(x)
                     }).ToArray();
                 }
@@ -1141,7 +1185,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    var ordered = _simulatedAccounts.Where(x=>x.AppId == appId).OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
+                    var ordered = _simulatedDb.Accounts.Where(x=>x.AppId == appId).OrderByDescending(x => x.AccountWideStats[statId]).Skip(startIndex).Take(size).ToList();
                     result = ordered.Select(x => new LeaderboardDTO()
                     {
                         AccountId = x.AccountId,
@@ -1184,6 +1228,8 @@ namespace Server.Database
 
                     account.AccountWideStats = statPost.Stats;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1217,6 +1263,8 @@ namespace Server.Database
 
                     account.AccountCustomWideStats = statPost.Stats;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1256,6 +1304,8 @@ namespace Server.Database
 
                     clan.ClanWideStats = stats;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1298,6 +1348,8 @@ namespace Server.Database
 
                     clan.ClanCustomWideStats = stats;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1336,6 +1388,8 @@ namespace Server.Database
 
                     account.MediusStats = stats;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1370,6 +1424,8 @@ namespace Server.Database
 
                     clan.ClanMediusStats = stats;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1401,7 +1457,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedClans.FirstOrDefault(x => x.AppId == appId && x.ClanName.ToLower() == name.ToLower());
+                    result = _simulatedDb.Clans.FirstOrDefault(x => x.AppId == appId && x.ClanName.ToLower() == name.ToLower());
                 }
                 else
                 {
@@ -1429,7 +1485,7 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    result = _simulatedClans.FirstOrDefault(x => x.ClanId == id);
+                    result = _simulatedDb.Clans.FirstOrDefault(x => x.ClanId == id);
                 }
                 else
                 {
@@ -1461,9 +1517,9 @@ namespace Server.Database
                     if (checkExisting == null)
                     {
                         var creatorAccount = await GetAccountById(creatorAccountId);
-                        _simulatedClans.Add(result = new ClanDTO()
+                        _simulatedDb.Clans.Add(result = new ClanDTO()
                         {
-                            ClanId = _simulatedClanIdCounter++,
+                            ClanId = _simulatedDb.ClanIdCounter++,
                             ClanName = clanName,
                             ClanLeaderAccount = creatorAccount,
                             ClanMemberAccounts = new List<AccountDTO>(new AccountDTO[] { creatorAccount }),
@@ -1475,6 +1531,8 @@ namespace Server.Database
                         });
 
                         creatorAccount.ClanId = result.ClanId;
+
+                        SaveSimulated();
                     }
                     else
                     {
@@ -1525,7 +1583,9 @@ namespace Server.Database
                         inv.ResponseStatus = 3;
 
                     // remove
-                    return _simulatedClans.Remove(clan);
+                    result = _simulatedDb.Clans.Remove(clan);
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1569,6 +1629,8 @@ namespace Server.Database
 
                     clan.ClanLeaderAccount = newLeaderAccount;
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1623,6 +1685,8 @@ namespace Server.Database
                     }
 
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1654,7 +1718,7 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     // get clan
-                    var clan = _simulatedClans.FirstOrDefault(x => x.ClanId == clanId);
+                    var clan = _simulatedDb.Clans.FirstOrDefault(x => x.ClanId == clanId);
                     if (clan == null)
                         return false;
 
@@ -1663,7 +1727,7 @@ namespace Server.Database
                         return false;
 
                     // get target account
-                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    var account = _simulatedDb.Accounts.FirstOrDefault(x => x.AccountId == accountId);
                     if (account == null)
                         return false;
 
@@ -1674,7 +1738,7 @@ namespace Server.Database
                     // add
                     clan.ClanMemberInvitations.Add(new ClanInvitationDTO()
                     {
-                        InvitationId = _simulatedClanInvitationIdCounter++,
+                        InvitationId = _simulatedDb.ClanInvitationIdCounter++,
                         AppId = clan.AppId,
                         ClanId = clanId,
                         ClanName = clan.ClanName,
@@ -1683,6 +1747,7 @@ namespace Server.Database
                         Message = message
                     });
 
+                    SaveSimulated();
                     return true;
                 }
                 else
@@ -1718,7 +1783,7 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     // get clans
-                    var clans = _simulatedClans.Where(x => x.ClanMemberInvitations.Any(y => y.TargetAccountId == accountId));
+                    var clans = _simulatedDb.Clans.Where(x => x.ClanMemberInvitations.Any(y => y.TargetAccountId == accountId));
 
                     // 
                     result = clans
@@ -1761,17 +1826,17 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     // find invitation
-                    var invite = _simulatedClans.Select(x => x.ClanMemberInvitations.FirstOrDefault(y => y.InvitationId == inviteId)).FirstOrDefault(x => x != null);
+                    var invite = _simulatedDb.Clans.Select(x => x.ClanMemberInvitations.FirstOrDefault(y => y.InvitationId == inviteId)).FirstOrDefault(x => x != null);
                     if (invite == null)
                         return false;
 
                     // get clan
-                    var clan = _simulatedClans.FirstOrDefault(x => x.ClanMemberInvitations.Contains(invite));
+                    var clan = _simulatedDb.Clans.FirstOrDefault(x => x.ClanMemberInvitations.Contains(invite));
                     if (clan == null)
                         return false;
 
                     // get account
-                    var account = _simulatedAccounts.FirstOrDefault(x => x.AccountId == accountId);
+                    var account = _simulatedDb.Accounts.FirstOrDefault(x => x.AccountId == accountId);
                     if (account == null)
                         return false;
 
@@ -1796,6 +1861,8 @@ namespace Server.Database
                     }
 
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1833,7 +1900,7 @@ namespace Server.Database
                 if (_settings.SimulatedMode)
                 {
                     // get clan
-                    var clan = _simulatedClans.FirstOrDefault(x => x.ClanId == clanId);
+                    var clan = _simulatedDb.Clans.FirstOrDefault(x => x.ClanId == clanId);
                     if (clan == null)
                         return false;
 
@@ -1854,6 +1921,8 @@ namespace Server.Database
                     invite.ResponseStatus = 3;
 
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1932,11 +2001,13 @@ namespace Server.Database
                     //
                     clan.ClanMessages.Add(new ClanMessageDTO()
                     {
-                        Id = _simulatedClanMessageIdCounter++,
+                        Id = _simulatedDb.ClanMessageIdCounter++,
                         Message = message
                     });
 
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -1988,6 +2059,8 @@ namespace Server.Database
                     clanMessage.Message = message;
 
                     result = true;
+
+                    SaveSimulated();
                 }
                 else
                 {
@@ -2023,8 +2096,8 @@ namespace Server.Database
                 {
                     return new DimAnnouncements()
                     {
-                        AnnouncementTitle = "Title",
-                        AnnouncementBody = "Body",
+                        AnnouncementTitle = "Horizon Medius Server",
+                        AnnouncementBody = "Source available on GitHub",
                         CreateDt = DateTime.UtcNow
                     };
                 }
@@ -2056,8 +2129,8 @@ namespace Server.Database
                     {
                         new DimAnnouncements()
                         {
-                            AnnouncementTitle = "Title",
-                            AnnouncementBody = "Body",
+                            AnnouncementTitle = "Horizon Medius Server",
+                            AnnouncementBody = "Source available on GitHub",
                             CreateDt = DateTime.UtcNow
                         }
                     };
@@ -2088,8 +2161,8 @@ namespace Server.Database
                 {
                     return new DimEula()
                     {
-                        EulaTitle = "Title",
-                        EulaBody = "Body"
+                        EulaTitle = "EULA",
+                        EulaBody = ""
                     };
                 }
                 else
@@ -2119,8 +2192,8 @@ namespace Server.Database
                 {
                     return new DimEula()
                     {
-                        EulaTitle = "Title",
-                        EulaBody = "Body"
+                        EulaTitle = "PRIVACY",
+                        EulaBody = ""
                     };
                 }
                 else
@@ -2488,7 +2561,10 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    return new Dictionary<string, string>();
+                    if (_simulatedDb.AppSettings.TryGetValue(appId, out var settings))
+                        return settings;
+                    else
+                        return new Dictionary<string, string>();
                 }
                 else
                 {
@@ -2509,7 +2585,8 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-
+                    //_simulatedDb.AppSettings[appId] = settings;
+                    //SaveSimulated();
                 }
                 else
                 {
