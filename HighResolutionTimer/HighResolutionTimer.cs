@@ -16,6 +16,8 @@ namespace Haukcode.HighResolutionTimer
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 this.timer = new WindowsTimer();
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                this.timer = new OsxTimer();
             else
                 this.timer = new LinuxTimer();
         }

@@ -362,3 +362,9 @@ Server.UniverseInformation/out/
 
 # SQLite3 database files
 database/
+
+# Mac OSX
+.DS_Store
+
+# vscode files
+.vscode/

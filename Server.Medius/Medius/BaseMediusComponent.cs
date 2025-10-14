@@ -198,8 +198,8 @@ namespace Server.Medius
                         pipeline.AddLast(new ScertMultiAppDecoder());
                         pipeline.AddLast(_scertHandler);
                     }))
-                    .ChildOption(ChannelOption.TcpNodelay, true)
-                    .ChildOption(ChannelOption.SoTimeout, 1000 * 60 * 15);
+                    .ChildOption(ChannelOption.TcpNodelay, true);
+                    //.ChildOption(ChannelOption.SoTimeout, 1000 * 60 * 15);
 
                 _boundChannel = await bootstrap.BindAsync(Port);
             }

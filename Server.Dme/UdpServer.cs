@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using Server.Dme.PluginArgs;
 using Server.Plugins.Interface;
 using Server.Pipeline.Attribute;
+using System.Net.Sockets;
 
 namespace Server.Dme
 {
@@ -114,7 +115,12 @@ namespace Server.Dme
             var bootstrap = new Bootstrap();
             bootstrap
                 .Group(_workerGroup)
-                .Channel<SocketDatagramChannel>()
+                .ChannelFactory(() =>
+                {
+                    var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    //socket.DualMode = false;
+                    return new SocketDatagramChannel(socket);
+                })
                 .Handler(new LoggingHandler(LogLevel.INFO))
                 .Handler(new ActionChannelInitializer<IChannel>(channel =>
                 {

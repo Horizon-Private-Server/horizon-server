@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -66,7 +67,12 @@ namespace Server.NAT
             var bootstrap = new Bootstrap();
             bootstrap
                 .Group(_workerGroup)
-                .Channel<SocketDatagramChannel>()
+                .ChannelFactory(() =>
+                {
+                    var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    //socket.DualMode = false;
+                    return new SocketDatagramChannel(socket);
+                })
                 .Handler(new LoggingHandler(LogLevel.INFO))
                 .Handler(new ActionChannelInitializer<IChannel>(channel =>
                 {

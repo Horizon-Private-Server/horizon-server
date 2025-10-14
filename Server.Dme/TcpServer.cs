@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using DotNetty.Handlers.Timeout;
 using Server.Dme.PluginArgs;
 using Server.Plugins.Interface;
+using System.Net.Sockets;
 
 namespace Server.Dme
 {
@@ -136,8 +137,8 @@ namespace Server.Dme
                     pipeline.AddLast(new ScertMultiAppDecoder());
                     pipeline.AddLast(_scertHandler);
                 }))
-                .ChildOption(ChannelOption.TcpNodelay, true)
-                .ChildOption(ChannelOption.SoTimeout, 1000 * 60 * 15);
+                .ChildOption(ChannelOption.TcpNodelay, true);
+                //.ChildOption(ChannelOption.SoTimeout, 1000 * 60 * 15);
 
             _boundChannel = await bootstrap.BindAsync(Port);
         }
