@@ -301,7 +301,7 @@ namespace Server.Medius
         {
             try
             {
-                return _scertHandler.Group
+                return _scertHandler.Channels
                     .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
                     .Where(x => x is DMEObject && x != null && (x as DMEObject).Location == preferredLocation && (x.ApplicationId == appId || x.ApplicationId == 0))
                     .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
@@ -310,7 +310,7 @@ namespace Server.Medius
 
             try
             {
-                return _scertHandler.Group
+                return _scertHandler.Channels
                     .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
                     .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
                     .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;

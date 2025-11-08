@@ -213,6 +213,8 @@ namespace Server.Plugins
                         _ = instance.Start(file.Directory.FullName, this);
                     }
                 }
+                catch (TypeInitializationException) { }
+                catch (BadImageFormatException) { }
                 catch (Exception ex)
                 {
                     Logger.Error(ex);

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNetty.Handlers" Version="0.7.0" />
+    <PackageReference Include="DotNetty.Handlers" Version="0.7.6" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
   </ItemGroup>

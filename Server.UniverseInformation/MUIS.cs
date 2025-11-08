@@ -134,10 +134,11 @@ namespace Server.UnivereInformation
         /// </summary>
         public async Task Tick()
         {
-            if (_scertHandler == null || _scertHandler.Group == null)
+            if (_scertHandler == null)
                 return;
 
-            await Task.WhenAll(_scertHandler.Group.Select(c => Tick(c)));
+            var tasks = _scertHandler.Channels.Select(Tick).ToArray();
+            await Task.WhenAll(tasks);
         }
 
         private async Task Tick(IChannel clientChannel)
