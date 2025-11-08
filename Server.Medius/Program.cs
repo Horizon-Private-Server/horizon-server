@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Crypto.Tls;
 using Org.BouncyCastle.Math;
 using System;
 using System.Collections.Concurrent;
@@ -241,10 +240,24 @@ namespace Server.Medius
 
             // Optionally add console logger (always enabled when debugging)
 #if DEBUG
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
+            InternalLoggerFactory.DefaultFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter(level => level >= LogSettings.Singleton.LogLevel)
+                    .AddConsole();
+            });
+            //InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #else
             if (Settings.Logging.LogToConsole)
-                InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
+            {
+                InternalLoggerFactory.DefaultFactory = LoggerFactory.Create(builder =>
+                {
+                    builder
+                        .AddFilter(level => level >= LogSettings.Singleton.LogLevel)
+                        .AddConsole();
+                });
+                //InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
+            }
 #endif
 
             // Initialize plugins
