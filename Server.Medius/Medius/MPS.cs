@@ -299,28 +299,19 @@ namespace Server.Medius
 
         public DMEObject GetFreeDme(int appId, int preferredLocation)
         {
-            try
-            {
-                return _scertHandler.Channels
-                    .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
-                    .Where(x => x is DMEObject && x != null && (x as DMEObject).Location == preferredLocation && (x.ApplicationId == appId || x.ApplicationId == 0))
-                    .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
-            }
-            catch { }
+            // get by location & app id
+            var dme = _scertHandler.Channels
+                .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
+                .Where(x => x is DMEObject && x != null && (x as DMEObject).Location == preferredLocation && (x.ApplicationId == appId || x.ApplicationId == 0))
+                .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
 
-            try
-            {
-                return _scertHandler.Channels
-                    .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
-                    .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
-                    .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e);
-            }
+            // if that fails get by app id only
+            dme ??= _scertHandler.Channels
+                .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
+                .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
+                .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
 
-            return null;
+            return dme;
         }
 
         public DMEObject ReserveDMEObject(MediusServerSessionBeginRequest request)
