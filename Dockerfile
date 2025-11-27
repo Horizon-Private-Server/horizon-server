@@ -1,5 +1,5 @@
 # Build stage =========================================================================
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as builder
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS builder
 
 COPY . /src
 
@@ -24,7 +24,7 @@ RUN dotnet publish -c Release -o out
 
 # Run stage =========================================================================
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1
+FROM mcr.microsoft.com/dotnet/sdk:9.0
 RUN mkdir /logs
 COPY ./docker /docker
 RUN chmod a+x /docker/entrypoint.sh

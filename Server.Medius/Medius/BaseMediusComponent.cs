@@ -193,7 +193,7 @@ namespace Server.Medius
                         pipeline.AddLast(new WriteTimeoutHandler(60 * 15));
                         pipeline.AddLast(new ScertEncoder());
                         pipeline.AddLast(new ScertIEnumerableEncoder());
-                        pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 2048, 1, 2, 0, 0, false));
+                        pipeline.AddLast(new ScertTcpFrameDecoder(DotNetty.Buffers.ByteOrder.LittleEndian, 1024 * 16, 1, 2, 0, 0, false));
                         pipeline.AddLast(new ScertDecoder());
                         pipeline.AddLast(new ScertMultiAppDecoder());
                         pipeline.AddLast(_scertHandler);
@@ -230,11 +230,12 @@ namespace Server.Medius
 
         public async Task Tick()
         {
-            if (_scertHandler == null || _scertHandler.Group == null)
+            if (_scertHandler == null)
                 return;
 
             // Tick clients
-            await Task.WhenAll(_scertHandler.Group.Select(c => Tick(c)));
+            var tasks = _scertHandler.Channels.Select(Tick).ToArray();
+            await Task.WhenAll(tasks);
 
             // Disconnect and remove timedout unauthenticated channels
             while (_forceDisconnectQueue.TryDequeue(out var channel))

@@ -1,5 +1,6 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Haukcode.HighResolutionTimer;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
 using NReco.Logging.File;
@@ -300,10 +301,24 @@ namespace Server.Dme
 
             // Optionally add console logger (always enabled when debugging)
 #if DEBUG
-            InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
+            InternalLoggerFactory.DefaultFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter(level => level >= LogSettings.Singleton.LogLevel)
+                    .AddConsole();
+            });
+            //InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
 #else
             if (Settings.Logging.LogToConsole)
-                InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
+            {
+                InternalLoggerFactory.DefaultFactory = LoggerFactory.Create(builder =>
+                {
+                    builder
+                        .AddFilter(level => level >= LogSettings.Singleton.LogLevel)
+                        .AddConsole();
+                });
+                //InternalLoggerFactory.DefaultFactory.AddProvider(new ConsoleLoggerProvider((s, level) => level >= LogSettings.Singleton.LogLevel, true));
+            }
 #endif
 
             // Initialize plugins

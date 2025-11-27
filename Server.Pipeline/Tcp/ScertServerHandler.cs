@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Server.Pipeline.Tcp
 {
@@ -18,12 +19,15 @@ namespace Server.Pipeline.Tcp
 
         public override bool IsSharable => true;
 
-        public IChannelGroup Group = null;
+        private IChannelGroup Group = null;
 
 
         public Action<IChannel> OnChannelActive;
         public Action<IChannel> OnChannelInactive;
         public Action<IChannel, BaseScertMessage> OnChannelMessage;
+
+        public bool HasGroup() => Group != null;
+        public IEnumerable<IChannel> Channels => Group?.ToArray() ?? [];
 
         public override void ChannelActive(IChannelHandlerContext ctx)
         {
