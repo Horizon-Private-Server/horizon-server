@@ -1,0 +1,57 @@
+name: Build and Upload .NET Project
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-x64
+
+    steps:
+      # Step 1: Checkout current repo
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      # Step 2: Setup .NET
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Step 4: Restore
+      - name: Restore
+        working-directory: repo/Server.Unified.Launcher
+        run: dotnet restore
+
+      # Step 5: Build
+      - name: Build
+        working-directory: repo/Server.Unified.Launcher
+        run: dotnet build --configuration Release --no-restore
+
+      # Step 6: Publish self-contained binaries
+      - name: Publish for ${{ matrix.os }}
+        working-directory: repo/Server.Unified.Launcher
+        run: |
+          dotnet publish --configuration Release /p:PublishSingleFile=true --self-contained true --runtime ${{ matrix.rid }} --output ../../output/${{ matrix.rid }}
+
+      # Step 7: Upload binaries as an artifact
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.rid }}
+          path: output/${{ matrix.rid }}/
