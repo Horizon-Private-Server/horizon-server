@@ -193,8 +193,8 @@ namespace Server.Pipeline.Tcp
             if (frameLength > this.maxFrameLength)
             {
                 int startOff = (int)Math.Min(20, input.ArrayOffset);
-                FailIfNecessary(true);
-                //throw new CorruptedFrameException($"{context.Channel.RemoteAddress} Frame Length exceeds max frame length on buffer: start:{startOff} {BitConverter.ToString(input.Array, input.ArrayOffset - startOff, startOff + input.ReadableBytes)}");
+                //FailIfNecessary(true);
+                throw new CorruptedFrameException($"{context.Channel.RemoteAddress} Frame Length exceeds max frame length on buffer: start:{startOff} {BitConverter.ToString(input.Array, input.ArrayOffset - startOff, startOff + input.ReadableBytes)}");
             }
 
             // never overflows because it's less than maxFrameLength
