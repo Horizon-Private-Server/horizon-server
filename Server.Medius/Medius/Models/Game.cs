@@ -441,6 +441,7 @@ namespace Server.Medius.Models
             if (WorldStatus == status)
                 return;
 
+            Logger.Info($"Game {Id}:{GameName}: WorldStatus {WorldStatus} -> {status}");
             _worldStatus = status;
 
             switch (status)

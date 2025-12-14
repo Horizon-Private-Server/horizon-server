@@ -226,12 +226,15 @@ namespace Server.Medius
             else if (request is MediusCreateGameRequest1 r1)
                 gameName = r1.GameName;
 
+            Logger.Info($"CreateGame request {request.MessageID} from {client} app:{client.ApplicationId} name:\"{gameName}\"");
+
             var existingGames = _lookupsByAppId.Where(x => appIdsInGroup.Contains(client.ApplicationId)).SelectMany(x => x.Value.GameIdToGame.Select(g => g.Value));
             
             // Ensure the name is unique
             // If the host leaves then we unreserve the name
             if (existingGames.Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == gameName && x.Host != null && x.Host.IsConnected))
             {
+                Logger.Warn($"CreateGame rejected duplicate name \"{gameName}\" for {client} app:{client.ApplicationId}.");
                 client.Queue(new RT_MSG_SERVER_APP()
                 {
                     Message = new MediusCreateGameResponse()
@@ -249,6 +252,7 @@ namespace Server.Medius
             var dme = Program.ProxyServer.GetFreeDme(client.ApplicationId, client.Location);
             if (dme == null)
             {
+                Logger.Warn($"CreateGame failed for {client} app:{client.ApplicationId} name:\"{gameName}\": no free DME available.");
                 client.Queue(new MediusCreateGameResponse()
                 {
                     MessageID = request.MessageID,
@@ -264,20 +268,27 @@ namespace Server.Medius
                 var game = new Game(client, request, client.CurrentChannel, dme);
                 AddGame(game);
 
+                var createMessageId = new MessageId($"{game.Id}-{client.AccountId}-{request.MessageID}");
+
+                Logger.Info($"Routing create game {game.Id}:{game.GameName} for host {client} to DME {dme?.IP}:{dme?.Port} msg:{createMessageId} app:{client.ApplicationId}");
+
                 // Send create game request to dme server
                 dme.Queue(new MediusServerCreateGameWithAttributesRequest()
                 {
-                    MessageID = new MessageId($"{game.Id}-{client.AccountId}-{request.MessageID}"),
+                    MessageID = createMessageId,
                     MediusWorldUID = (uint)game.Id,
                     Attributes = game.Attributes,
                     ApplicationID = client.ApplicationId,
                     MaxClients = game.MaxPlayers
                 });
+
+                // Log if the DME does not respond in a timely manner
+                _ = LogCreateGamePendingAsync(game, createMessageId);
             }
             catch (Exception e)
             {
                 // 
-                Logger.Error(e);
+                Logger.Error($"Exception creating game \"{gameName}\" for {client} app:{client.ApplicationId}", e);
 
                 // Failure adding game for some reason
                 client.Queue(new MediusCreateGameResponse()
@@ -330,6 +341,16 @@ namespace Server.Medius
                         ServerKey = Program.GlobalAuthPublic
                     }
                 });
+            }
+        }
+
+        private async Task LogCreateGamePendingAsync(Game game, MessageId messageId)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
+            if (game != null && game.DMEWorldId < 0 && game.WorldStatus == MediusWorldStatus.WorldPendingCreation)
+            {
+                Logger.Warn($"Still waiting on DME create response for game {game.Id}:{game.GameName} msg:{messageId} host:{game.Host} app:{game.ApplicationId} created:{game.UtcTimeCreated:O}");
             }
         }
 

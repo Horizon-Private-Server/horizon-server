@@ -190,8 +190,22 @@ namespace Server.Medius
                         var game = Program.Manager.GetGameByGameId(gameId);
                         var rClient = Program.Manager.GetClientByAccountId(accountId);
 
+                        Logger.Info($"CreateGame response for gameId:{gameId} msg:{createGameWithAttrResponse.MessageID} world:{createGameWithAttrResponse.WorldID} confirmation:{createGameWithAttrResponse.Confirmation} host:{rClient} game:{game?.GameName ?? "<unknown>"}");
+
+                        if (game == null)
+                        {
+                            Logger.Warn($"CreateGame response could not be matched to game id {gameId}. Dropping response.");
+                            break;
+                        }
+
+                        if (rClient == null)
+                        {
+                            Logger.Warn($"CreateGame response for game {game.Id}:{game.GameName} could not find host account {accountId}.");
+                        }
+
                         if (!createGameWithAttrResponse.IsSuccess)
                         {
+                            Logger.Warn($"DME failed to create game {game.Id}:{game.GameName} confirmation:{createGameWithAttrResponse.Confirmation}");
                             rClient?.Queue(new MediusCreateGameResponse()
                             {
                                 MessageID = new MessageId(msgId),
@@ -203,6 +217,7 @@ namespace Server.Medius
                         else
                         {
                             game.DMEWorldId = createGameWithAttrResponse.WorldID;
+                            Logger.Info($"Game {game.Id}:{game.GameName} assigned DMEWorldId {game.DMEWorldId} (msg:{msgId}).");
                             await game.GameCreated();
                             rClient?.Queue(new MediusCreateGameResponse()
                             {
