@@ -137,7 +137,8 @@ namespace Server.UnivereInformation
             if (_scertHandler == null)
                 return;
 
-            var tasks = _scertHandler.Channels.Select(Tick).ToArray();
+            var channels = _scertHandler.Channels;
+            var tasks = channels.Select(Tick).ToArray();
             await Task.WhenAll(tasks);
         }
 

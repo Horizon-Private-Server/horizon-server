@@ -168,7 +168,8 @@ namespace Server.Dme
             if (_scertHandler == null)
                 return;
 
-            var tasks = _scertHandler.Channels.Select(HandleIncomingMessages).ToArray();
+            var channels = _scertHandler.Channels;
+            var tasks = channels.Select(HandleIncomingMessages).ToArray();
             await Program.TimeAsync("tcp incoming", () => Task.WhenAll(tasks));
         }
 
@@ -180,7 +181,8 @@ namespace Server.Dme
             if (_scertHandler == null)
                 return;
 
-            var tasks = _scertHandler.Channels.Select(HandleOutgoingMessages).ToArray();
+            var channels = _scertHandler.Channels;
+            var tasks = channels.Select(HandleOutgoingMessages).ToArray();
             await Task.WhenAll(tasks);
 
             // Disconnect and remove timedout unauthenticated channels
