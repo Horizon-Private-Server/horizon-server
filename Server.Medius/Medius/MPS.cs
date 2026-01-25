@@ -299,14 +299,16 @@ namespace Server.Medius
 
         public DMEObject GetFreeDme(int appId, int preferredLocation)
         {
+            var channels = _scertHandler.GetChannels();
+
             // get by location & app id
-            var dme = _scertHandler.Channels
+            var dme = channels
                 .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
                 .Where(x => x is DMEObject && x != null && (x as DMEObject).Location == preferredLocation && (x.ApplicationId == appId || x.ApplicationId == 0))
                 .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
 
             // if that fails get by app id only
-            dme ??= _scertHandler.Channels
+            dme ??= channels
                 .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
                 .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
                 .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;

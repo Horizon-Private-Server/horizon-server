@@ -168,7 +168,7 @@ namespace Server.Dme
             if (_scertHandler == null)
                 return;
 
-            var channels = _scertHandler.Channels;
+            var channels = _scertHandler.GetChannels();
             var tasks = channels.Select(HandleIncomingMessages).ToArray();
             await Program.TimeAsync("tcp incoming", () => Task.WhenAll(tasks));
         }
@@ -181,7 +181,7 @@ namespace Server.Dme
             if (_scertHandler == null)
                 return;
 
-            var channels = _scertHandler.Channels;
+            var channels = _scertHandler.GetChannels();
             var tasks = channels.Select(HandleOutgoingMessages).ToArray();
             await Task.WhenAll(tasks);
 

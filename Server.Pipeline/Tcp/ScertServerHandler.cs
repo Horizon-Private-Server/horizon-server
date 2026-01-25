@@ -27,7 +27,7 @@ namespace Server.Pipeline.Tcp
         public Action<IChannel, BaseScertMessage> OnChannelMessage;
 
         public bool HasGroup() => Group != null;
-        public IEnumerable<IChannel> Channels => Group?.ToArray() ?? [];
+        public IChannel[] GetChannels() => Group?.ToArray() ?? [];
 
         public override void ChannelActive(IChannelHandlerContext ctx)
         {

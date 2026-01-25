@@ -234,7 +234,7 @@ namespace Server.Medius
                 return;
 
             // Tick clients
-            var channels = _scertHandler.Channels;
+            var channels = _scertHandler.GetChannels();
             var tasks = channels.Select(Tick).ToArray();
             await Task.WhenAll(tasks);
 
