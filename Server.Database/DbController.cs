@@ -30,6 +30,8 @@ namespace Server.Database
         private string _dbAccessToken = null;
         private string _dbAccountName = null;
 
+        public bool IsSimulated => _settings.SimulatedMode;
+
         public DbController(string configPath, string simulatedDbPath)
         {
             // Load db settings
@@ -2663,7 +2665,7 @@ namespace Server.Database
 
         #region Http
 
-        private async Task<HttpResponseMessage> DeleteDbAsync(string route)
+        public async Task<HttpResponseMessage> DeleteDbAsync(string route)
         {
             // 
             HttpResponseMessage result = null;
@@ -2704,7 +2706,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<HttpResponseMessage> GetDbAsync(string route)
+        public async Task<HttpResponseMessage> GetDbAsync(string route)
         {
             // 
             HttpResponseMessage result = null;
@@ -2745,7 +2747,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<T> GetDbAsync<T>(string route)
+        public async Task<T> GetDbAsync<T>(string route)
         {
             // 
             T result = default(T);
@@ -2790,7 +2792,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<HttpResponseMessage> PostDbAsync(string route, string body)
+        public async Task<HttpResponseMessage> PostDbAsync(string route, string body)
         {
             // 
             HttpResponseMessage result = null;
@@ -2831,7 +2833,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<HttpResponseMessage> PostDbAsync(string route, object body)
+        public async Task<HttpResponseMessage> PostDbAsync(string route, object body)
         {
             // 
             HttpResponseMessage result = null;
@@ -2872,7 +2874,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<T> PostDbAsync<T>(string route, object body)
+        public async Task<T> PostDbAsync<T>(string route, object body)
         {
             // 
             T result = default(T);
@@ -2917,7 +2919,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<HttpResponseMessage> PutDbAsync(string route, string body)
+        public async Task<HttpResponseMessage> PutDbAsync(string route, string body)
         {
             // 
             HttpResponseMessage result = null;
@@ -2958,7 +2960,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<HttpResponseMessage> PutDbAsync(string route, object body)
+        public async Task<HttpResponseMessage> PutDbAsync(string route, object body)
         {
             // 
             HttpResponseMessage result = null;
@@ -2999,7 +3001,7 @@ namespace Server.Database
             return result;
         }
 
-        private async Task<T> PutDbAsync<T>(string route, object body)
+        public async Task<T> PutDbAsync<T>(string route, object body)
         {
             // 
             T result = default(T);
