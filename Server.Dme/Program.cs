@@ -195,8 +195,8 @@ namespace Server.Dme
             {
                 Logger.Error(ex);
 
-                await TcpServer.Stop();
                 await Task.WhenAll(Managers.Select(x => x.Value.Stop()));
+                await TcpServer.Stop();
             }
         }
 

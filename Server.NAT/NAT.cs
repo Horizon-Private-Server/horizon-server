@@ -5,6 +5,7 @@ using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using RT.Cryptography;
 using RT.Models;
+using Server.Common;
 using Server.Pipeline.Udp;
 using System;
 using System.Collections.Generic;
@@ -91,12 +92,19 @@ namespace Server.NAT
         {
             try
             {
-                await _boundChannel.CloseAsync();
+                if (_boundChannel != null)
+                {
+                    var closeTask = _boundChannel.CloseAsync();
+                    await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000));
+                }
             }
             finally
             {
-                await Task.WhenAll(
-                        _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                if (_workerGroup != null)
+                {
+                    await Task.WhenAll(
+                            _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                }
             }
         }
 

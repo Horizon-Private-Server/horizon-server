@@ -14,5 +14,13 @@ namespace Server.Dme.PluginArgs
         public BaseScertMessage Packet { get; set; }
 
         public bool Ignore { get; set; }
+
+        public bool IsIncoming { get; }
+        
+        
+        public OnTcpMsg(bool isIncoming)
+        {
+            IsIncoming = isIncoming;
+        }
     }
 }

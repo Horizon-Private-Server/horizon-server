@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server.Dme.Models
@@ -153,6 +154,7 @@ namespace Server.Dme.Models
 
         private DateTime _lastServerEchoValue = DateTime.UnixEpoch;
         private DateTime? _lastForceDisconnect = null;
+        private int _isStopping = 0;
 
         public ClientObject(string sessionKey, World dmeWorld, int dmeId)
         {
@@ -263,29 +265,39 @@ namespace Server.Dme.Models
 
         public async Task Stop()
         {
-            if (IsDestroyed)
+            if (IsDestroyed || Interlocked.Exchange(ref _isStopping, 1) == 1)
                 return;
+
+            var udp = Udp;
+            var tcp = Tcp;
+
+            // Mark destroyed and detach channels early to prevent re-entrant close races.
+            Udp = null;
+            Tcp = null;
+            IsDestroyed = true;
 
             try
             {
-                if (Udp != null)
-                    await Udp.Stop();
+                if (udp != null)
+                    await udp.Stop();
 
-                if (Tcp != null)
-                    await Tcp.CloseAsync();
+                if (tcp != null)
+                {
+                    var closeTask = tcp.CloseAsync();
+                    if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                    {
+                        Logger.Warn($"Timed out waiting for TCP close for client {this}");
+                    }
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                
+                Logger.Error(ex);
             }
             finally
             {
                 OnDestroyed?.Invoke(this);
             }
-
-            Tcp = null;
-            Udp = null;
-            IsDestroyed = true;
         }
 
         public void OnTcpConnected(IChannel channel)

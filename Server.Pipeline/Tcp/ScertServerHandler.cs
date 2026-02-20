@@ -20,6 +20,7 @@ namespace Server.Pipeline.Tcp
         public override bool IsSharable => true;
 
         private IChannelGroup Group = null;
+        private readonly ConcurrentDictionary<string, IChannel> _channels = new ConcurrentDictionary<string, IChannel>();
 
 
         public Action<IChannel> OnChannelActive;
@@ -27,7 +28,7 @@ namespace Server.Pipeline.Tcp
         public Action<IChannel, BaseScertMessage> OnChannelMessage;
 
         public bool HasGroup() => Group != null;
-        public IChannel[] GetChannels() => Group?.ToArray() ?? [];
+        public IChannel[] GetChannels() => _channels.Values.ToArray();
 
         public override void ChannelActive(IChannelHandlerContext ctx)
         {
@@ -52,11 +53,13 @@ namespace Server.Pipeline.Tcp
             {
                 Logger.Warn("Channel Closed");
                 g?.Remove(ctx.Channel);
+                _channels.TryRemove(ctx.Channel.Id.AsLongText(), out _);
                 OnChannelInactive?.Invoke(ctx.Channel);
             });
 
             // Add to channels list
             g.Add(ctx.Channel);
+            _channels[ctx.Channel.Id.AsLongText()] = ctx.Channel;
 
             // Send event upstream
             OnChannelActive?.Invoke(ctx.Channel);
@@ -71,6 +74,7 @@ namespace Server.Pipeline.Tcp
 
             // Remove
             g?.Remove(ctx.Channel);
+            _channels.TryRemove(ctx.Channel.Id.AsLongText(), out _);
 
             // Send event upstream
             OnChannelInactive?.Invoke(ctx.Channel);
