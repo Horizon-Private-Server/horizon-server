@@ -124,11 +124,11 @@ namespace Server.Dme
             };
 
             // Remove client on disconnect
-            _scertHandler.OnChannelInactive += async (channel) =>
+            _scertHandler.OnChannelInactive += (channel) =>
             {
                 Logger.Error($"Lost connection to MPS");
                 TimeLostConnection = Utils.GetHighPrecisionUtcTime();
-                await Stop();
+                _ = Stop();
             };
 
             // Queue all incoming messages
@@ -164,8 +164,19 @@ namespace Server.Dme
         public async Task Stop()
         {
             await Task.WhenAll(_worlds.Select(x => x.Stop()));
-            await _mpsChannel.DisconnectAsync();
-            await _group.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+            if (_mpsChannel != null)
+            {
+                var disconnectTask = _mpsChannel.DisconnectAsync();
+                if (!await disconnectTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                    Logger.Warn("Timed out waiting for DME MPS channel disconnect.");
+            }
+
+            if (_group != null)
+            {
+                var shutdownTask = _group.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+                if (!await shutdownTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                    Logger.Warn("Timed out waiting for DME MPS event loop shutdown.");
+            }
 
             // 
             _worlds.Clear();
@@ -383,7 +394,12 @@ namespace Server.Dme
                 case RT_MSG_SERVER_FORCED_DISCONNECT serverForcedDisconnect:
                 case RT_MSG_CLIENT_DISCONNECT_WITH_REASON clientDisconnectWithReason:
                     {
-                        await serverChannel.CloseAsync();
+                        if (serverChannel != null)
+                        {
+                            var closeTask = serverChannel.CloseAsync();
+                            if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                                Logger.Warn("Timed out waiting for DME MPS server channel close.");
+                        }
                         _mpsState = MPSConnectionState.NO_CONNECTION;
                         break;
                     }

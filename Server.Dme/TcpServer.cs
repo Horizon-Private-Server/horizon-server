@@ -91,21 +91,13 @@ namespace Server.Dme
             };
 
             // Queue all incoming messages
-            _scertHandler.OnChannelMessage += async (channel, message) =>
+            _scertHandler.OnChannelMessage += (channel, message) =>
             {
                 string key = channel.Id.AsLongText();
                 if (_channelDatas.TryGetValue(key, out var data))
                 {
                     if (!data.Ignore && (data.ClientObject == null || !data.ClientObject.IsDestroyed))
                     {
-                        // Plugin
-                        var pluginArgs = new OnTcpMsg()
-                        {
-                            Player = data.ClientObject,
-                            Packet = message
-                        };
-                        await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_TCP, pluginArgs);
-
                         data.RecvQueue.Enqueue(message);
                         data.ClientObject?.OnRecv(message);
                         if (message is RT_MSG_SERVER_ECHO serverEcho)
@@ -150,7 +142,12 @@ namespace Server.Dme
         {
             try
             {
-                await _boundChannel.CloseAsync();
+                if (_boundChannel != null)
+                {
+                    var closeTask = _boundChannel.CloseAsync();
+                    if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                        Logger.Warn("Timed out waiting for DME TCP bound channel close.");
+                }
             }
             finally
             {
@@ -629,12 +626,21 @@ namespace Server.Dme
                 Message = message
             };
 
-            // Send to plugins
+            // Plugin
+            var onTcpMsg = new OnTcpMsg(isIncoming)
+            {
+                Player = data.ClientObject,
+                Packet = message
+            };
+
+            // go from lowest form upwards
+            await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_TCP, onTcpMsg);
+            if (onTcpMsg.Ignore)
+                return true;
+
             await Program.Plugins.OnMessageEvent(message.Id, onMsg);
             if (onMsg.Ignore)
                 return true;
-
-
 
             // Send medius message to plugins
             if (message is RT_MSG_CLIENT_APP_TOSERVER clientApp)

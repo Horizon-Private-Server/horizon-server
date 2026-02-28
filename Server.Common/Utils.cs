@@ -326,6 +326,22 @@ namespace Server.Common
             }
         }
 
+        public static async Task<bool> TryAwait(this Task task, TimeSpan timeout)
+        {
+            using (var timeoutCancellationTokenSource = new CancellationTokenSource())
+            {
+                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+                if (completedTask == task)
+                {
+                    timeoutCancellationTokenSource.Cancel();
+                    await task;
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
         #endregion
 
     }

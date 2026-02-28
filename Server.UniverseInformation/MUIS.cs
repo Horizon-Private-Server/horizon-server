@@ -119,13 +119,22 @@ namespace Server.UnivereInformation
         {
             try
             {
-                await _boundChannel.CloseAsync();
+                if (_boundChannel != null)
+                {
+                    var closeTask = _boundChannel.CloseAsync();
+                    await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000));
+                }
             }
             finally
             {
-                await Task.WhenAll(
-                        _bossGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
-                        _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                var shutdownTasks = new List<Task>();
+                if (_bossGroup != null)
+                    shutdownTasks.Add(_bossGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                if (_workerGroup != null)
+                    shutdownTasks.Add(_workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+
+                if (shutdownTasks.Count > 0)
+                    await Task.WhenAll(shutdownTasks);
             }
         }
 
