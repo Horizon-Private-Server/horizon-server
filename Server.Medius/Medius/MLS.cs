@@ -85,7 +85,9 @@ namespace Server.Medius
                         if (!Program.Manager.IsAppIdSupported(clientConnectTcp.AppId))
                         {
                             Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with incompatible app id {clientConnectTcp.AppId}");
-                            await clientChannel.CloseAsync();
+                            var closeTask = clientChannel.CloseAsync();
+                            if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                                Logger.Warn($"Timed out waiting for MLS client channel close: {clientChannel.RemoteAddress}");
                             return;
                         }
 

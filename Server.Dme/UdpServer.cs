@@ -8,6 +8,7 @@ using Microsoft.VisualBasic.FileIO;
 using RT.Common;
 using RT.Cryptography;
 using RT.Models;
+using Server.Common;
 using Server.Pipeline.Tcp;
 using Server.Pipeline.Udp;
 using Server.Dme.Models;
@@ -95,20 +96,9 @@ namespace Server.Dme
             };
 
             // Queue all incoming messages
-            _scertHandler.OnChannelMessage += async (channel, message) =>
+            _scertHandler.OnChannelMessage += (channel, message) =>
             {
-                var pluginArgs = new OnUdpMsg()
-                {
-                    Player = this.ClientObject,
-                    Packet = message
-                };
-
-                // Plugin
-                await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_UDP, pluginArgs);
-
-                if (!pluginArgs.Ignore)
-                    _recvQueue.Enqueue(message);
-
+                _recvQueue.Enqueue(message);
                 ClientObject?.OnRecv(message);
             };
 
@@ -144,12 +134,20 @@ namespace Server.Dme
         {
             try
             {
-                await _boundChannel.CloseAsync();
+                if (_boundChannel != null)
+                {
+                    var closeTask = _boundChannel.CloseAsync();
+                    if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                        Logger.Warn("Timed out waiting for DME UDP bound channel close.");
+                }
             }
             finally
             {
-                await Task.WhenAll(
-                        _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                if (_workerGroup != null)
+                {
+                    await Task.WhenAll(
+                            _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                }
 
                 FreePort();
             }
@@ -322,7 +320,7 @@ namespace Server.Dme
                 {
                     try
                     {
-                        if (!await PassMessageToPlugins(_boundChannel, ClientObject, message.Message, true))
+                        if (!await PassMessageToPlugins(_boundChannel, ClientObject, message, true))
                             ProcessMessage(message);
                     }
                     catch (Exception e)
@@ -353,7 +351,7 @@ namespace Server.Dme
                     // Add send queue to responses
                     while (_sendQueue.TryDequeue(out var message))
                     {
-                        if (!await PassMessageToPlugins(_boundChannel, ClientObject, message.Message, false))
+                        if (!await PassMessageToPlugins(_boundChannel, ClientObject, message, false))
                             responses.Add(message);
                     }
 
@@ -370,8 +368,9 @@ namespace Server.Dme
 
         #endregion
 
-        protected async Task<bool> PassMessageToPlugins(IChannel clientChannel, ClientObject clientObject, BaseScertMessage message, bool isIncoming)
+        protected async Task<bool> PassMessageToPlugins(IChannel clientChannel, ClientObject clientObject, ScertDatagramPacket packet, bool isIncoming)
         {
+            var message = packet.Message;
             var onMsg = new OnMessageArgs(isIncoming)
             {
                 Player = clientObject,
@@ -379,12 +378,20 @@ namespace Server.Dme
                 Message = message
             };
 
-            // Send to plugins
+            var onUdpMsg = new OnUdpMsg(isIncoming)
+            {
+                Player = this.ClientObject,
+                Packet = packet,
+            };
+
+            // go from lowest form upwards
+            await Program.Plugins.OnEvent(PluginEvent.DME_GAME_ON_RECV_UDP, onUdpMsg);
+            if (onUdpMsg.Ignore)
+                return true;
+
             await Program .Plugins.OnMessageEvent(message.Id, onMsg);
             if (onMsg.Ignore)
                 return true;
-
-
 
             // Send medius message to plugins
             if (message is RT_MSG_CLIENT_APP_TOSERVER clientApp)

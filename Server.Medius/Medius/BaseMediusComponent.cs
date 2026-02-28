@@ -76,6 +76,7 @@ namespace Server.Medius
         }
 
         protected ConcurrentQueue<IChannel> _forceDisconnectQueue = new ConcurrentQueue<IChannel>();
+        protected ConcurrentQueue<IChannel> _disconnectedQueue = new ConcurrentQueue<IChannel>();
         protected ConcurrentDictionary<string, ChannelData> _channelDatas = new ConcurrentDictionary<string, ChannelData>();
 
         protected PS2_RC4 _sessionCipher = null;
@@ -136,18 +137,9 @@ namespace Server.Medius
             };
 
             // Remove client on disconnect
-            _scertHandler.OnChannelInactive += async (channel) =>
+            _scertHandler.OnChannelInactive += (channel) =>
             {
-                await Tick(channel);
-                string key = channel.Id.AsLongText();
-                if (_channelDatas.TryRemove(key, out var data))
-                {
-                    data.State = ClientState.DISCONNECTED;
-                    data.ClientObject?.OnDisconnected();
-                }
-
-                //
-                await OnDisconnected(channel);
+                _disconnectedQueue.Enqueue(channel);
             };
 
             // Queue all incoming messages
@@ -218,13 +210,23 @@ namespace Server.Medius
         {
             try
             {
-                await _boundChannel.CloseAsync();
+                if (_boundChannel != null)
+                {
+                    var closeTask = _boundChannel.CloseAsync();
+                    if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                        Logger.Warn("Timed out waiting for Medius bound channel close.");
+                }
             }
             finally
             {
-                await Task.WhenAll(
-                        _bossGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
-                        _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                var shutdownTasks = new List<Task>();
+                if (_bossGroup != null)
+                    shutdownTasks.Add(_bossGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                if (_workerGroup != null)
+                    shutdownTasks.Add(_workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+
+                if (shutdownTasks.Count > 0)
+                    await Task.WhenAll(shutdownTasks);
             }
         }
 
@@ -241,15 +243,17 @@ namespace Server.Medius
             // Disconnect and remove timedout unauthenticated channels
             while (_forceDisconnectQueue.TryDequeue(out var channel))
             {
-
                 // Send disconnect message
                 //_ = ForceDisconnectClient(channel);
 
-                // Remove
-                _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
+                _channelDatas.TryGetValue(channel.Id.AsLongText(), out var d);
 
                 // Logout
-                d?.ClientObject?.Logout();
+                if (d?.ClientObject?.IsLoggedIn == true)
+                {
+                    var logoutTask = d.ClientObject.Logout();
+                    await logoutTask.TryAwait(TimeSpan.FromMilliseconds(2000));
+                }
 
                 // 
                 Logger.Warn($"REMOVING CHANNEL {channel},{d},{d?.ClientObject}");
@@ -258,8 +262,26 @@ namespace Server.Medius
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(5000);
-                    try { await channel.CloseAsync(); } catch (Exception) { }
+                    try
+                    {
+                        var closeTask = channel.CloseAsync();
+                        await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000));
+                    }
+                    catch (Exception) { }
                 });
+            }
+
+            // Handle disconnected clients
+            while (_disconnectedQueue.TryDequeue(out var channel))
+            {
+                string key = channel.Id.AsLongText();
+                if (_channelDatas.TryRemove(key, out var data))
+                {
+                    data.State = ClientState.DISCONNECTED;
+                    data.ClientObject?.OnDisconnected();
+                }
+                
+                await OnDisconnected(channel);
             }
         }
 

@@ -76,7 +76,9 @@ namespace Server.Medius
                         {
                             Logger.Error($"Client {clientChannel.RemoteAddress} attempting to authenticate with invalid key {clientCryptKeyPublic}");
                             data.State = ClientState.DISCONNECTED;
-                            await clientChannel.CloseAsync();
+                            var closeTask = clientChannel.CloseAsync();
+                            if (!await closeTask.TryAwait(TimeSpan.FromMilliseconds(2000)))
+                                Logger.Warn($"Timed out waiting for MPS client channel close: {clientChannel.RemoteAddress}");
                             break;
                         }
 
