@@ -68,7 +68,7 @@ namespace Server.Dme.Config
         /// <summary>
         /// Number of milliseconds for main loop thread to sleep.
         /// </summary>
-        public int MainLoopSleepMs { get; set; } = 5;
+        public int MainLoopSleepMs { get; set; } = 20;
 
         /// <summary>
         /// Milliseconds between plugin ticks.

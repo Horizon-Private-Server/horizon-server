@@ -235,12 +235,11 @@ namespace Server.Dme.Models
             List<BaseScertMessage> responses = new List<BaseScertMessage>();
 
             // set aggtime to locked intervals of whatever is stored in AggTimeMs
-            // sometimes this server will be +- a few milliseconds on an agg and
-            // we don't want that to change when messages get sent
-            //if (LastAggTime.HasValue)
-            //    LastAggTime += AggTimeMs * ((Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) / AggTimeMs);
-            //else
-            LastAggTime = Utils.GetMillisecondsSinceStartup();
+            // rounds to nearest AggTimeMs interval to prevent drift
+            if (LastAggTime.HasValue)
+                LastAggTime += AggTimeMs * ((Utils.GetMillisecondsSinceStartup() - LastAggTime.Value) / AggTimeMs);
+            else
+                LastAggTime = Utils.GetMillisecondsSinceStartup();
 
             // Echo
             if (MediusVersion > 108 && (Utils.GetHighPrecisionUtcTime() - UtcLastServerEchoSent).TotalSeconds > Program.GetAppSettingsOrDefault(ApplicationId).ServerEchoIntervalSeconds)

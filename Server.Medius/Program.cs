@@ -25,7 +25,6 @@ using Server.Common.Logging;
 using Server.Plugins;
 using System.Net.NetworkInformation;
 using Server.Common;
-using Haukcode.HighResolutionTimer;
 using System.Text.RegularExpressions;
 
 namespace Server.Medius
@@ -66,7 +65,7 @@ namespace Server.Medius
 
         private static int _ticks = 0;
         private static Stopwatch _sw = new Stopwatch();
-        private static HighResolutionTimer _timer;
+        private static Stopwatch _loopSw = new Stopwatch();
 
         static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<Program>();
 
@@ -102,16 +101,10 @@ namespace Server.Medius
 
                 // Attempt to authenticate with the db middleware
                 // We do this every 24 hours to get a fresh new token
+                // Auth failure no longer blocks the tick loop — server keeps running with cached data
                 if (!await Database.AmIAuthenticated() || (_lastSuccessfulDbAuth == null || (Utils.GetHighPrecisionUtcTime() - _lastSuccessfulDbAuth.Value).TotalHours > 24))
                 {
-                    if (!await Database.Authenticate())
-                    {
-                        // Log and exit when unable to authenticate
-                        Logger.Error("Unable to authenticate with the db middleware server");
-                        await Task.Delay(1000); // delay loop to give time before next authentication request
-                        return;
-                    }
-                    else
+                    if (await Database.Authenticate())
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
                         Logger.Info("Successfully authenticated with the db middleware server");
@@ -129,6 +122,10 @@ namespace Server.Medius
                             await Database.ClearActiveGames();
                         }
 #endif
+                    }
+                    else
+                    {
+                        Logger.Error("Unable to authenticate with the db middleware server");
                     }
                 }
 
@@ -188,10 +185,9 @@ namespace Server.Medius
             // 
             Logger.Info("Started.");
 
-            // start timer
-            _timer = new HighResolutionTimer();
-            _timer.SetPeriod(waitMs);
-            _timer.Start();
+            // clock-based tick scheduling — accounts for actual work time
+            _loopSw.Start();
+            var nextTick = _loopSw.Elapsed;
 
             // iterate
             while (true)
@@ -200,16 +196,20 @@ namespace Server.Medius
                 if (sleepMS != waitMs)
                 {
                     waitMs = sleepMS;
-                    _timer.Stop();
-                    _timer.SetPeriod(waitMs);
-                    _timer.Start();
+                    nextTick = _loopSw.Elapsed;
                 }
 
                 // tick
                 await TickAsync();
 
-                // wait for next tick
-                _timer.WaitForTrigger();
+                // wait for next tick, accounting for work time
+                nextTick += TimeSpan.FromMilliseconds(waitMs);
+                var delay = nextTick - _loopSw.Elapsed;
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay);
+                else if (delay < TimeSpan.FromMilliseconds(-waitMs * 2))
+                    // More than 2 ticks behind — reset to avoid spiral
+                    nextTick = _loopSw.Elapsed;
             }
         }
 

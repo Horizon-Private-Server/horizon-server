@@ -1,5 +1,5 @@
 ﻿using DotNetty.Common.Internal.Logging;
-using Haukcode.HighResolutionTimer;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Newtonsoft.Json;
@@ -55,7 +55,7 @@ namespace Server.Dme
 
         private static int _ticks = 0;
         private static Stopwatch _sw = new Stopwatch();
-        private static HighResolutionTimer _timer;
+        private static Stopwatch _loopSw = new Stopwatch();
         private static DateTime _lastConfigRefresh = Utils.GetHighPrecisionUtcTime();
         private static DateTime? _lastSuccessfulDbAuth = null;
 
@@ -97,22 +97,10 @@ namespace Server.Dme
 
                 // Attempt to authenticate with the db middleware
                 // We do this every 24 hours to get a fresh new token
+                // Auth failure no longer blocks the tick loop — server keeps running with cached data
                 if (!await Database.AmIAuthenticated() || (_lastSuccessfulDbAuth == null || (Utils.GetHighPrecisionUtcTime() - _lastSuccessfulDbAuth.Value).TotalHours > 24))
                 {
-                    if (!await Database.Authenticate())
-                    {
-                        // Log and exit when unable to authenticate
-                        Logger.Error("Unable to authenticate with the db middleware server");
-
-                        // disconnect from MPS
-                        foreach (var manager in Managers)
-                            if (manager.Value != null && manager.Value.IsConnected)
-                                await manager.Value.Stop();
-
-                        await Task.Delay(5000); // delay loop to give time before next authentication request
-                        return;
-                    }
-                    else
+                    if (await Database.Authenticate())
                     {
                         _lastSuccessfulDbAuth = Utils.GetHighPrecisionUtcTime();
                         Logger.Info("Successfully authenticated with the db middleware server");
@@ -124,6 +112,10 @@ namespace Server.Dme
                         foreach (var manager in Managers)
                             if (manager.Value != null && !manager.Value.IsConnected)
                                 await manager.Value.Start();
+                    }
+                    else
+                    {
+                        Logger.Error("Unable to authenticate with the db middleware server");
                     }
                 }
 
@@ -223,54 +215,46 @@ namespace Server.Dme
             // 
             Logger.Info("Started.");
 
-            // start timer
-            _timer = new HighResolutionTimer();
-            _timer.SetPeriod(waitMs);
-            _timer.Start();
+            // clock-based tick scheduling — accounts for actual work time
+            _loopSw.Start();
+            var nextTick = _loopSw.Elapsed;
+            var lastMetricFlush = _loopSw.Elapsed;
 
             // iterate
             while (true)
             {
-                // 
-                if (metricCooldownTicks > 0)
-                    metricCooldownTicks--;
-                else
-                    metricCooldownTicks = (1000 * 5) / waitMs; // 5 seconds
-
                 // handle tick rate change
                 if (Settings.MainLoopSleepMs != waitMs)
                 {
                     waitMs = Settings.MainLoopSleepMs;
-                    _timer.Stop();
-                    _timer.SetPeriod(waitMs);
-                    _timer.Start();
+                    nextTick = _loopSw.Elapsed;
                 }
 
                 // tick
                 await TimeAsync("tick", TickAsync);
 
-
-                if (Settings.Logging.LogMetrics && !String.IsNullOrEmpty(metricPrintString))
+                // flush metrics every 5 seconds (wall-clock based, not tick-count based)
+                if ((_loopSw.Elapsed - lastMetricFlush).TotalSeconds >= 5)
                 {
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                        Logger.Info("\n" + metricPrintString);
-                    else
-                        Logger.Info(metricPrintString);
-                    metricPrintString = "";
+                    if (Settings.Logging.LogMetrics && !String.IsNullOrEmpty(metricPrintString))
+                    {
+                        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                            Logger.Info("\n" + metricPrintString);
+                        else
+                            Logger.Info(metricPrintString);
+                        metricPrintString = "";
+                    }
+                    lastMetricFlush = _loopSw.Elapsed;
                 }
 
-                var l1 = Stopwatch.ElapsedMilliseconds;
-
-                // wait for next tick
-                _timer.WaitForTrigger();
-                //Thread.Sleep(TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.9)));
-
-                var l2 = Stopwatch.ElapsedMilliseconds;
-
-                if ((l2 - l1) > 1)
-                {
-                    //Logger.Error($"LOOP DT {l2 - l1}");
-                }
+                // wait for next tick, accounting for work time
+                nextTick += TimeSpan.FromMilliseconds(waitMs);
+                var delay = nextTick - _loopSw.Elapsed;
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay);
+                else if (delay < TimeSpan.FromMilliseconds(-waitMs * 2))
+                    // More than 2 ticks behind — reset to avoid spiral
+                    nextTick = _loopSw.Elapsed;
             }
         }
 
