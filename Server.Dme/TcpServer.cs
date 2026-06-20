@@ -185,17 +185,17 @@ namespace Server.Dme
             // Disconnect and remove timedout unauthenticated channels
             while (_forceDisconnectQueue.TryDequeue(out var channel))
             {
-                // Send disconnect message
-                _ = ForceDisconnectClient(channel);
+                // Send graceful disconnect notification before closing socket
+                await ForceDisconnectClient(channel);
 
                 // Remove
                 _channelDatas.TryRemove(channel.Id.AsLongText(), out var d);
                 Logger.Warn($"REMOVING CHANNEL {channel},{d},{d?.ClientObject}");
 
-                // close after 5 seconds
+                // Brief delay to let disconnect message flush, then close
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(5000);
+                    await Task.Delay(500);
                     try
                     {
                         await channel?.CloseAsync();
@@ -229,7 +229,7 @@ namespace Server.Dme
                         catch (Exception e)
                         {
                             Logger.Error(e);
-                            _ = ForceDisconnectClient(clientChannel);
+                            await ForceDisconnectClient(clientChannel);
                         }
                     }
                 }
