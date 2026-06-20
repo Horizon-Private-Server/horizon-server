@@ -243,10 +243,10 @@ namespace Server.Medius
             // Disconnect and remove timedout unauthenticated channels
             while (_forceDisconnectQueue.TryDequeue(out var channel))
             {
-                // Send disconnect message
-                //_ = ForceDisconnectClient(channel);
-
                 _channelDatas.TryGetValue(channel.Id.AsLongText(), out var d);
+
+                // Send graceful disconnect notification before closing socket
+                await ForceDisconnectClient(channel);
 
                 // Logout
                 if (d?.ClientObject?.IsLoggedIn == true)
@@ -258,10 +258,10 @@ namespace Server.Medius
                 // 
                 Logger.Warn($"REMOVING CHANNEL {channel},{d},{d?.ClientObject}");
 
-                // close after 5 seconds
+                // Brief delay to let disconnect message flush, then close
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(5000);
+                    await Task.Delay(500);
                     try
                     {
                         var closeTask = channel.CloseAsync();
