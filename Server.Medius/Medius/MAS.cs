@@ -529,7 +529,10 @@ namespace Server.Medius
                         {
                             // ERROR - Need a session
                             if (data.ClientObject == null)
-                                throw new InvalidOperationException($"INVALID OPERATION: {clientChannel} sent {accountLoginRequest} without a session.");
+                            {
+                                data.SendQueue.Enqueue(new RT_MSG_CLIENT_DISCONNECT_WITH_REASON() { Reason = 0 });
+                                return;
+                            }
 
                             // validate name
                             if (!Program.PassTextFilter(data.ApplicationId, Config.TextFilterContext.ACCOUNT_NAME, accountLoginRequest.Username))

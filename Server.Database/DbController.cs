@@ -2566,7 +2566,11 @@ namespace Server.Database
                     if (_simulatedDb.AppSettings.TryGetValue(appId, out var settings))
                         return settings;
                     else
-                        return new Dictionary<string, string>();
+                        return new Dictionary<string, string>()
+                        {
+                            { "CreateAccountOnNotFound", "True" },
+                            { "EnableEncryption", "False" },
+                        };
                 }
                 else
                 {
@@ -2587,8 +2591,8 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    //_simulatedDb.AppSettings[appId] = settings;
-                    //SaveSimulated();
+                    _simulatedDb.AppSettings[appId] = settings;
+                    SaveSimulated();
                 }
                 else
                 {
