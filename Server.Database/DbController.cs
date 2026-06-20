@@ -2591,8 +2591,8 @@ namespace Server.Database
             {
                 if (_settings.SimulatedMode)
                 {
-                    //_simulatedDb.AppSettings[appId] = settings;
-                    //SaveSimulated();
+                    _simulatedDb.AppSettings[appId] = settings;
+                    SaveSimulated();
                 }
                 else
                 {

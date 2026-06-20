@@ -229,7 +229,7 @@ namespace Server.Dme
                         catch (Exception e)
                         {
                             Logger.Error(e);
-                            _ = ForceDisconnectClient(clientChannel);
+                            await ForceDisconnectClient(clientChannel);
                         }
                     }
                 }
