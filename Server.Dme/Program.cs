@@ -198,6 +198,15 @@ namespace Server.Dme
 
             Logger.Info("Starting medius components...");
 
+            // wait for db auth before accepting connections
+            while (!await Database.AmIAuthenticated())
+            {
+                Logger.Info("Waiting for DB middleware to be ready...");
+                if (await Database.Authenticate())
+                    break;
+                await Task.Delay(1000);
+            }
+
             Logger.Info($"Starting TCP on port {TcpServer.Port}.");
             TcpServer.Start();
             Logger.Info($"TCP started.");
