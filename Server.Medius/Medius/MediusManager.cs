@@ -227,11 +227,12 @@ namespace Server.Medius
                 gameName = r1.GameName;
 
             var existingGames = _lookupsByAppId.Where(x => appIdsInGroup.Contains(client.ApplicationId)).SelectMany(x => x.Value.GameIdToGame.Select(g => g.Value));
-            
+
             // Ensure the name is unique
             // If the host leaves then we unreserve the name
             if (existingGames.Any(x => x.WorldStatus != MediusWorldStatus.WorldClosed && x.WorldStatus != MediusWorldStatus.WorldInactive && x.GameName == gameName && x.Host != null && x.Host.IsConnected))
             {
+                Logger.Warn($"CreateGame: Rejected - GameName '{gameName}' already exists for AppId={client.ApplicationId}.");
                 client.Queue(new RT_MSG_SERVER_APP()
                 {
                     Message = new MediusCreateGameResponse()
@@ -246,9 +247,11 @@ namespace Server.Medius
 
             // Try to get next free dme server
             // If none exist, return error to clist
+            Logger.Info($"CreateGame: Requesting free DME for AppId={client.ApplicationId}, PreferredLocation={client.Location}, GameName='{gameName}'.");
             var dme = Program.ProxyServer.GetFreeDme(client.ApplicationId, client.Location);
             if (dme == null)
             {
+                Logger.Error($"CreateGame: No free DME available for AppId={client.ApplicationId}, PreferredLocation={client.Location}. Rejecting request.");
                 client.Queue(new MediusCreateGameResponse()
                 {
                     MessageID = request.MessageID,
@@ -258,11 +261,16 @@ namespace Server.Medius
                 return;
             }
 
+            Logger.Info($"CreateGame: Using DME -> IP={dme.IP}, Port={dme.Port}, Location={dme.Location}, ApplicationId={dme.ApplicationId}, " +
+                        $"CurrentWorlds={dme.CurrentWorlds}, MaxWorlds={dme.MaxWorlds}, CurrentPlayers={dme.CurrentPlayers} for GameName='{gameName}'.");
+
             // Create and add
             try
             {
                 var game = new Game(client, request, client.CurrentChannel, dme);
                 AddGame(game);
+
+                Logger.Info($"CreateGame: Game created -> Id={game.Id}, Name='{gameName}', AssignedDME={dme.IP}:{dme.Port}.");
 
                 // Send create game request to dme server
                 dme.Queue(new MediusServerCreateGameWithAttributesRequest()
@@ -276,7 +284,6 @@ namespace Server.Medius
             }
             catch (Exception e)
             {
-                // 
                 Logger.Error(e);
 
                 // Failure adding game for some reason
@@ -484,7 +491,7 @@ namespace Server.Medius
         {
             await TickClients();
 
-            await TickChannels ();
+            await TickChannels();
 
             await TickGames();
         }

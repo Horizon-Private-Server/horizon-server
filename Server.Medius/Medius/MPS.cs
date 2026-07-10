@@ -165,7 +165,7 @@ namespace Server.Medius
                         dme.ApplicationId = data.ApplicationId;
                         dme.BeginSession();
                         Program.Manager.AddDmeClient(dme);
-                        
+
                         // 
                         data.ClientObject = dme;
 
@@ -174,11 +174,11 @@ namespace Server.Medius
 
                         Queue(new RT_MSG_SERVER_APP()
                         {
-                             Message = new MediusServerSetAttributesResponse()
-                             {
-                                 MessageID = dmeSetAttributesRequest.MessageID,
-                                 Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS
-                             }
+                            Message = new MediusServerSetAttributesResponse()
+                            {
+                                MessageID = dmeSetAttributesRequest.MessageID,
+                                Confirmation = MGCL_ERROR_CODE.MGCL_SUCCESS
+                            }
                         }, clientChannel);
 
                         break;
@@ -303,17 +303,46 @@ namespace Server.Medius
         {
             var channels = _scertHandler.GetChannels();
 
-            // get by location & app id
-            var dme = channels
+            var allDmes = channels
                 .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
-                .Where(x => x is DMEObject && x != null && (x as DMEObject).Location == preferredLocation && (x.ApplicationId == appId || x.ApplicationId == 0))
-                .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
+                .OfType<DMEObject>()
+                .ToList();
+
+            Logger.Info($"GetFreeDme: AppId={appId}, PreferredLocation={preferredLocation} -> {allDmes.Count} DME candidate(s) found:");
+            foreach (var d in allDmes)
+            {
+                Logger.Info($"    DME[IP={d.IP}, Port={d.Port}, Location={d.Location}, ApplicationId={d.ApplicationId}, " +
+                            $"CurrentWorlds={d.CurrentWorlds}, MaxWorlds={d.MaxWorlds}, CurrentPlayers={d.CurrentPlayers}, IsConnected={d.IsConnected}]");
+            }
+
+            // get by location & app id
+            var dme = allDmes
+                .Where(x => x.Location == preferredLocation && (x.ApplicationId == appId || x.ApplicationId == 0))
+                .MinBy(x => x.CurrentWorlds);
+
+            if (dme != null)
+            {
+                Logger.Info($"GetFreeDme: Selected DME (location match) -> IP={dme.IP}, Port={dme.Port}, Location={dme.Location}, " +
+                            $"ApplicationId={dme.ApplicationId}, CurrentWorlds={dme.CurrentWorlds}, MaxWorlds={dme.MaxWorlds}, CurrentPlayers={dme.CurrentPlayers}");
+                return dme;
+            }
+
+            Logger.Warn($"GetFreeDme: No DME matched PreferredLocation={preferredLocation} for AppId={appId}. Falling back to AppId-only match.");
 
             // if that fails get by app id only
-            dme ??= channels
-                .Select(x => _channelDatas[x.Id.AsLongText()]?.ClientObject)
-                .Where(x => x is DMEObject && x != null && (x.ApplicationId == appId || x.ApplicationId == 0))
-                .MinBy(x => (x as DMEObject).CurrentWorlds) as DMEObject;
+            dme = allDmes
+                .Where(x => x.ApplicationId == appId || x.ApplicationId == 0)
+                .MinBy(x => x.CurrentWorlds);
+
+            if (dme != null)
+            {
+                Logger.Info($"GetFreeDme: Selected DME (AppId fallback) -> IP={dme.IP}, Port={dme.Port}, Location={dme.Location}, " +
+                            $"ApplicationId={dme.ApplicationId}, CurrentWorlds={dme.CurrentWorlds}, MaxWorlds={dme.MaxWorlds}, CurrentPlayers={dme.CurrentPlayers}");
+            }
+            else
+            {
+                Logger.Error($"GetFreeDme: No free DME available at all for AppId={appId}.");
+            }
 
             return dme;
         }
@@ -326,6 +355,6 @@ namespace Server.Medius
             return dme;
         }
 
-        
+
     }
 }
