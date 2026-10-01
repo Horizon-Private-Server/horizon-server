@@ -23,15 +23,15 @@ jobs:
     steps:
       # Step 1: Checkout current repo
       - name: Checkout current repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: repo
 
       # Step 2: Setup .NET
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       # Step 4: Restore
       - name: Restore
@@ -51,7 +51,7 @@ jobs:
 
       # Step 7: Upload binaries as an artifact
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.rid }}
           path: output/${{ matrix.rid }}/
