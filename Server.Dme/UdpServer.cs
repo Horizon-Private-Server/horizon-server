@@ -33,7 +33,7 @@ namespace Server.Dme
 
         public int Port { get; protected set; } = -1;
 
-        protected IEventLoopGroup _workerGroup = null;
+        protected static readonly  IEventLoopGroup _workerGroup = new MultithreadEventLoopGroup();
         protected IChannel _boundChannel = null;
         protected ScertDatagramHandler _scertHandler = null;
 
@@ -79,8 +79,6 @@ namespace Server.Dme
         /// </summary>
         public virtual async Task Start()
         {
-            //
-            _workerGroup = new MultithreadEventLoopGroup();
             _scertHandler = new ScertDatagramHandler();
 
             //
@@ -143,12 +141,6 @@ namespace Server.Dme
             }
             finally
             {
-                if (_workerGroup != null)
-                {
-                    await Task.WhenAll(
-                            _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
-                }
-
                 FreePort();
             }
         }

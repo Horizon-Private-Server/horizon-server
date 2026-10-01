@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,7 +8,7 @@ namespace RT.Cryptography
     public class CipherService
     {
         private ICipherFactory _factory = null;
-        private Dictionary<CipherContext, ICipher> _ciphers = new Dictionary<CipherContext, ICipher>();
+        private readonly ConcurrentDictionary<CipherContext, ICipher> _ciphers = new ConcurrentDictionary<CipherContext, ICipher>();
 
         public bool EnableEncryption { get; set; } = true;
 
@@ -18,35 +19,22 @@ namespace RT.Cryptography
 
         public void GenerateCipher(CipherContext context)
         {
-            if (!_ciphers.ContainsKey(context))
-                _ciphers.Add(context, _factory.CreateNew(context));
-            else
-                _ciphers[context] = _factory.CreateNew(context);
+            _ciphers[context] = _factory.CreateNew(context);
         }
 
         public void GenerateCipher(CipherContext context, byte[] publicKey)
         {
-            if (!_ciphers.ContainsKey(context))
-                _ciphers.Add(context, _factory.CreateNew(context, publicKey));
-            else
-                _ciphers[context] = _factory.CreateNew(context, publicKey);
+            _ciphers[context] = _factory.CreateNew(context, publicKey);
         }
 
         public void GenerateCipher(RsaKeyPair rsaKeyPair)
         {
-            var context = CipherContext.RSA_AUTH;
-            if (!_ciphers.ContainsKey(context))
-                _ciphers.Add(context, _factory.CreateNew(rsaKeyPair));
-            else
-                _ciphers[context] = _factory.CreateNew(rsaKeyPair);
+            _ciphers[CipherContext.RSA_AUTH] = _factory.CreateNew(rsaKeyPair);
         }
 
         public void SetCipher(CipherContext context, ICipher cipher)
         {
-            if (!_ciphers.ContainsKey(context))
-                _ciphers.Add(context, cipher);
-            else
-                _ciphers[context] = cipher;
+            _ciphers[context] = cipher;
         }
 
         public bool HasKey(CipherContext context)
