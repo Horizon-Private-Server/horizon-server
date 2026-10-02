@@ -253,9 +253,7 @@ namespace Server.Dme.Models
 
         public void SendTcpAppSingle(ClientObject source, short targetDmeId, byte[] Payload)
         {
-            var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
-
-            if (target != null && target.IsAuthenticated && target.IsConnected && target.HasRecvFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (Clients.TryGetValue(targetDmeId, out var target) && target.IsAuthenticated && target.IsConnected && target.HasRecvFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueTcp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
@@ -267,9 +265,7 @@ namespace Server.Dme.Models
 
         public void SendUdpAppSingle(ClientObject source, short targetDmeId, byte[] Payload)
         {
-            var target = Clients.FirstOrDefault(x => x.Value.DmeId == targetDmeId).Value;
-
-            if (target != null && target.IsAuthenticated && target.IsConnected && target.HasRecvFlag(RT_RECV_FLAG.RECV_SINGLE))
+            if (Clients.TryGetValue(targetDmeId, out var target) && target.IsAuthenticated && target.IsConnected && target.HasRecvFlag(RT_RECV_FLAG.RECV_SINGLE))
             {
                 target.EnqueueUdp(new RT_MSG_CLIENT_APP_SINGLE()
                 {
